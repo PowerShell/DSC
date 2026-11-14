@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::args::{GetOutputFormat, OutputFormat};
+use crate::report::render;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, write_object};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
@@ -64,7 +65,7 @@ pub fn get(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
             write_object(&json, format, false)?;
         }
         Err(err) => {
-            error!("{err}");
+            error!("{}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
@@ -88,7 +89,7 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, ver
     let export_result = match resource.export(&input, &context) {
         Ok(export) => { export }
         Err(err) => {
-            error!("{err}");
+            error!("{}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     };
@@ -169,13 +170,13 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
             Ok(GetResult::Resource(response)) => response.actual_state,
             Ok(_) => unreachable!(),
             Err(err) => {
-                error!("{err}");
+                error!("{}", render(&err));
                 return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
         };
 
         if let Err(err) = resource.delete(input, &context) {
-            error!("{err}");
+            error!("{}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
 
@@ -183,7 +184,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
             Ok(GetResult::Resource(response)) => response.actual_state,
             Ok(_) => unreachable!(),
             Err(err) => {
-                error!("{err}");
+                error!("{}", render(&err));
                 return Err(ExitCode::from(EXIT_DSC_ERROR));
             }
         };
@@ -221,7 +222,7 @@ pub fn set(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version
             write_object(&json, format, false)?;
         }
         Err(err) => {
-            error!("{err}");
+            error!("{}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
@@ -259,7 +260,7 @@ pub fn test(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, versio
             write_object(&json, format, false)?;
         }
         Err(err) => {
-            error!("{err}");
+            error!("{}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
@@ -302,7 +303,7 @@ pub fn delete(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
             }
         },
         Err(err) => {
-            error!("{err}");
+            error!("{}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
@@ -334,7 +335,7 @@ pub fn schema(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
             write_object(&json, format, false)?;
         }
         Err(err) => {
-            error!("{err}");
+            error!("{}", render(&err));
             return Err(ExitCode::from(EXIT_DSC_ERROR));
         }
     }
@@ -358,7 +359,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
         .ok()
         .and_then(|value| value.as_object().cloned());
     if let Err(err) = add_resource_export_results_to_configuration(&*dsc_resource, &mut conf, input, &context) {
-        error!("{err}");
+        error!("{}", render(&err));
         return Err(ExitCode::from(EXIT_DSC_ERROR));
     }
 

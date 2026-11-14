@@ -87,6 +87,26 @@ schemas:
           Invalid exit code. Each exit code must be defined as a string representing a 32-bit
           signed integer, like `5` or `-2147024891`.
 
+    pluginCommandName:
+      title:
+        en-us: Plug-in command name
+      description:
+        en-us: >-
+          Defines the name of the command a plug-in adds to DSC.
+      markdownDescription:
+        en-us: |-
+          Defines the name of the command a plug-in adds to DSC. The user specifies the command
+          name after `dsc`, like `lint` in `dsc lint`.
+
+          A command name must start with a lowercase ASCII letter and can only contain lowercase
+          ASCII letters, ASCII digits, and hyphens. It can't end with a hyphen or contain
+          consecutive hyphens. DSC compares command names case-sensitively.
+      patternErrorMessage:
+        en-us: >-
+          Invalid plug-in command name. A command name must start with a lowercase ASCII letter
+          and can only contain lowercase ASCII letters, ASCII digits, and hyphens, like `lint` or
+          `resource-kit`. It can't end with a hyphen or contain consecutive hyphens.
+
     resourceType:
       title:
         en-us: Fully qualified type name

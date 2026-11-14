@@ -12,12 +12,15 @@ use rust_i18n::i18n;
 
 pub mod actions;
 pub mod configure;
+pub mod diagnostics;
 pub mod discovery;
 pub mod dscerror;
 pub mod dscresources;
 pub mod extensions;
 pub mod functions;
+pub mod lint;
 pub mod parser;
+pub mod plugins;
 pub mod progress;
 pub mod resources;
 pub mod schemas;

@@ -79,6 +79,7 @@ Describe 'Tests for DSC server' {
             'invoke_dsc_function'   = $false
             'invoke_dsc_resource'   = $false
             'list_dsc_actions'      = $false
+            'lint_dsc_config'       = $false
             'list_dsc_functions'    = $false
             'list_dsc_resources'    = $false
             'show_dsc_action'       = $false
@@ -1184,5 +1185,64 @@ resources:
         $response.result.structuredContent.outputSchema | Should -Not -BeNullOrEmpty
         $response.result.structuredContent.description | Should -BeExactly 'An action for testing.'
         $response.result.structuredContent.requireSecurityContext | Should -BeExactly 'current'
+    }
+
+    It 'Calling lint_dsc_config returns diagnostics' {
+        $configuration = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  unused:
+    type: string
+    defaultValue: x
+resources:
+- name: a
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[parameters('missing')]"
+'@
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 39
+            method  = "tools/call"
+            params  = @{
+                name      = "lint_dsc_config"
+                arguments = @{
+                    configuration = $configuration
+                    discovery     = $false
+                    rules         = @{ 'no-unused-parameters' = 'info' }
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 39
+        $result = $response.result.structuredContent.result
+        $result.valid | Should -BeFalse -Because ($response | ConvertTo-Json -Depth 20 | Out-String)
+        $result.discovery | Should -BeFalse
+        $undefined = $result.diagnostics | Where-Object rule -EQ 'undefined-parameter'
+        $undefined.path | Should -BeExactly '/resources/0/properties/output'
+        $unused = $result.diagnostics | Where-Object rule -EQ 'no-unused-parameters'
+        $unused.level | Should -BeExactly 'info'
+    }
+
+    It 'Calling lint_dsc_config with an unknown rule returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 40
+            method  = "tools/call"
+            params  = @{
+                name      = "lint_dsc_config"
+                arguments = @{
+                    configuration = '{"$schema": "https://aka.ms/dsc/schemas/v3/bundled/config/document.json", "resources": []}'
+                    discovery     = $false
+                    rules         = @{ 'no-such-rule' = 'off' }
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 40
+        $response.error.code | Should -Be -32602
+        $response.error.message | Should -Match 'no-such-rule'
     }
 }

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/plugin/manifest.json",
+    "type": "Microsoft.DSC/Lint",
+    "version": "3.4.0-preview.3",
+    "description": "Check configuration documents for problems without applying them",
+    "command": {
+        "name": "lint",
+        "executable": "dsclint"
+    }
+}

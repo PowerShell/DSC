@@ -131,6 +131,17 @@ macro_rules! test_schema_for {
         }
     }
 
+    #[cfg(test)] mod lint {
+        #[allow(unused_must_use)]
+        #[cfg(test)] mod diagnostic {
+            test_schema_for!(dsc_lib::lint::diagnostic::LintResult);
+        }
+        #[allow(unused_must_use)]
+        #[cfg(test)] mod rule {
+            test_schema_for!(dsc_lib::lint::rule::LintRuleInfo);
+        }
+    }
+
     #[cfg(test)] mod extensions {
         #[allow(unused_must_use)]
         #[cfg(test)] mod discover {
@@ -158,6 +169,23 @@ macro_rules! test_schema_for {
             test_schema_for!(dsc_lib::extensions::secret::SecretMethod);
         }
     }
+
+    #[cfg(test)] mod plugins {
+        #[allow(unused_must_use)]
+        #[cfg(test)] mod command_name {
+            test_schema_for!(dsc_lib::plugins::command_name::PluginCommandName);
+        }
+        #[allow(unused_must_use)]
+        #[cfg(test)] mod dscplugin {
+            test_schema_for!(dsc_lib::plugins::dscplugin::DscPlugin);
+        }
+        #[allow(unused_must_use)]
+        #[cfg(test)] mod plugin_manifest {
+            test_schema_for!(dsc_lib::plugins::plugin_manifest::PluginArgKind);
+            test_schema_for!(dsc_lib::plugins::plugin_manifest::PluginCommand);
+            test_schema_for!(dsc_lib::plugins::plugin_manifest::PluginManifest);
+        }
+    }
     mod settings {
         test_schema_for!(dsc_lib::settings::DscSettings);
         test_schema_for!(dsc_lib::settings::DscSettingsScope);
@@ -165,6 +193,8 @@ macro_rules! test_schema_for {
         mod fields {
             test_schema_for!(dsc_lib::settings::fields::ForbidIgnoreSettingsFileField);
             test_schema_for!(dsc_lib::settings::fields::IgnoreSettingsFileField);
+            test_schema_for!(dsc_lib::settings::fields::PluginsFileData);
+            test_schema_for!(dsc_lib::settings::fields::PluginsResolvedSettings);
             test_schema_for!(dsc_lib::settings::fields::ResourcePathFileData);
             test_schema_for!(dsc_lib::settings::fields::ResourcePathResolvedSettings);
             test_schema_for!(dsc_lib::settings::fields::TracingFileData);

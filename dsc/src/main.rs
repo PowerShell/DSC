@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use args::{Args, SubCommand};
-use clap::{CommandFactory, Parser};
+use args::SubCommand;
 use clap_complete::generate;
 use dsc_lib::{progress::ProgressFormat, settings::{DscSettings, DscSettingsScope, global as global_settings, sources::EnvironmentData}};
 use server::start_server;
@@ -19,6 +18,8 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod plugin;
+pub mod report;
 pub mod resolve;
 pub mod resource_command;
 pub mod server;
@@ -76,7 +77,7 @@ fn dsc_main() -> Result<(), ExitCode> {
         error!("{}", t!("main.failedCtrlCHandler"));
     }
 
-    let args = Args::parse();
+    let args = plugin::parse_args();
 
     // Initialize with local settings; reload for global after tracing init
     // to emit messages for settings loading/resolution.
@@ -115,35 +116,12 @@ fn dsc_main() -> Result<(), ExitCode> {
     match args.subcommand {
         SubCommand::Completer { shell } => {
             info!("{} {:?}", t!("main.generatingCompleter"), shell);
-            let mut cmd = Args::command();
+            // Include the plug-in commands, so the script completes them like built-in commands.
+            let mut cmd = plugin::command_with_plugins(&plugin::discover());
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
-            let Ok(params) = get_input(None, parameters_file.as_ref()) else {
-                return Err(ExitCode::from(util::EXIT_INVALID_INPUT));
-            };
-            let file_params = if params.is_empty() {
-                None
-            } else {
-                Some(params)
-            };
-
-            let merged_parameters = match (file_params, parameters) {
-                (Some(file_content), Some(inline_content)) => {
-                    info!("{}", t!("main.mergingParameters"));
-                    match util::merge_parameters(&file_content, &inline_content) {
-                        Ok(merged) => Some(merged),
-                        Err(err) => {
-                            error!("{}: {err}", t!("main.failedMergingParameters"));
-                            return Err(ExitCode::from(util::EXIT_INVALID_INPUT))    ;
-                        }
-                    }
-                },
-                (Some(file_content), None) => Some(file_content),
-                (None, Some(inline_content)) => Some(inline_content),
-                (None, None) => None,
-            };
-
+            let merged_parameters = merge_parameter_inputs(parameters, parameters_file.as_ref())?;
             subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
         },
         SubCommand::Action { subcommand } => {
@@ -154,6 +132,14 @@ fn dsc_main() -> Result<(), ExitCode> {
         },
         SubCommand::Function { subcommand } => {
             subcommand::function(&subcommand)?;
+        },
+        SubCommand::Plugin { subcommand } => {
+            subcommand::plugin(&subcommand)?;
+        },
+        SubCommand::External(external_args) => {
+            // Only returns when the plug-in couldn't be started; otherwise it exits with the
+            // plug-in's exit code.
+            plugin::dispatch(&external_args, args.progress_format)?;
         },
         SubCommand::Server => {
             if let Err(err) = start_server() {
@@ -179,6 +165,48 @@ fn dsc_main() -> Result<(), ExitCode> {
     }
 
     Ok(())
+}
+
+/// Combine the inline parameters with the parameters file, if either was given.
+///
+/// # Arguments
+///
+/// * `parameters` - The inline parameters, as JSON or YAML.
+/// * `parameters_file` - The path to a parameters file, or `-` to read it from STDIN.
+///
+/// # Returns
+///
+/// The merged parameters as JSON, or `None` when neither was given. Inline values take precedence
+/// over values from the file.
+///
+/// # Errors
+///
+/// Returns `EXIT_INVALID_INPUT` when the file can't be read or the two inputs can't be merged.
+fn merge_parameter_inputs(parameters: Option<String>, parameters_file: Option<&String>) -> Result<Option<String>, ExitCode> {
+    let Ok(file_params) = get_input(None, parameters_file) else {
+        return Err(ExitCode::from(util::EXIT_INVALID_INPUT));
+    };
+    let file_params = if file_params.is_empty() {
+        None
+    } else {
+        Some(file_params)
+    };
+
+    match (file_params, parameters) {
+        (Some(file_content), Some(inline_content)) => {
+            info!("{}", t!("main.mergingParameters"));
+            match util::merge_parameters(&file_content, &inline_content) {
+                Ok(merged) => Ok(Some(merged)),
+                Err(err) => {
+                    error!("{}: {err}", t!("main.failedMergingParameters"));
+                    Err(ExitCode::from(util::EXIT_INVALID_INPUT))
+                }
+            }
+        },
+        (Some(file_content), None) => Ok(Some(file_content)),
+        (None, Some(inline_content)) => Ok(Some(inline_content)),
+        (None, None) => Ok(None),
+    }
 }
 
 fn ctrlc_handler() {

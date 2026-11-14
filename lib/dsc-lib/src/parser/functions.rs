@@ -147,6 +147,12 @@ impl Function {
     pub fn name(&self) -> &str {
         &self.name
     }
+
+    /// Get the arguments passed to the function, if any were written.
+    #[must_use]
+    pub fn args(&self) -> Option<&[FunctionArg]> {
+        self.args.as_deref()
+    }
 }
 
 fn convert_args_node(statement_bytes: &[u8], args: Option<&Node>) -> Result<Option<Vec<FunctionArg>>, DscError> {

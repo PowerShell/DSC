@@ -3,6 +3,7 @@
 
 use crate::settings::DscSettingsError;
 use crate::settings::fields::{
+    PluginsFileData,
     TracingFileData,
     TracingLevelField,
     TracingFormatField,
@@ -168,6 +169,9 @@ use super::*;
                 "appendEnvPath": true,
                 "directories": ["dir1", "dir2"],
                 "restricted": false,
+            },
+            "plugins": {
+                "enabled": false
             }
         });
         let json_str = serde_json::to_string_pretty(&json).unwrap();
@@ -195,6 +199,9 @@ use super::*;
                     PathBuf::from("dir2").into()
                 ]),
                 restricted: Some(false),
+            }),
+            plugins: Some(PluginsFileData {
+                enabled: Some(false),
             }),
             ..Default::default()
         };

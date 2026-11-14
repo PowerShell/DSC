@@ -13,6 +13,7 @@ use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
 use crate::extensions::extension_manifest::ExtensionManifest;
+use crate::plugins::plugin_manifest::PluginManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
 use crate::schemas::dsc_repo::DscRepoSchema;
 use crate::schemas::transforms::idiomaticize_externally_tagged_enum;
@@ -53,6 +54,10 @@ pub struct ManifestList {
     pub adapted_resources: Option<Vec<AdaptedDscResourceManifest>>,
     pub resources: Option<Vec<ResourceManifest>>,
     pub extensions: Option<Vec<ExtensionManifest>>,
+    /// The command plug-ins the list defines. Resource discovery doesn't load plug-ins. They are
+    /// discovered separately, only when a plug-in command is needed, by
+    /// [`discover_plugins()`](crate::plugins::discovery::discover_plugins).
+    pub plugins: Option<Vec<PluginManifest>>,
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -133,7 +138,7 @@ impl CommandDiscovery {
     /// - When joining the directories into a new `PATH` fails, which could
     ///   occur due to invalid paths in `resourcePath.directories` or system
     ///   limitations.
-    fn get_resource_paths() -> Result<Vec<PathBuf>, DscError> {
+    pub(crate) fn get_resource_paths() -> Result<Vec<PathBuf>, DscError> {
         // Check if the resource paths have already been resolved and cached;
         // if so, return the cached paths immediately to avoid redundant
         // computation and potentially mutating PATH repeatedly.
@@ -776,7 +781,21 @@ fn insert_resource(resources: &mut DiscoveryCache, resource: Box<dyn ResourceInv
     }
 }
 
-fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
+/// Evaluates the condition of a manifest.
+///
+/// # Arguments
+///
+/// * `condition` - The expression from the `condition` property of a manifest, if it defines one.
+///
+/// # Returns
+///
+/// The result of the expression, or `true` when the manifest doesn't define a condition.
+///
+/// # Errors
+///
+/// Returns a [`DscError`] when the expression can't be parsed or evaluated, or when its result
+/// isn't a boolean.
+pub(crate) fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
     if let Some(cond) = condition {
         let mut statement = Statement::new()?;
         let result = statement.parse_and_execute(cond, &Context::new())?;

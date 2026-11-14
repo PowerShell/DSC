@@ -104,6 +104,28 @@ pub struct PreferenceFileData {
         ),
     )]
     pub resource_path: Option<ResourcePathFileData>,
+    /// Defines settings that affect whether DSC discovers and runs command
+    /// plug-ins.
+    ///
+    /// You can control whether DSC dispatches commands that aren't built in
+    /// to a plug-in.
+    ///
+    /// For more information, see [`PluginsFileData`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(
+        title = schema_i18n!("plugins.title"),
+        description = schema_i18n!("plugins.description"),
+        extend(
+            "markdownDescription" = schema_i18n!("plugins.markdownDescription")
+        ),
+    )]
+    pub plugins: Option<PluginsFileData>,
+    /// Defines the levels of the lint rules.
+    ///
+    /// The linter reads this section itself. It isn't part of the resolved settings, because the
+    /// levels are merged per rule and combined with the overrides of a lint run.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lint: Option<crate::lint::LintSettings>,
 }
 
 /// Public API
@@ -175,6 +197,7 @@ impl PreferenceFileData {
     ///
     /// `true` if any of the file data fields are populated, otherwise `false`.
     pub(crate) fn any_defined(&self) -> bool {
+        self.plugins.is_some() ||
         self.resource_path.is_some() ||
         self.tracing.is_some()
     }

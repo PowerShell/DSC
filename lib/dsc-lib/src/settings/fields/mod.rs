@@ -201,6 +201,8 @@ mod forbid_ignore_settings_file;
 pub use forbid_ignore_settings_file::*;
 mod ignore_settings_file;
 pub use ignore_settings_file::*;
+mod plugins;
+pub use plugins::*;
 mod resource_path;
 pub use resource_path::*;
 mod tracing;

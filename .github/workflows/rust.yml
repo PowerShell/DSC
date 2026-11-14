@@ -73,7 +73,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [dsc, adapters, extensions, resources]
+        group: [dsc, dsclint, adapters, extensions, resources]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -157,7 +157,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [dsc, adapters, extensions, resources]
+        group: [dsc, dsclint, adapters, extensions, resources]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -258,6 +258,8 @@ jobs:
             group: dsc/tests/config
           - name: dsc-other
             group: dsc/tests/other
+          - name: dsclint
+            group: dsclint
           - name: adapters
             group: adapters
           - name: extensions

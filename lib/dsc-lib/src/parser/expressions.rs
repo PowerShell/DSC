@@ -204,4 +204,16 @@ impl Expression {
             Ok(value)
         }
     }
+
+    /// Get the function the expression invokes.
+    #[must_use]
+    pub fn function(&self) -> &Function {
+        &self.function
+    }
+
+    /// Get the accessors applied to the function result, in the order they are applied.
+    #[must_use]
+    pub fn accessors(&self) -> &[Accessor] {
+        &self.accessors
+    }
 }

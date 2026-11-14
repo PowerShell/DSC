@@ -29,11 +29,13 @@ cp -r $RPM_SOURCE_DIR/dsc_files/* $RPM_BUILD_ROOT/opt/dsc/
 # Create symlink to make dsc available in PATH
 ln -s /opt/dsc/dsc $RPM_BUILD_ROOT/usr/bin/dsc
 ln -s /opt/dsc/dsc-bicep-ext $RPM_BUILD_ROOT/usr/bin/dsc-bicep-ext
+ln -s /opt/dsc/dsclint $RPM_BUILD_ROOT/usr/bin/dsclint
 
 %files
 /opt/dsc/*
 /usr/bin/dsc
 /usr/bin/dsc-bicep-ext
+/usr/bin/dsclint
 
 %changelog
 * Wed Oct 22 2025 Microsoft Corporation

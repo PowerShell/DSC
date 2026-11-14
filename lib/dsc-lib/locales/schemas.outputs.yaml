@@ -1,0 +1,126 @@
+_version: 2
+schemas:
+  outputs:
+    plugin:
+      list:
+        title:
+          en-us: Plug-in list output
+        description:
+          en-us: >-
+            Describes a command plug-in that DSC discovered.
+        markdownDescription:
+          en-us: |-
+            Describes a command plug-in that DSC discovered. The `dsc plugin list` command returns
+            one of these objects for every discovered plug-in, including plug-ins that are shadowed
+            by another plug-in that provides the same command.
+
+            For more information, see the [plug-in list output reference][01].
+
+            [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/outputs/plugin/list
+        fields:
+          type:
+            title:
+              en-us: Type
+            description:
+              en-us: >-
+                The fully qualified type name that identifies the plug-in.
+            markdownDescription:
+              en-us: |-
+                Identifies the plug-in by its fully qualified type name, like `Microsoft.DSC/Lint`.
+          version:
+            title:
+              en-us: Version
+            description:
+              en-us: >-
+                The semantic version of the plug-in.
+            markdownDescription:
+              en-us: |-
+                Indicates the semantic version of the plug-in. When DSC finds more than one
+                manifest with the same type, it only returns the plug-in with the highest version.
+          command:
+            title:
+              en-us: Command
+            description:
+              en-us: >-
+                The name of the command the plug-in adds to DSC.
+            markdownDescription:
+              en-us: |-
+                Indicates the name of the command the plug-in adds to DSC. For example, a plug-in
+                with the command `lint` is invoked as `dsc lint`.
+          description:
+            title:
+              en-us: Description
+            description:
+              en-us: >-
+                The description of the command.
+            markdownDescription:
+              en-us: |-
+                Describes the command. The value is `null` when the manifest doesn't define a
+                description.
+          deprecationMessage:
+            title:
+              en-us: Deprecation message
+            description:
+              en-us: >-
+                The message that indicates the plug-in is deprecated.
+            markdownDescription:
+              en-us: |-
+                Indicates that the plug-in is deprecated. The value is `null` when the plug-in
+                isn't deprecated. DSC writes the message as a warning each time the command is
+                invoked.
+          path:
+            title:
+              en-us: Path
+            description:
+              en-us: >-
+                The path of the file that defines the plug-in manifest.
+            markdownDescription:
+              en-us: |-
+                Indicates the path of the file that defines the plug-in manifest. For a plug-in
+                defined in a manifest list, this is the path of the manifest list.
+          directory:
+            title:
+              en-us: Directory
+            description:
+              en-us: >-
+                The directory that contains the plug-in manifest.
+            markdownDescription:
+              en-us: |-
+                Indicates the directory that contains the plug-in manifest. DSC resolves the
+                `manifestRelativePath` arguments of the plug-in against this directory.
+          shadowed:
+            title:
+              en-us: Shadowed
+            description:
+              en-us: >-
+                Indicates whether another plug-in provides the same command.
+            markdownDescription:
+              en-us: |-
+                Indicates whether another plug-in that DSC discovered earlier provides the same
+                command. DSC never runs a shadowed plug-in for its command name. To run a
+                shadowed plug-in, specify its type name instead of the command name, like
+                `dsc OpenDSC/Lint`.
+    lint:
+      result:
+        title:
+          en-us: dsclint result
+        description:
+          en-us: >-
+            Describes the output of the `dsclint` command.
+        markdownDescription:
+          en-us: |-
+            Describes the output of the `dsclint` command: the diagnostics the lint rules
+            reported for the document, counts of the diagnostics by level, whether the document
+            is free of error-level diagnostics, and whether resource discovery ran.
+      rules:
+        title:
+          en-us: dsclint rule
+        description:
+          en-us: >-
+            Describes a lint rule and the level it reports at, as listed by `dsclint --list-rules`.
+        markdownDescription:
+          en-us: |-
+            Describes a lint rule and the level it reports at, as listed by
+            `dsclint --list-rules`. The `defaultLevel` is the level the rule reports at unless
+            it is overridden; `level` is the level in effect after the settings file and any
+            `--rule` overrides are applied.

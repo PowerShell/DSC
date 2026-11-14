@@ -8,5 +8,11 @@
     "level": "WARN",
     "format": "Default",
     "allowOverride": true
+  },
+  "plugins": {
+    "enabled": true
+  },
+  "lint": {
+    "rules": {}
   }
 }

@@ -1,0 +1,188 @@
+_version: 2
+schemas:
+  plugin:
+    manifest:
+      title:
+        en-us: Plug-in manifest
+      description:
+        en-us: >-
+          Defines a command plug-in: the command it adds to DSC and how DSC runs it.
+      markdownDescription:
+        en-us: |-
+          Defines a command plug-in. A plug-in adds a top-level command to DSC without being part
+          of the DSC executable. The manifest names the command and the executable that implements
+          it.
+
+          DSC discovers plug-in manifests in the same directories as resource and extension
+          manifests. The file name of a plug-in manifest must end with `.dsc.plugin.json`,
+          `.dsc.plugin.yaml`, or `.dsc.plugin.yml`. A manifest list can define plug-ins in its
+          `plugins` property.
+
+          When the first argument to DSC isn't a built-in command, DSC runs the plug-in that
+          provides the command with the remaining arguments and exits with the plug-in's exit code.
+
+          For more information, see the [plug-in manifest reference][01].
+
+          [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/plugin/manifest/root
+      fields:
+        type:
+          title:
+            en-us: Type
+          description:
+            en-us: >-
+              The fully qualified type name that identifies the plug-in.
+          markdownDescription:
+            en-us: |-
+              Defines the fully qualified type name that identifies the plug-in, like
+              `Microsoft.DSC/Lint`. The name uses the same syntax as the type name of a resource
+              or an extension.
+
+              When DSC finds more than one manifest with the same type, it uses the manifest with
+              the highest version.
+        version:
+          title:
+            en-us: Version
+          description:
+            en-us: >-
+              The semantic version of the plug-in.
+          markdownDescription:
+            en-us: |-
+              Defines the semantic version of the plug-in. When DSC finds more than one manifest
+              with the same type, it uses the manifest with the highest version.
+        condition:
+          title:
+            en-us: Condition
+          description:
+            en-us: >-
+              An expression that defines whether the plug-in is available.
+          markdownDescription:
+            en-us: |-
+              Defines a DSC expression that must evaluate to a boolean. When the expression
+              evaluates to `false`, DSC treats the plug-in as not installed: the command isn't
+              listed and can't be invoked.
+
+              Use a condition for a plug-in that depends on a tool that might not be installed. For
+              example, the following condition makes a plug-in available only when `pwsh` is
+              discoverable:
+
+              ```json
+              "condition": "[not(equals(tryWhich('pwsh'), null()))]"
+              ```
+        deprecationMessage:
+          title:
+            en-us: Deprecation message
+          description:
+            en-us: >-
+              A message that indicates the plug-in is deprecated.
+          markdownDescription:
+            en-us: |-
+              Defines a message that indicates the plug-in is deprecated. When this property is
+              defined, DSC writes the message as a warning each time the command is invoked.
+        description:
+          title:
+            en-us: Description
+          description:
+            en-us: >-
+              A one-line description of the command.
+          markdownDescription:
+            en-us: |-
+              Defines a one-line description of the command. DSC shows the description next to the
+              command in `dsc --help` and in the output of `dsc plugin list`.
+        tags:
+          title:
+            en-us: Tags
+          description:
+            en-us: >-
+              Defines a list of searchable terms for the plug-in.
+          markdownDescription:
+            en-us: |-
+              Defines a list of searchable terms for the plug-in.
+        metadata:
+          title:
+            en-us: Metadata
+          description:
+            en-us: >-
+              Arbitrary data for the plug-in that DSC doesn't interpret.
+          markdownDescription:
+            en-us: |-
+              Defines arbitrary data for the plug-in. DSC doesn't interpret the metadata. It's
+              returned with the manifest in the output of `dsc plugin list`.
+      command:
+        title:
+          en-us: Command
+        description:
+          en-us: >-
+            Defines the command the plug-in adds to DSC and how DSC runs it.
+        markdownDescription:
+          en-us: |-
+            Defines the command the plug-in adds to DSC and how DSC runs it.
+
+            DSC starts the executable in the caller's working directory, with the standard input,
+            output, and error streams of DSC. It passes the arguments defined in `args` followed by
+            the arguments the user specified after the command name. DSC exits with the exit code
+            of the executable.
+
+            DSC sets environment variables that tell the plug-in how it was invoked, like
+            `DSC_EXE`, `DSC_VERSION`, `DSC_PLUGIN_COMMAND`, and `DSC_PLUGIN_DIR`.
+
+            For more information, see the [command property reference][01].
+
+            [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/plugin/manifest/command
+        fields:
+          name:
+            title:
+              en-us: Command name
+            description:
+              en-us: >-
+                The name of the command, which the user specifies after `dsc`.
+            markdownDescription:
+              en-us: |-
+                Defines the name of the command, which the user specifies after `dsc`. For example,
+                a plug-in with the command name `lint` is invoked as `dsc lint`.
+
+                The name can't be the name or the alias of a built-in command, like `config` or
+                `resource`. DSC always matches built-in commands first and skips a plug-in that
+                uses one of their names.
+
+                When plug-ins with different types define the same command name, the plug-in DSC
+                discovers first provides the command. The others are reported as shadowed in the
+                output of `dsc plugin list` and can be run by their type name, like `dsc OpenDSC/Lint`.
+          executable:
+            title:
+              en-us: Executable
+            description:
+              en-us: >-
+                The name of the executable to run for the command.
+            markdownDescription:
+              en-us: |-
+                Defines the name of the executable to run for the command. The value must be the
+                name of an executable discoverable in the system's `PATH` environment variable,
+                the name of an executable in the same directory as the manifest, or the full path
+                to the executable. A file extension is only required when the operating system
+                doesn't recognize the file as an executable without it.
+
+                To implement a plug-in as a script, define the interpreter as the executable and
+                pass the script in `args` with the `manifestRelativePath` argument kind.
+          args:
+            title:
+              en-us: Arguments
+            description:
+              en-us: >-
+                The arguments to pass to the executable before the arguments the user specified.
+            markdownDescription:
+              en-us: |-
+                Defines the list of arguments to pass to the executable before the arguments the
+                user specified after the command name. Each item is one of the following:
+
+                - A string, which DSC passes as written.
+                - An object with the `manifestRelativePath` property. DSC replaces the item with
+                  the absolute path of the file, resolved against the directory that contains the
+                  manifest. The value must be a relative path.
+
+                A plug-in runs in the caller's working directory, not in the directory that
+                contains the manifest. Use `manifestRelativePath` to pass a file that ships with
+                the plug-in, like a script:
+
+                ```json
+                "args": ["-NoProfile", "-File", { "manifestRelativePath": "graph.ps1" }]
+                ```

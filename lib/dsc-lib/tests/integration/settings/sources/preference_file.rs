@@ -17,6 +17,7 @@ crate::macros::test_dsc_repo_schema!{
         properties: {
             TRACING_PROPERTY_SCHEMA => "tracing",
             RESOURCE_PATH_PROPERTY_SCHEMA => "resourcePath",
+            PLUGINS_PROPERTY_SCHEMA => "plugins",
         }
     },
     test_meta_schema: {},
@@ -30,6 +31,9 @@ crate::macros::test_dsc_repo_schema!{
         resource_path_title => (RESOURCE_PATH_PROPERTY_SCHEMA, "title"),
         resource_path_description => (RESOURCE_PATH_PROPERTY_SCHEMA, "description"),
         resource_path_markdown_description => (RESOURCE_PATH_PROPERTY_SCHEMA, "markdownDescription"),
+        plugins_title => (PLUGINS_PROPERTY_SCHEMA, "title"),
+        plugins_description => (PLUGINS_PROPERTY_SCHEMA, "description"),
+        plugins_markdown_description => (PLUGINS_PROPERTY_SCHEMA, "markdownDescription"),
     },
     test_validation: {
         empty_object_is_valid => {
@@ -52,12 +56,28 @@ crate::macros::test_dsc_repo_schema!{
             input_json: json!({"resourcePath": {"appendEnvPath": "invalid"}}),
             expected_valid: false,
         },
+        plugins_field_as_empty_object_is_valid => {
+            input_json: json!({"plugins": {}}),
+            expected_valid: true,
+        },
+        plugins_field_with_valid_data_is_valid => {
+            input_json: json!({"plugins": {"enabled": false}}),
+            expected_valid: true,
+        },
+        plugins_field_with_invalid_data_is_invalid => {
+            input_json: json!({"plugins": {"enabled": "invalid"}}),
+            expected_valid: false,
+        },
+        plugins_field_as_boolean_is_invalid => {
+            input_json: json!({"plugins": false}),
+            expected_valid: false,
+        },
     }
 }
 
 #[cfg(test)]
 mod serde {
-    use dsc_lib::settings::{fields::ResourcePathFileData, sources::PreferenceFileData};
+    use dsc_lib::settings::{fields::{PluginsFileData, ResourcePathFileData}, sources::PreferenceFileData};
     use std::path::PathBuf;
     use serde_json::{json, Value};
     use test_case::test_case;
@@ -72,7 +92,9 @@ mod serde {
                     PathBuf::from("/dsc/extensions")
                 ]),
                 ..Default::default()
-            })
+            }),
+            plugins: None,
+            lint: None,
         },
         json!({
             "resourcePath": {
@@ -80,6 +102,18 @@ mod serde {
             }
         });
         "with defined fields only includes those defined fields"
+    )]
+    #[test_case(
+        &PreferenceFileData {
+            plugins: Some(PluginsFileData { enabled: Some(false) }),
+            ..Default::default()
+        },
+        json!({
+            "plugins": {
+                "enabled": false
+            }
+        });
+        "with plugins defined only includes plugins"
     )]
     fn serializing(data: &PreferenceFileData, expected: Value) {
         let serialized = serde_json::to_value(data)
@@ -89,6 +123,8 @@ mod serde {
 
     #[test_case(json!({"tracing": {"level": "invalid"}}); "tracing with invalid data is invalid")]
     #[test_case(json!({"resourcePath": {"appendEnvPath": "invalid"}}); "resource_path with invalid data is invalid")]
+    #[test_case(json!({"plugins": {"enabled": "invalid"}}); "plugins with invalid data is invalid")]
+    #[test_case(json!({"plugins": false}); "plugins as boolean is invalid")]
     fn derserializing_invalid(input_value: Value) {
         let result = serde_json::from_value::<PreferenceFileData>(input_value.clone());
         assert!(result.is_err(), "expected deserialization to fail for input: {:?}", input_value);
@@ -96,6 +132,7 @@ mod serde {
     #[test_case(json!({}); "empty object is valid")]
     #[test_case(json!({"resourcePath": {"directories": ["/dsc/resources"]}}); "resource_path with valid data is valid")]
     #[test_case(json!({"tracing": {"level": "info"}}); "tracing with valid data is valid")]
+    #[test_case(json!({"plugins": {"enabled": false}}); "plugins with valid data is valid")]
     fn deserializing_valid(input_value: Value) {
         let result = serde_json::from_value::<PreferenceFileData>(input_value.clone());
         assert!(

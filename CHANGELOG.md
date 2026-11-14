@@ -77,6 +77,51 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Added
 
+- Added the `dsclint` command, a standalone executable that ships with DSC and checks a
+  configuration document for problems without applying it. The command validates the document
+  against the configuration document schema and runs a set of rules that report duplicate resource
+  names, unresolved and circular dependencies, expressions that don't parse or call unknown
+  functions, undeclared or unused parameters and variables, invalid parameter constraints,
+  deprecated features, and, with resource discovery, resource types that aren't installed or
+  literal properties that don't match a resource's schema. You can change the level of a rule for
+  a run with the `--rule` option or for every run in the new `lint` section of the settings file,
+  and control which level makes the command fail with `--fail-on`. The `dsc schema` command
+  exposes the new `lint-result` and `lint-rules` schemas, and the MCP server exposes the linter as
+  the `lint_dsc_config` tool. Every diagnostic records the line and column of the problem, and
+  when the output isn't redirected the command renders each diagnostic as a report that shows the
+  problem in the document text with the rule's identifier and what the rule requires.
+
+  <details><summary>Related work items</summary>
+
+  - Issues:
+    - [#591][#591]
+    - [#842][#842]
+  - PRs: [#1768][#1768]
+
+  </details>
+
+- Added command plug-ins, which add a top-level command to `dsc` without being part of the DSC
+  executable. A plug-in is defined by a plug-in manifest, a file whose name ends with
+  `.dsc.plugin.json`, `.dsc.plugin.yaml`, or `.dsc.plugin.yml`, or by the new `plugins` property
+  of a manifest list. When the first argument to `dsc` isn't a built-in command, DSC runs the
+  plug-in that defines the command with the remaining arguments and the standard streams of `dsc`,
+  and exits with the plug-in's exit code. Built-in commands always take precedence, and DSC only
+  searches for plug-ins when it needs them. The new `dsc plugin list` command lists the discovered
+  plug-ins, the top-level help lists plug-in commands after the built-in commands,
+  `dsc help <command>` displays the help of a plug-in command, and the scripts from
+  `dsc completer` complete the names of plug-in commands. DSC tells a plug-in how it was invoked
+  with the `DSC_EXE`, `DSC_VERSION`, `DSC_PLUGIN_COMMAND`, and `DSC_PLUGIN_DIR` environment
+  variables and makes the options specified before the command available as `DSC_TRACE_LEVEL`,
+  `DSC_TRACE_FORMAT`, and `DSC_PROGRESS_FORMAT`. The new `plugins.enabled` setting turns plug-ins
+  off, and the `dsc schema` command exposes the new `plugin-manifest` schema.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#461][#461]
+  - PRs: <!-- Add the link to the pull request when it's opened. -->
+
+  </details>
+
 - Added the `Microsoft.Windows/AuditPolicy`, `Microsoft.Windows/AuditPolicyList`, and
   `Microsoft.Windows/AuditPolicyOption` built-in resources for managing the Windows advanced audit
   policy natively, as a replacement for the `AuditPolicyDsc` PowerShell module. `AuditPolicy`
@@ -115,6 +160,22 @@ changes since the last release, see the [diff on GitHub][unreleased].
   invalid parameters error.
 
 ### Changed
+
+- Schema validation errors now show the problem in place. When the input to a resource or a
+  resource's properties in a configuration document don't match the resource's schema, DSC reports
+  every violation at once with its JSON pointer, renders a snippet of the input or the document
+  that highlights each offending property or value, and suggests the closest known property name
+  for a property it doesn't recognize. For a configuration document the snippet points at the
+  resource's declaration in your document rather than at its evaluated properties. The snippet
+  isn't rendered for the `json` trace format, which keeps one line per error, and is never
+  rendered for values the schema identifies as secure.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_
+  - PRs: [#1768][#1768]
+
+  </details>
 
 - Extensions that implement the `secret` capability must now define the `args` property for the
   `secret` command with exactly one secret name input argument (`nameArg`) and at most one vault
@@ -1794,6 +1855,7 @@ Version `3.0.0` is the first generally available release of DSC.
 [#515]: https://github.com/PowerShell/DSC/issues/515
 [#543]: https://github.com/PowerShell/DSC/issues/543
 [#566]: https://github.com/PowerShell/DSC/issues/566
+[#591]: https://github.com/PowerShell/DSC/issues/591
 [#57]: https://github.com/PowerShell/DSC/issues/57
 [#598]: https://github.com/PowerShell/DSC/issues/598
 [#628]: https://github.com/PowerShell/DSC/issues/628
@@ -1858,6 +1920,7 @@ Version `3.0.0` is the first generally available release of DSC.
 [#832]: https://github.com/PowerShell/DSC/issues/832
 [#834]: https://github.com/PowerShell/DSC/issues/834
 [#841]: https://github.com/PowerShell/DSC/issues/841
+[#842]: https://github.com/PowerShell/DSC/issues/842
 [#843]: https://github.com/PowerShell/DSC/issues/843
 [#844]: https://github.com/PowerShell/DSC/issues/844
 [#845]: https://github.com/PowerShell/DSC/issues/845
@@ -2033,3 +2096,4 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1755]: https://github.com/PowerShell/DSC/issues/1755
 [#1758]: https://github.com/PowerShell/DSC/issues/1758
 [#1759]: https://github.com/PowerShell/DSC/issues/1759
+[#1768]: https://github.com/PowerShell/DSC/issues/1768

@@ -3,18 +3,17 @@
 
 use clap::ValueEnum;
 use dsc_lib_security_context::{SecurityContext, get_security_context};
-use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, env, path::{Path, PathBuf}, process::Stdio};
-use crate::{configure::{config_doc::{ExecutionKind, Operation, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, context::Context, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, settings::fields::ResourcePathResolvedSettings, types::ExitCodesMap, util::canonicalize_which};
+use crate::{diagnostics::{JsonOrigin, SchemaValidationError}, configure::{config_doc::{ExecutionKind, Operation, SecurityContextKind}, config_result::{ResourceGetResult, ResourceTestResult}, context::Context, schema_cache::{RESOURCE_SCHEMAS, get_resource_schema}}, dscresources::resource_manifest::{ExportSchemaKind, ExportSchemaOrFiltering, SchemaArgKind}, settings::fields::ResourcePathResolvedSettings, types::ExitCodesMap, util::canonicalize_which};
 use crate::dscerror::DscError;
 use crate::locked_insert;
 use crate::resources::{invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ValidateResult, ResolveResult, ExportResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_invoke::process_expression_arg};
 use crate::settings::global as global_settings;
 use super::{
-    dscresource::{get_diff, get_diff_with_schema, redact, DscResource},
+    dscresource::{get_diff, get_diff_with_schema, redact, validate_json_all, DscResource},
     resource_manifest::{
         GetArgKind, SetDeleteArgKind, InputKind, Kind, ReturnKind, SchemaKind
     }
@@ -51,7 +50,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, context: &Context) -> Re
     validate_security_context(context.target_resource.as_ref(), &get.require_security_context, &command_resource.type_name, &Operation::Get)?;
     let args = process_get_args(get.args.as_ref(), filter, command_resource, context)?;
     if !filter.is_empty() {
-        verify_json_from_manifest(resource, filter, context)?;
+        verify_json_from_manifest(resource, filter, context, JsonOrigin::Input)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
     }
 
@@ -59,7 +58,7 @@ pub fn invoke_get(resource: &DscResource, filter: &str, context: &Context) -> Re
     let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.verifyOutputUsing", resource = &resource.type_name, executable = &get.executable));
-        verify_json_from_manifest(resource, &stdout, context)?;
+        verify_json_from_manifest(resource, &stdout, context, JsonOrigin::Output)?;
     }
 
     let result: GetResult = if let Ok(group_response) = serde_json::from_str::<Vec<ResourceGetResult>>(&stdout) {
@@ -135,7 +134,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
         return Err(DscError::NotImplemented("set".to_string()));
     };
     validate_security_context(context.target_resource.as_ref(), &set.require_security_context, &command_resource.type_name, &Operation::Set)?;
-    verify_json_from_manifest(resource, desired, context)?;
+    verify_json_from_manifest(resource, desired, context, JsonOrigin::Input)?;
 
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && set.pre_test != Some(true) {
@@ -188,7 +187,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
 
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.setVerifyGet", resource = &resource.type_name, executable = &get.executable));
-        verify_json_from_manifest(resource, &stdout, context)?;
+        verify_json_from_manifest(resource, &stdout, context, JsonOrigin::Output)?;
     }
 
     let pre_state_value: Value = if exit_code == 0 {
@@ -238,7 +237,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
 
             if resource.kind == Kind::Resource {
                 debug!("{}", t!("dscresources.commandResource.setVerifyOutput", operation = operation_type, resource = &command_resource.type_name, executable = &set.executable));
-                verify_json_from_manifest(resource, &stdout, context)?;
+                verify_json_from_manifest(resource, &stdout, context, JsonOrigin::Output)?;
             }
 
             let actual_value: Value = match serde_json::from_str(&stdout){
@@ -265,7 +264,8 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
             };
 
             if resource.kind == Kind::Resource {
-                verify_json_from_manifest(resource, actual_line, context)?;
+                debug!("{}", t!("dscresources.commandResource.setVerifyOutput", operation = operation_type, resource = &command_resource.type_name, executable = &set.executable));
+                verify_json_from_manifest(resource, actual_line, context, JsonOrigin::Output)?;
             }
 
             let actual_value: Value = serde_json::from_str(actual_line)?;
@@ -328,7 +328,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, context: &Context) ->
         return invoke_synthetic_test(resource, expected, context);
     };
 
-    verify_json_from_manifest(resource, expected, context)?;
+    verify_json_from_manifest(resource, expected, context, JsonOrigin::Input)?;
 
     let command_resource = match context.target_resource.as_ref() {
         Some(r) => r,
@@ -352,7 +352,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, context: &Context) ->
         Some(ReturnKind::State) => {
             if command_resource.kind == Kind::Resource {
                 debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &command_resource.type_name, executable = &test.executable));
-                verify_json_from_manifest(resource, &stdout, context)?;
+                verify_json_from_manifest(resource, &stdout, context, JsonOrigin::Output)?;
             }
 
             let actual_value: Value = match serde_json::from_str(&stdout){
@@ -380,7 +380,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, context: &Context) ->
 
             if resource.kind == Kind::Resource {
                 debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.type_name, executable = &test.executable));
-                verify_json_from_manifest(resource, actual_value, context)?;
+                verify_json_from_manifest(resource, actual_value, context, JsonOrigin::Output)?;
             }
 
             let actual_value: Value = serde_json::from_str(actual_value)?;
@@ -498,7 +498,7 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, context: &Context) ->
         return Err(DscError::NotImplemented("delete".to_string()));
     };
 
-    verify_json_from_manifest(resource, filter, context)?;
+    verify_json_from_manifest(resource, filter, context, JsonOrigin::Input)?;
 
     let command_resource = context.target_resource.as_ref().unwrap_or(resource);
     validate_security_context(context.target_resource.as_ref(), &delete.require_security_context, &command_resource.type_name, &Operation::Delete)?;
@@ -647,17 +647,8 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, context: &Cont
         }
     };
     let schema = serde_json::from_str(&schema)?;
-    let compiled_schema = match Validator::new(&schema) {
-        Ok(schema) => schema,
-        Err(e) => {
-            return Err(DscError::Schema(e.to_string()));
-        },
-    };
     let json: Value = serde_json::from_str(input)?;
-    if let Err(err) = compiled_schema.validate(&json) {
-        return Err(DscError::Schema(err.to_string()));
-    }
-    Ok(())
+    validate_against_schema(resource, &schema, &json, JsonOrigin::Input)
 }
 
 /// Invoke the export operation on a resource
@@ -737,7 +728,7 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, context: &Cont
         };
         if resource.kind == Kind::Resource {
             debug!("{}", t!("dscresources.commandResource.exportVerifyOutput", resource = &resource.type_name, executable = &export.executable));
-            verify_json_from_manifest(resource, line, context)?;
+            verify_json_from_manifest(resource, line, context, JsonOrigin::Output)?;
         }
         instances.push(instance);
     }
@@ -1198,7 +1189,7 @@ fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<Comm
     })
 }
 
-fn verify_json_from_manifest(resource: &DscResource, json: &str, context: &Context) -> Result<(), DscError> {
+fn verify_json_from_manifest(resource: &DscResource, json: &str, context: &Context, origin: JsonOrigin) -> Result<(), DscError> {
     trace!("{}", t!("dscresources.commandResource.verifyJson", resource = resource.type_name, json = json));
     let Some(manifest) = &resource.manifest else {
         return Err(DscError::MissingManifest(resource.type_name.to_string()));
@@ -1223,23 +1214,55 @@ fn verify_json_from_manifest(resource: &DscResource, json: &str, context: &Conte
     // otherwise, use schema validation
     let schema = get_schema(resource, context)?;
     let schema: Value = serde_json::from_str(&schema)?;
-    let compiled_schema = match Validator::new(&schema) {
-        Ok(schema) => schema,
-        Err(e) => {
-            return Err(DscError::Schema(e.to_string()));
-        },
-    };
     let json: Value = serde_json::from_str(json)?;
-    if let Err(err) = compiled_schema.validate(&json) {
-        let mut error_message = err.to_string();
-        // check if message contains a "secureString" or "secureObject" and redact it
-        if error_message.contains("\"secureString\"") || error_message.contains("\"secureObject\"") {
-            error_message = t!("dscresources.commandResource.redactedSchemaErrorMessage").to_string();
-        }
-        return Err(DscError::Schema(error_message));
+    validate_against_schema(resource, &schema, &json, origin)
+}
+
+/// Validate JSON against a resource's schema, reporting every violation where it occurs.
+///
+/// The error carries the origin, so a host can tell an error about its own input from one about
+/// what the resource returned. The text shown with the error has every `secureString` and
+/// `secureObject` value replaced, so a violation next to a secure value can't expose it; a
+/// violation that quotes a secure value in its message is redacted entirely.
+///
+/// # Arguments
+///
+/// * `resource` - The resource whose schema it is
+/// * `schema` - The schema
+/// * `json` - The JSON to validate
+/// * `origin` - Where the JSON came from, which the report names
+///
+/// # Errors
+///
+/// * `DscError::Validation` - The schema failed to compile
+/// * `DscError::SchemaValidation` - The JSON violates the schema
+fn validate_against_schema(resource: &DscResource, schema: &Value, json: &Value, origin: JsonOrigin) -> Result<(), DscError> {
+    let violations = validate_json_all(resource.type_name.as_ref(), schema, json)?;
+    if violations.is_empty() {
+        return Ok(());
     }
 
-    Ok(())
+    let (subject, name) = match origin {
+        JsonOrigin::Input => (
+            t!("dscresources.commandResource.schemaSubjectInput", resource = resource.type_name).to_string(),
+            t!("dscresources.commandResource.schemaSourceInput").to_string(),
+        ),
+        JsonOrigin::Output => (
+            t!("dscresources.commandResource.schemaSubjectOutput", resource = resource.type_name).to_string(),
+            t!("dscresources.commandResource.schemaSourceOutput").to_string(),
+        ),
+    };
+    let mut error = SchemaValidationError::new(subject, violations).with_schema(schema).with_origin(origin);
+    // a message that quotes a "secureString" or "secureObject" value would expose it
+    let holds_secure_value = error.violations().iter().any(|violation| {
+        violation.message.contains("\"secureString\"") || violation.message.contains("\"secureObject\"")
+    });
+    if holds_secure_value {
+        error = error.redacted(&t!("dscresources.commandResource.redactedSchemaErrorMessage"));
+    } else if let Ok(text) = serde_json::to_string_pretty(&redact(json)) {
+        error = error.with_source(&text, &name, "");
+    }
+    Err(DscError::SchemaValidation(Box::new(error)))
 }
 
 fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
@@ -1469,4 +1492,64 @@ struct Trace {
     _span: Option<HashMap<String, Value>>,
     #[serde(rename = "spans")]
     _spans: Option<Vec<HashMap<String, Value>>>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::configure::parameters::SECURE_VALUE_REDACTED;
+    use miette::Diagnostic;
+    use serde_json::json;
+
+    fn echo() -> DscResource {
+        let mut resource = DscResource::new();
+        resource.type_name = "Test/Echo".parse().unwrap();
+        resource
+    }
+
+    /// The schema validation error inside a `DscError`.
+    fn schema_error(error: DscError) -> SchemaValidationError {
+        match error {
+            DscError::SchemaValidation(error) => *error,
+            other => panic!("expected a schema validation error, got {other}"),
+        }
+    }
+
+    /// The whole text attached to an error.
+    fn attached_text(error: &SchemaValidationError) -> String {
+        let source = error.source_code().expect("the error has source text");
+        let contents = source.read_span(&(0..1).into(), 0, 1000).unwrap();
+        String::from_utf8_lossy(contents.data()).to_string()
+    }
+
+    #[test]
+    fn attached_input_has_secure_values_redacted_even_when_they_are_valid() {
+        let schema = json!({
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "password": { "type": ["string", "object"] },
+                "name": { "type": "string" }
+            }
+        });
+        let input = json!({ "password": { "secureString": "hunter2" }, "nmae": "x" });
+        let error = schema_error(validate_against_schema(&echo(), &schema, &input, JsonOrigin::Input).unwrap_err());
+        assert_eq!(error.origin(), JsonOrigin::Input);
+        assert!(!error.is_redacted());
+        let text = attached_text(&error);
+        assert!(!text.contains("hunter2"), "{text}");
+        assert!(text.contains(SECURE_VALUE_REDACTED), "{text}");
+        assert!(text.contains("nmae"), "{text}");
+    }
+
+    #[test]
+    fn secure_value_quoted_in_a_message_redacts_the_whole_error() {
+        let schema = json!({ "type": "object", "properties": { "password": { "type": "string" } } });
+        let output = json!({ "password": { "secureString": "hunter2" } });
+        let error = schema_error(validate_against_schema(&echo(), &schema, &output, JsonOrigin::Output).unwrap_err());
+        assert_eq!(error.origin(), JsonOrigin::Output);
+        assert!(error.is_redacted());
+        assert!(!error.has_source());
+        assert!(!error.to_string().contains("hunter2"), "{error}");
+    }
 }
