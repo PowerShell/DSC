@@ -101,6 +101,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
     };
     let operation_type: String;
     let mut is_synthetic_what_if = false;
+    let mut is_legacy_what_if = false;
     let command_resource = match context.target_resource.as_ref() {
         Some(target) => target,
         None => resource
@@ -124,6 +125,7 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
                 &manifest.set
             } else if manifest.what_if.is_some() {
                 warn!("{}", t!("dscresources.commandResource.whatIfWarning", resource = &command_resource.type_name));
+                is_legacy_what_if = true;
                 &manifest.what_if
             } else {
                 is_synthetic_what_if = true;
@@ -227,10 +229,17 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
 
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, resource.directory.as_deref(), env, manifest.exit_codes.as_ref())?;
 
-    let return_kind = if context.execution_type == ExecutionKind::WhatIf {
-        set.what_if_returns.as_ref().or(set.returns.as_ref())
-    } else {
+    // The adapted resource manifest defines `return` for the `set` method. The legacy `whatIf`
+    // method is a separate command with its own `return`, so the override doesn't apply to it.
+    let returns = if is_legacy_what_if {
         set.returns.as_ref()
+    } else {
+        resolve_return_kind(context.target_resource.as_ref(), set.returns.as_ref(), &Operation::Set)
+    };
+    let return_kind = if context.execution_type == ExecutionKind::WhatIf {
+        set.what_if_returns.as_ref().or(returns)
+    } else {
+        returns
     };
 
     match return_kind {
@@ -348,7 +357,7 @@ pub fn invoke_test(resource: &DscResource, expected: &str, context: &Context) ->
     }
 
     let mut expected_value: Value = serde_json::from_str(expected)?;
-    match test.returns {
+    match resolve_return_kind(context.target_resource.as_ref(), test.returns.as_ref(), &Operation::Test) {
         Some(ReturnKind::State) => {
             if command_resource.kind == Kind::Resource {
                 debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &command_resource.type_name, executable = &test.executable));
@@ -1365,6 +1374,46 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
     }
 
     ""
+}
+
+/// Resolve the kind of output DSC expects from the command for a `set` or `test` operation.
+///
+/// An adapted resource manifest can define `return` for its `set` and `test` operations. When
+/// it does, that value takes precedence over the `return` defined for the same method in the
+/// manifest of the adapter that invokes the command. Otherwise the adapted resource inherits
+/// the value from the adapter's manifest.
+///
+/// The override describes the output of the adapter's `set` and `test` methods. Don't call this
+/// function for the legacy `whatIf` method, which defines its own `return`.
+///
+/// # Arguments
+///
+/// * `target_resource` - The adapted resource the command is invoked for, if any.
+/// * `manifest_return` - The return kind defined for the method in the manifest of the resource
+///   or adapter that owns the command.
+/// * `operation` - The operation being invoked. Only [`Operation::Set`] and [`Operation::Test`]
+///   can be overridden by an adapted resource manifest.
+///
+/// # Returns
+///
+/// The return kind from the adapted resource manifest when it defines one for the operation,
+/// otherwise `manifest_return`.
+fn resolve_return_kind<'a>(target_resource: Option<&'a DscResource>, manifest_return: Option<&'a ReturnKind>, operation: &Operation) -> Option<&'a ReturnKind> {
+    let adapted_return = target_resource
+        .and_then(|resource| resource.adapted_manifest.as_ref())
+        .and_then(|adapted_manifest| match operation {
+            Operation::Set => adapted_manifest.set.as_ref().and_then(|set| set.returns.as_ref()),
+            Operation::Test => adapted_manifest.test.as_ref().and_then(|test| test.returns.as_ref()),
+            _ => None,
+        });
+    if let (Some(resource), Some(return_kind)) = (target_resource, adapted_return) {
+        let kind = match return_kind {
+            ReturnKind::State => "state",
+            ReturnKind::StateAndDiff => "stateAndDiff",
+        };
+        debug!("{}", t!("dscresources.commandResource.adaptedReturnKind", resource = &resource.type_name, operation = operation, kind = kind));
+    }
+    adapted_return.or(manifest_return)
 }
 
 pub(crate)fn validate_security_context(target_resource: Option<&DscResource>, required_security_context: &Option<SecurityContextKind>, resource_type: &str, operation: &Operation) -> Result<(), DscError> {

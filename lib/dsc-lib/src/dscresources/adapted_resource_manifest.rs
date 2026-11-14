@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::{
-    configure::config_doc::SecurityContextKind, dscresources::{dscresource::ResourceCapability, resource_manifest::{Kind, ResourceManifest}},  schemas::dsc_repo::DscRepoSchema, types::{FullyQualifiedTypeName, ResourceVersion},
+    configure::config_doc::SecurityContextKind, dscresources::{dscresource::ResourceCapability, resource_manifest::{Kind, ResourceManifest, ReturnKind}},  schemas::dsc_repo::DscRepoSchema, types::{FullyQualifiedTypeName, ResourceVersion},
 };
 use rust_i18n::t;
 use schemars::JsonSchema;
@@ -30,6 +30,9 @@ pub struct GetOperation {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct SetOperation {
     pub require_security_context: Option<SecurityContextKind>,
+    /// The type of return value the adapter emits when it invokes the Set operation for this resource. When specified, this overrides the `return` property of the Set method in the adapter's manifest.
+    #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
+    pub returns: Option<ReturnKind>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
@@ -44,6 +47,9 @@ pub struct DeleteOperation {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct TestOperation {
     pub require_security_context: Option<SecurityContextKind>,
+    /// The type of return value the adapter emits when it invokes the Test operation for this resource. When specified, this overrides the `return` property of the Test method in the adapter's manifest.
+    #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
+    pub returns: Option<ReturnKind>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]

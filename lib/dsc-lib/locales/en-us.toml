@@ -238,6 +238,7 @@ exportNotSupportedUsingGet = "Export is not supported by resource '%{resource}' 
 runProcessError = "Failed to run process '%{executable}': %{error}"
 whatIfWarning = "Resource '%{resource}' uses deprecated 'whatIf' operation. See https://github.com/PowerShell/DSC/issues/1361 for migration information."
 securityContextRequired = "Operation '%{operation}' for resource '%{resource}' requires security context '%{context}'"
+adaptedReturnKind = "Adapted resource '%{resource}' defines return kind '%{kind}' for operation '%{operation}', overriding the adapter manifest"
 noAdaptedContent = "No adapted content available for resource '%{resource}'"
 invalidAdaptedContent = "Invalid adapted content for resource '%{resource}': %{error}"
 exportFilteringNotSupported = "Resource '%{resource}' does not support export filtering"

@@ -107,6 +107,22 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
+- Added the `return` property to the `set` and `test` operations in adapted resource manifests.
+  Resource authors can set it to `state` or `stateAndDiff` to declare what the adapter emits when
+  it invokes that operation for the adapted resource. Previously, every adapted resource inherited
+  the return kind from the manifest of its adapter. When an adapted resource manifest defines
+  `return` for an operation, DSC uses that value instead of the one in the adapter's manifest.
+  Adapted resources that don't define the property continue to inherit it from the adapter. The
+  override applies when the adapter is invoked for a single resource instance, which is the case
+  for adapters that set `inputKind` to `single`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#1655][#1655]
+  - PRs: [#1802][#1802]
+
+  </details>
+
 - Added what-if support to the MCP server tools. The `invoke_dsc_config` tool now accepts a
   `what_if` option for the `set` operation, and the `invoke_dsc_resource` tool accepts `what_if`
   for the `set` and `delete` operations. This mirrors the `--what-if` flag on the `dsc config set`,
@@ -2029,7 +2045,9 @@ Version `3.0.0` is the first generally available release of DSC.
 [#1557]: https://github.com/PowerShell/DSC/issues/1557
 [#1558]: https://github.com/PowerShell/DSC/issues/1558
 [#1562]: https://github.com/PowerShell/DSC/issues/1562
+[#1655]: https://github.com/PowerShell/DSC/issues/1655
 [#1729]: https://github.com/PowerShell/DSC/issues/1729
 [#1755]: https://github.com/PowerShell/DSC/issues/1755
 [#1758]: https://github.com/PowerShell/DSC/issues/1758
 [#1759]: https://github.com/PowerShell/DSC/issues/1759
+[#1802]: https://github.com/PowerShell/DSC/issues/1802
