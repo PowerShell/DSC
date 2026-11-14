@@ -11,5 +11,8 @@
   },
   "plugins": {
     "enabled": true
+  },
+  "lint": {
+    "rules": {}
   }
 }

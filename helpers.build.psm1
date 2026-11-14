@@ -3066,6 +3066,9 @@ function Build-DscDebPackage{
         $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsc-bicep-ext'
         New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsc-bicep-ext' -Force > $null
 
+        $symlinkPath = Join-Path $debBuildRoot 'usr' 'bin' 'dsclint'
+        New-Item -ItemType SymbolicLink -Path $symlinkPath -Target '/opt/dsc/dsclint' -Force > $null
+
         # Read the control template and replace placeholders
         $controlTemplate = Get-Content "$PSScriptRoot/packaging/deb/control" -Raw
         $controlContent = $controlTemplate.Replace('VERSION_PLACEHOLDER', $productVersion).Replace('ARCH_PLACEHOLDER', $debArch)

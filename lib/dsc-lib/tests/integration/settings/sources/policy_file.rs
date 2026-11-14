@@ -120,6 +120,7 @@ mod serde {
                 ..Default::default()
             }),
             plugins: None,
+            lint: None,
         },
         json!({
             "forbidIgnoreSettingsFile": true,

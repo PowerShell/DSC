@@ -11,6 +11,7 @@ crossterm = { workspace = true }
 ctrlc = { workspace = true }
 indicatif = { workspace = true }
 jsonschema = { workspace = true }
+miette = { workspace = true, features = ["fancy-no-backtrace"] }
 path-absolutize = { workspace = true }
 regex = { workspace = true }
 rmcp = { workspace = true, features = [

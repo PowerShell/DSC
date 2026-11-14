@@ -27,6 +27,7 @@ impl McpServer {
                 + Self::invoke_dsc_function_router()
                 + Self::invoke_dsc_resource_router()
                 + Self::list_dsc_actions_router()
+                + Self::lint_dsc_config_router()
                 + Self::list_dsc_functions_router()
                 + Self::list_dsc_resources_router()
                 + Self::show_dsc_action_router()

@@ -154,6 +154,12 @@ pub struct PolicyFileData {
         ),
     )]
     pub plugins: Option<PluginsFileData>,
+    /// Defines the levels of the lint rules.
+    ///
+    /// The linter reads this section itself. It isn't part of the resolved settings, because the
+    /// levels are merged per rule and combined with the overrides of a lint run.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lint: Option<crate::lint::LintSettings>,
 }
 
 /// Public API

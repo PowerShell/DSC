@@ -301,6 +301,7 @@ impl PolicyFileDataBuilder {
             tracing: self.tracing,
             resource_path: self.resource_path,
             plugins: self.plugins,
+            lint: None,
         }
     }
 }
@@ -377,6 +378,7 @@ impl PreferenceFileDataBuilder {
             tracing: self.tracing,
             resource_path: self.resource_path,
             plugins: self.plugins,
+            lint: None,
         }
     }
 }

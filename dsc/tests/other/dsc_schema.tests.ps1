@@ -48,6 +48,17 @@ Describe 'config schema tests' {
         $schema.'$schema' | Should -BeExactly 'https://json-schema.org/draft/2020-12/schema'
     }
 
+    It 'exposes the lint output schemas used by dsclint and the MCP server' {
+        $schema = dsc schema --type lint-result 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        $schema.properties.diagnostics | Should -Not -BeNullOrEmpty
+        $schema.properties.summary | Should -Not -BeNullOrEmpty
+
+        $schema = dsc schema --type lint-rules 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        $schema.properties.defaultLevel | Should -Not -BeNullOrEmpty
+    }
+
     It 'schema uses camelCase for <type>' -TestCases $schemaTestCases {
         param($type)
 
