@@ -149,7 +149,7 @@ dsc OpenDSC/Lint --file ./demo.dsc.yaml
 ### Complete plug-in commands
 
 The script from `dsc completer` completes plug-in commands and, when the plug-in ships a
-completion spec, their options and values:
+completion definition, their options and values:
 
 ```powershell
 dsc completer powershell | Out-String | Invoke-Expression
@@ -225,7 +225,7 @@ The manifest reuses the properties that resource and extension manifests already
 | `condition`          |    No    | An expression. When it evaluates to `false`, DSC treats the plug-in as not installed.                  |
 | `deprecationMessage` |    No    | A message DSC writes as a warning each time the command is invoked.                                    |
 | `command`            |   Yes    | The command the plug-in adds and how DSC runs it.                                                      |
-| `completion`         |    No    | Where to find the completion spec for the command. See [Shell completion](#shell-completion).          |
+| `completion`         |    No    | The options and values to complete for the command. See [Shell completion](#shell-completion).         |
 | `metadata`           |    No    | Arbitrary data, as in other manifests.                                                                 |
 
 The `command` object has these properties:
@@ -290,7 +290,7 @@ when the result is needed:
 
 | Invocation                                            | Plug-in discovery |
 | :---------------------------------------------------- | :---------------: |
-| A built-in command, such as `dsc config get`          |        No         |
+| A built-in command, such as `dsc config get`          |         No        |
 | `dsc <name>` where `<name>` isn't a built-in command  |        Yes        |
 | `dsc --help`, `dsc -h`, and `dsc help` without a name |        Yes        |
 | `dsc plugin list`                                     |        Yes        |
@@ -443,12 +443,124 @@ then completes plug-in command names. The script is static: after a plug-in is i
 removed, it has to be generated again. Generating it when the shell starts, as the PowerShell
 example in [Complete plug-in commands](#complete-plug-in-commands) does, keeps it current.
 
-#### Completion spec
+#### Completion definition
 
-To get its options and values completed, a plug-in ships a completion spec and names it in the
-manifest with `completion.spec`, a path relative to the manifest. The file uses the
-[carapace command spec][05] format: YAML that declares a command's flags, its nested commands,
-and the values to complete.
+To get its options and values completed, a plug-in describes them in the `completion` property of
+its manifest. The property takes one of two forms, and a manifest that defines both isn't valid:
+
+- An inline definition in a format that DSC owns, described in
+  [Inline definition](#inline-definition).
+- `completion.spec`, the path of a [carapace command spec][05] file relative to the manifest,
+  described in [Carapace spec file](#carapace-spec-file).
+
+Both forms describe the same things, and DSC uses them the same way: it reads the definition only
+in `dsc completer`, to complete the plug-in command like a built-in command. The definition plays
+no part in dispatch, and DSC never validates the arguments of a plug-in against it.
+
+The two examples that follow describe the same `lint` command.
+
+##### Inline definition
+
+The inline definition is JSON or YAML inside the manifest. It is part of the plug-in manifest
+schema, so it is validated, versioned, and documented with the manifest, and an editor that knows
+the schema completes it.
+
+```json
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/plugin/manifest.json",
+  "type": "Microsoft.DSC/Lint",
+  "version": "3.4.0",
+  "description": "Check configuration documents for problems without applying them",
+  "command": {
+    "name": "lint",
+    "executable": "dsclint"
+  },
+  "completion": {
+    "options": [
+      {
+        "names": ["-f", "--file"],
+        "description": "A document to lint",
+        "repeatable": true,
+        "value": { "kind": "file", "extensions": [".json", ".yaml", ".yml"] }
+      },
+      {
+        "names": ["-i", "--input"],
+        "description": "The document as a string",
+        "value": { "kind": "string" }
+      },
+      {
+        "names": ["--no-discovery"],
+        "description": "Skip resource discovery and the rules that need it"
+      },
+      {
+        "names": ["--fail-on"],
+        "description": "The lowest level that makes the command exit with code 5",
+        "value": { "values": ["error", "warning", "info"] }
+      },
+      {
+        "names": ["-o", "--output-format"],
+        "description": "The output format to use",
+        "value": {
+          "values": [
+            { "value": "json", "description": "One line of JSON" },
+            { "value": "pretty-json", "description": "Indented JSON" },
+            { "value": "yaml", "description": "YAML" }
+          ]
+        }
+      }
+    ],
+    "commands": [
+      {
+        "name": "rules",
+        "description": "List the rules",
+        "options": [
+          {
+            "names": ["--category"],
+            "description": "Only list the rules of a category",
+            "value": { "values": ["document", "expression", "parameter", "dependency"] }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+A definition, and each entry of `commands`, has these properties:
+
+| Property    | Description                                                                                                                                                         |
+| :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `options`   | The options of the command. Each has `names`, and optionally `description`, `value`, `repeatable`, `required`, and `hidden`. An option without `value` is a switch. |
+| `arguments` | The positional arguments of the command, in order. Each has `name`, and optionally `description`, `value`, `required`, and `repeatable`.                            |
+| `commands`  | The nested commands. Each has `name`, optionally `aliases`, `description`, and `hidden`, and its own `options`, `arguments`, and `commands`.                        |
+
+A `value` says what to complete. `kind` is `string` (nothing to suggest), `file`, `directory`, or
+`command`. `extensions` narrows `file` to files with those extensions. `values` lists the accepted
+values, each as a string or as an object with `value` and `description`.
+
+The inline definition is deliberately static. It has no way to run a command for suggestions, so
+a completion script never runs anything on behalf of a plug-in.
+
+##### Carapace spec file
+
+The plug-in ships a separate YAML file in the [carapace command spec][05] format and names it in
+the manifest:
+
+```json
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/plugin/manifest.json",
+  "type": "Microsoft.DSC/Lint",
+  "version": "3.4.0",
+  "description": "Check configuration documents for problems without applying them",
+  "command": {
+    "name": "lint",
+    "executable": "dsclint"
+  },
+  "completion": {
+    "spec": "dsclint.completion.yaml"
+  }
+}
+```
 
 ```yaml
 # yaml-language-server: $schema=https://carapace.sh/schemas/command.json
@@ -466,26 +578,44 @@ completion:
   flag:
     file: ["$files([.json, .yaml, .yml])"]
     fail-on: [error, warning, info]
-    output-format: [json, pretty-json, yaml]
+    output-format: ["json\tOne line of JSON", "pretty-json\tIndented JSON", "yaml\tYAML"]
+commands:
+  - name: rules
+    description: List the rules
+    flags:
+      --category=: Only list the rules of a category
+    completion:
+      flag:
+        category: [document, expression, parameter, dependency]
 ```
 
-DSC adopts this format instead of defining one for the following reasons:
+DSC replaces the `name` at the root of the spec with the command name from the manifest.
 
-- It has a published [JSON schema][06] and covers flags, nested commands, and values, which is
-  what [#461][01] tried to sketch for a manifest and left open.
-- It can be generated from the argument definitions of clap, cobra, kong, urfave/cli, click, and
-  oclif, so most authors don't write it by hand. The spec for `dsclint` is generated from its
-  clap definition during the build, for example with [carapace-spec-clap][07].
-- The same file serves carapace users directly.
+##### How the two forms compare
 
-DSC replaces the `name` at the root of the spec with the command name from the manifest. The spec
-is read only by `dsc completer`. It plays no part in dispatch, and DSC never validates the
-arguments of a plug-in against it.
+|                                     | Inline definition                               | Carapace spec file                                           |
+|:------------------------------------|:------------------------------------------------|:-------------------------------------------------------------|
+| Where it lives                      | In the manifest, as JSON or YAML                | A separate YAML file next to the manifest                    |
+| Schema and versioning               | The plug-in manifest schema, versioned with DSC | A [JSON schema][06] published by carapace, without a version |
+| Option syntax                       | Objects with named properties                   | A compact string, like `-f, --file=*`                        |
+| Named positional arguments          | Yes                                             | No, positions only                                           |
+| Values with descriptions            | Yes                                             | Yes, separated by a tab                                      |
+| Values from running a command       | No                                              | Yes, through carapace only                                   |
+| Generated from argument parsers     | No generators exist yet                         | Generators for clap, cobra, kong, urfave/cli, click, oclif   |
+| Completes in `dsc completer` shells | Fully                                           | The static part, see [Native scripts](#native-scripts)       |
+| Completes through carapace          | Yes, DSC converts it                            | Yes, passed through with its macros                          |
+| Depends on a third-party format     | No                                              | Yes, see [Risks](#risks-of-the-carapace-spec-format)         |
+
+The inline definition is the form to use when the plug-in is described by hand or the author
+wants one file. The carapace spec file is the form to use when a generator can produce it from
+the plug-in's argument parser, for example [carapace-spec-clap][07] for `dsclint`, or when the
+plug-in wants suggestions that carapace computes while the user types.
 
 #### Native scripts
 
-For the shells it supports itself, DSC translates the static part of each spec into the command
-tree before it generates the script:
+For the shells it supports itself, DSC adds the completion definition of each plug-in to the
+command tree before it generates the script. It uses every part of an inline definition. For a
+carapace spec file it uses the static part:
 
 | Spec element                                                      | Used for native scripts                                      |
 | :---------------------------------------------------------------- | :----------------------------------------------------------- |
@@ -506,9 +636,10 @@ works.
 `carapace` is added as a value of the `SHELL` argument. The command writes one carapace spec for
 `dsc`: the built-in command tree, plus one entry under `commands` per plug-in.
 
-- For a plug-in with a completion spec, the entry is that spec, complete with its macros.
-- For a plug-in without one, the entry delegates to a completer named `dsc-<command>` and falls
-  back to file completion. This is [the convention carapace uses][08] for the plug-ins of `git`,
+- For a plug-in with a carapace spec file, the entry is that spec, complete with its macros.
+- For a plug-in with an inline definition, DSC converts the definition into the entry.
+- For a plug-in without a completion definition, the entry delegates to a completer named
+  `dsc-<command>` and falls back to file completion. This is [the convention carapace uses][08] for the plug-ins of `git`,
   `gh`, and `cargo`, so a user can still add a spec of their own for that plug-in.
 
 The user saves the output as `dsc.yaml` in the carapace user spec directory. Carapace then
@@ -537,7 +668,8 @@ today.
 - **Trust for artifacts applies.** The trust RFC in [#1687][09] covers manifests and the
   executables they name. When it is implemented, plug-in manifests fall under the same policy,
   and `dsc plugin list` reports the trust property that RFC adds to `dsc resource list`.
-- **Completion specs can name commands.** A carapace spec can contain macros that run a command
+- **Carapace spec files can name commands.** An inline completion definition can't run anything.
+  A carapace spec can contain macros that run a command
   when the user presses the Tab key. DSC's native scripts never run them. The output of
   `dsc completer carapace` carries them into the user's carapace configuration, so the existing
   advice to review the output of `dsc completer` before using it applies.
@@ -571,11 +703,11 @@ These aren't enforced, but a plug-in that follows them feels like a part of `dsc
 1. The manifest and its schema, discovery, dispatch, the environment contract, help,
    `dsc plugin list`, the `plugins.enabled` setting, plug-in command names in `dsc completer`,
    and the manifest for `dsclint`.
-1. Completion specs: `completion.spec`, the translation for native scripts, and
-   `dsc completer carapace`.
+1. Completion definitions: the inline definition, `completion.spec`, their use in native scripts,
+   and `dsc completer carapace`.
 
 The first phase stands on its own. The second can change in response to the open question about
-the spec format without affecting plug-ins that already exist.
+the completion definition without affecting plug-ins that already exist.
 
 ## Alternate proposals and considerations
 
@@ -639,7 +771,7 @@ This RFC takes the following from them:
 - **Declaring arguments in the manifest.** [#461][01] sketched `args` and `argSets`, or JSON
   schemas for input and output, from which DSC would build the command line. That gives uniform
   help and validation, but it turns DSC into a command-line framework and limits a plug-in to what
-  the manifest can express. Plug-ins parse their own arguments, and the completion spec covers
+  the manifest can express. Plug-ins parse their own arguments, and the completion definition covers
   discoverability.
 - **Several commands per manifest.** A map of commands would let one manifest add `dsc package`
   and `dsc manifest`. One command per manifest keeps the identity, version, and shadowing rules
@@ -655,21 +787,43 @@ This RFC takes the following from them:
   `unstable-dynamic` feature ([clap#3166][18]), and it runs plug-ins on every press of the Tab
   key. The static approach can be replaced when that engine is stable. The manifest doesn't
   change.
-- **Another completion format.** Other formats were only surveyed for this RFC. They weren't
-  evaluated in the same depth as carapace:
-  - The Fig completion spec, which Microsoft's `inshellisense` consumes. A spec is a TypeScript
-    module. `inshellisense` is maintained and completes in Windows PowerShell as well as in
-    PowerShell 7, which carapace doesn't. The tool the format was created for is no longer
-    actively maintained.
-  - The `usage` spec, a KDL document with an exporter for clap. It generates completions for
-    Bash, Zsh, fish, PowerShell, and Nushell, and the generated scripts need the `usage` tool on
-    `PATH`.
-  - Helm's `completion.yaml`, which is specific to Helm.
+- **Another completion format.** These formats were compared with the carapace spec and the
+  inline definition. Whichever format a plug-in uses, DSC can only use its static part for the
+  scripts from `dsc completer`, which are the only completions that need no other tool and work
+  in Windows PowerShell 5.1. A format therefore has to be readable by DSC, and its own engine can
+  only be an optional extra.
+  - **The [`usage`][23] spec.** It is the most expressive of the formats: named positional
+    arguments with a count, groups of exclusive options, and a `mount` node for commands that
+    plug-ins provide. A spec can only be written in KDL, not in JSON or YAML, and it has no
+    published schema. The completion scripts aren't static: they call the `usage` tool on every
+    press of the Tab key, so every user needs it installed. Values computed by a command run
+    through `sh`, with a fallback to `cmd` on Windows that only handles a plain command. Support
+    for Windows PowerShell 5.1 isn't stated. The project had five major versions in 2026 and
+    depends largely on one maintainer.
+  - **The Fig completion spec.** A spec is a JavaScript or TypeScript module, not a data file,
+    and every tool that reads one runs it as code. No parser exists outside JavaScript. The
+    [repository of specs][24] hasn't merged a change since May 2025, the product it was made for
+    is discontinued, and its successor [removed autocomplete][25]. The tools that still read the
+    format are Microsoft's: [`inshellisense`][26] and the terminal suggestions in Visual Studio
+    Code, for which `azd` generates a Fig spec. `inshellisense` runs in Windows PowerShell, but
+    it isn't Tab completion: it wraps the shell and draws its own list, and it needs its own
+    runtime. Fig could become an export of `dsc completer` for Visual Studio Code. It doesn't fit
+    in a manifest.
+  - **[OpenCLI][27].** A JSON or YAML description of a command line with a JSON schema, from the
+    Spectre.Console community. It is a draft at version 0.1. It describes options and named
+    arguments, but has no place to say that a value is a file or a directory, and no tool
+    generates completions from it yet.
+  - **Helm's `completion.yaml`.** It is specific to Helm.
 
-  The carapace spec is proposed because it was raised in the working group, it is YAML with a
-  published JSON schema, and generators exist for common command-line frameworks. Whether one of
-  the other formats fits DSC better hasn't been established. That is part of the open question
-  about the format.
+  The carapace spec is the only one of these that is a data file with a schema, that DSC can read
+  without running another tool, and that has generators for common argument parsers. That is why
+  it is the external format this RFC accepts next to the inline definition.
+- **Only one of the two forms.** Accepting only the inline definition would keep a third-party
+  format out of the manifest, and authors would lose the generators and the suggestions that
+  carapace computes. Accepting only the carapace spec file would leave DSC without a format it
+  controls, with the risks described in
+  [Risks of the carapace spec format](#risks-of-the-carapace-spec-format). This RFC proposes
+  both, and the choice is an open question.
 - **Requiring carapace.** Carapace could replace `dsc completer` entirely. It needs a separate
   binary, [it requires PowerShell 7][19] while DSC users also run Windows PowerShell 5.1, and it
   has [no machine-wide directory for specs][20] that an installer could write to. It stays
@@ -691,18 +845,16 @@ This RFC takes the following from them:
 - The project appears to depend largely on a single maintainer.
 
 DSC limits the exposure by reading a small, documented subset, by ignoring what it doesn't
-recognize, and by keeping the spec out of dispatch. If the format has to be replaced, a `format`
-property next to `completion.spec` can select another one, and a manifest without it keeps meaning
-carapace.
+recognize, and by keeping the spec out of dispatch. The inline definition doesn't have these
+risks, and a plug-in can move to it without changing anything else in its manifest.
 
 ### Open questions
 
 1. Does the working group want the `dsc-<name>` file name convention as a fallback in the first
    version? This RFC leaves it out for the reasons under [Alternatives](#alternatives).
-1. Is the carapace spec the format the working group wants in a DSC manifest, given the risks
-   above? The alternatives for the second phase are a minimal format owned by DSC, or one of the
-   formats under [Alternatives](#alternatives), which this RFC surveyed but didn't compare in
-   depth.
+1. Should a manifest accept both forms of the completion definition, as proposed, or only one?
+   The inline definition is owned by DSC and has no generators yet. The carapace spec file has
+   generators and the risks described above.
 1. Should DSC skip plug-in manifests in directories that non-administrators can write to when it
    runs elevated, using the path permission check from [#1760][21]? The same question exists for
    resource and extension manifests, so the answer should be the same for all three.
@@ -743,3 +895,8 @@ carapace.
 [20]: https://github.com/carapace-sh/carapace-bin/issues/1336
 [21]: https://github.com/PowerShell/DSC/issues/1760
 [22]: https://github.com/PowerShell/DSC/issues/591
+[23]: https://usage.jdx.dev/
+[24]: https://github.com/withfig/autocomplete
+[25]: https://kiro.dev/docs/cli/autocomplete/
+[26]: https://github.com/microsoft/inshellisense
+[27]: https://opencli.org/
