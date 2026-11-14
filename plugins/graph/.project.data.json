@@ -1,0 +1,11 @@
+{
+    "Name": "plugins/graph",
+    "Kind": "Plugin",
+    "TestOnly": true,
+    "CopyFiles": {
+        "All": [
+            "graph.dsc.plugin.json",
+            "graph.ps1"
+        ]
+    }
+}
