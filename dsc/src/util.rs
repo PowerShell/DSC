@@ -43,7 +43,7 @@ use dsc_lib::{
         parse_input_to_json,
     },
 };
-use dsc_lib_telemetry::{StderrFormat, basic::{BasicTracingOptions}};
+use dsc_lib_telemetry::{StderrFormat, DscTracingOptions};
 use path_absolutize::Absolutize;
 use rust_i18n::t;
 use schemars::{Schema, schema_for};
@@ -344,7 +344,7 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
 pub fn enable_tracing(resolved_settings: &DscSettingsResolved) {
     let tracing_setting = &resolved_settings.tracing;
 
-    let default_guard = dsc_lib_telemetry::basic::BasicTracingOptions::init_default_guard();
+    let default_guard = DscTracingOptions::init_default_guard();
 
     // convert to 'tracing' crate type
     let tracing_level = tracing_setting.level.value.clone().into();
@@ -354,19 +354,20 @@ pub fn enable_tracing(resolved_settings: &DscSettingsResolved) {
         TracingFormatField::Plaintext => StderrFormat::Plaintext,
         TracingFormatField::Json => StderrFormat::Json,
     };
+    // For now, always enable OpenTelemetry.
+    let enable_otel = true;
 
     // enable tracing
-    let subscriber = BasicTracingOptions {
+    let subscriber = DscTracingOptions {
         tracing_level,
-        stderr_format
+        stderr_format,
+        enable_otel,
     }.init_subscriber();
 
     drop(default_guard);
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("{}", t!("util.failedToSetTracing"));
     }
-
-    info!("Trace-level is {:?}", tracing_setting.level.value);
 }
 
 pub fn get_input(input: Option<&String>, file: Option<&String>) -> Result<String, ExitCode> {
