@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-$script:CurrentCacheSchemaVersion = 3
+$script:CurrentCacheSchemaVersion = 6
 $ErrorActionPreference = 'Stop'
 
 function Import-PSDSCModule {
@@ -44,15 +44,15 @@ function Get-DscModuleManifestList {
 
 function Add-AstMember {
     param(
-        $AllTypeDefinitions,
+        [hashtable]$TypeDefinitionsByName,
         $TypeAst,
         $Properties
     )
 
     foreach ($TypeConstraint in $TypeAst.BaseTypes) {
-        $t = $AllTypeDefinitions | Where-Object { $_.Name -eq $TypeConstraint.TypeName.Name }
+        $t = $TypeDefinitionsByName[$TypeConstraint.TypeName.Name]
         if ($t) {
-            Add-AstMember -AllTypeDefinitions $AllTypeDefinitions -TypeAst $t -Properties $Properties
+            Add-AstMember -TypeDefinitionsByName $TypeDefinitionsByName -TypeAst $t -Properties $Properties
         }
     }
 
@@ -62,14 +62,17 @@ function Add-AstMember {
             continue;
         }
         $skipProperty = $true
-        $isKeyProperty = $false
+        $isRequiredProperty = $false
+        $isReadOnly = $false
         foreach ($attr in $property.Attributes) {
-            if ($attr.TypeName.Name -eq 'DscProperty') {
+            if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?DscProperty(Attribute)?$') {
                 $skipProperty = $false
                 foreach ($attrArg in $attr.NamedArguments) {
-                    if ($attrArg.ArgumentName -eq 'Key') {
-                        $isKeyProperty = $true
-                        break
+                    if ($attrArg.ArgumentName -in @('Key', 'Mandatory') -and $attrArg.Argument.SafeGetValue()) {
+                        $isRequiredProperty = $true
+                    }
+                    if ($attrArg.ArgumentName -eq 'NotConfigurable' -and $attrArg.Argument.SafeGetValue()) {
+                        $isReadOnly = $true
                     }
                 }
             }
@@ -81,7 +84,27 @@ function Add-AstMember {
         [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
         $prop.Name = $property.Name
         $prop.PropertyType = $property.PropertyType.TypeName.Name
-        $prop.IsMandatory = $isKeyProperty
+        $prop.IsMandatory = $isRequiredProperty
+        $prop.IsReadOnly = $isReadOnly
+        $enumTypeName = $prop.PropertyType -replace '^(?:System\.)?Nullable\[(.*)\]$', '$1' -replace '\[\]$', ''
+        $enumType = $TypeDefinitionsByName[$enumTypeName]
+        if ($enumType.IsEnum) {
+            $prop.Values = @($enumType.Members.Name)
+        }
+        $prop.IsClass = $null -ne $enumType -and -not $enumType.IsEnum
+        foreach ($attr in $property.Attributes) {
+            if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?AllowNull(Attribute)?$') {
+                $prop.AllowNull = $true
+            }
+            if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?ValidateSet(Attribute)?$') {
+                $prop.Values = @($attr.PositionalArguments | ForEach-Object { $_.SafeGetValue() })
+                foreach ($argument in $attr.NamedArguments) {
+                    if ($argument.ArgumentName -eq 'IgnoreCase') {
+                        $prop.IgnoreCase = $argument.Argument.SafeGetValue()
+                    }
+                }
+            }
+        }
         $Properties.Add($prop)
     }
 }
@@ -132,6 +155,11 @@ function FindAndParseResourceDefinitions {
         },
         $false);
 
+    $typeDefinitionsByName = @{}
+    foreach ($typeDefinition in $typeDefinitions) {
+        $typeDefinitionsByName[$typeDefinition.Name] = $typeDefinition
+    }
+
     $resourceList = [System.Collections.Generic.List[DscResourceInfo]]::new()
 
     foreach ($typeDefinitionAst in $typeDefinitions) {
@@ -151,7 +179,7 @@ function FindAndParseResourceDefinitions {
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
                 $DscResourceInfo.Capabilities = GetClassBasedCapabilities $typeDefinitionAst.Members
-                Add-AstMember -AllTypeDefinitions $typeDefinitions -TypeAst $typeDefinitionAst -Properties $DscResourceInfo.Properties
+                Add-AstMember -TypeDefinitionsByName $typeDefinitionsByName -TypeAst $typeDefinitionAst -Properties $DscResourceInfo.Properties
 
                 $resourceList.Add($DscResourceInfo)
             }
@@ -741,6 +769,10 @@ class DscResourcePropertyInfo {
     [string] $Name
     [string] $PropertyType
     [bool] $IsMandatory
+    [bool] $AllowNull
+    [bool] $IsReadOnly
+    [bool] $IsClass
+    [bool] $IgnoreCase = $true
     [System.Collections.Generic.List[string]] $Values
 }
 

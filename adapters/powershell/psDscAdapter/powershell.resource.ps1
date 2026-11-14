@@ -6,8 +6,8 @@
     ''
 )]
 param(
-    [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate, ClearCache.')]
-    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
+    [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, ClearCache.')]
+    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'ClearCache')]
     [string]$Operation,
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
     [string]$jsonInput = '{}',
@@ -31,13 +31,13 @@ function Write-DscTrace {
     )
 
     process {
-        $trace = @{$Operation.ToLower() = $Message }
+    $trace = @{$Operation.ToLower() = $Message }
 
-        if ($Now) {
-            $host.ui.WriteErrorLine(($trace | ConvertTo-Json -Compress -Depth 10))
-        } else {
-            $traceQueue.Enqueue($trace)
-        }
+    if ($Now) {
+        $host.ui.WriteErrorLine(($trace | ConvertTo-Json -Compress -Depth 10))
+    } else {
+        $traceQueue.Enqueue($trace)
+    }
     }
 }
 
@@ -61,8 +61,8 @@ function Clear-EventSubscribers {
 $ps = [PowerShell]::Create().AddScript({
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate, ClearCache.')]
-        [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
+        [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, ClearCache.')]
+        [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'ClearCache')]
         [string]$Operation,
         [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
         [string]$jsonInput = '{}',
@@ -130,19 +130,182 @@ $ps = [PowerShell]::Create().AddScript({
             }
         }
 
-        if ('Validate' -ne $Operation) {
-            Write-Debug -Debug -Message "jsonInput=$jsonInput"
+        Write-Debug -Debug -Message "jsonInput=$jsonInput"
 
-            # load private functions of psDscAdapter stub module
-            if ($PSVersionTable.PSVersion.Major -le 5) {
-                $psDscAdapter = Import-Module "$ScriptRoot/win_psDscAdapter.psd1" -Force -PassThru
+        # load private functions of psDscAdapter stub module
+        if ($PSVersionTable.PSVersion.Major -le 5) {
+            $psDscAdapter = Import-Module "$ScriptRoot/win_psDscAdapter.psd1" -Force -PassThru
+        }
+        else {
+            $psDscAdapter = Import-Module "$ScriptRoot/psDscAdapter.psd1" -Force -PassThru
+        }
+
+        # initialize OUTPUT as array
+        $result = [System.Collections.Generic.List[Object]]::new()
+
+        function ConvertTo-CanonicalPropertyName {
+            param([string]$Name)
+
+            if ($Name -cmatch '^[A-Za-z0-9]+$') {
+                # Preserve acronym boundaries, for example IPAddress -> ipAddress.
+                $prefix = [regex]::Match($Name, '^[A-Z]+(?=[A-Z][a-z]|[0-9]|$)|^[A-Z]').Value
+                return $prefix.ToLowerInvariant() + $Name.Substring($prefix.Length)
             }
-            else {
-                $psDscAdapter = Import-Module "$ScriptRoot/psDscAdapter.psd1" -Force -PassThru
+            return $Name
+        }
+
+        function Test-PropertyAllowsNull {
+            param($Property)
+
+            return $Property.AllowNull -or ($Property.IsMandatory -and $Property.PropertyType -match '^\[?(?:System\.)?Nullable\[')
+        }
+
+        function ConvertTo-ResourceState {
+            param(
+                $State,
+                $Properties,
+                [bool]$ExcludeLcmProperties
+            )
+
+            $canonicalState = @{}
+            $stateProperties = if ($State -is [System.Collections.IDictionary]) { $State.Keys } else { $State.PSObject.Properties.Name }
+            foreach ($name in $stateProperties) {
+                if ($ExcludeLcmProperties -and $name -in @('DependsOn', 'PsDscRunAsCredential')) {
+                    continue
+                }
+                $value = if ($State -is [System.Collections.IDictionary]) { $State[$name] } else { $State.$name }
+                $property = $Properties | Where-Object -Property Name -EQ $name | Select-Object -First 1
+                if ($null -eq $value -and -not $property.IsMandatory -and -not (Test-PropertyAllowsNull -Property $property)) {
+                    continue
+                }
+                $canonicalState[(ConvertTo-CanonicalPropertyName -Name $name)] = $value
+            }
+            return $canonicalState
+        }
+
+        function ConvertTo-PropertySchema {
+            [CmdletBinding()]
+            param(
+                [string]$PropertyType,
+                [string[]]$Values,
+                [bool]$AllowNull,
+                [bool]$IsClass,
+                [bool]$IgnoreCase = $true
+            )
+
+            # Windows PowerShell metadata can wrap type names in brackets.
+            $typeName = $PropertyType -replace '^\[(.*)\]$', '$1'
+            $typeName = $typeName -replace '^(?:System\.)?Nullable\[(.*)\]$', '$1'
+            if ($typeName.EndsWith('[]')) {
+                return @{
+                    type = if ($AllowNull) { @('array', 'null') } else { 'array' }
+                    items = ConvertTo-PropertySchema -PropertyType $typeName.Substring(0, $typeName.Length - 2) -Values $Values -IsClass $IsClass -IgnoreCase $IgnoreCase
+                }
             }
 
-            # initialize OUTPUT as array
-            $result = [System.Collections.Generic.List[Object]]::new()
+            $schema = switch -Regex ($typeName -replace '^System\.', '') {
+                '^(string|char|datetime|datetimeoffset|guid|uri)$' {
+                    @{ type = 'string' }
+                    break
+                }
+                '^(securestring|security\.securestring|timespan|version)$' {
+                    # These accept string input but serialize as objects in resource output.
+                    @{ type = @('string', 'object') }
+                    break
+                }
+                '^(bool|boolean)$' {
+                    @{ type = 'boolean' }
+                    break
+                }
+                '^(byte|sbyte|short|ushort|int|uint|long|ulong|int16|uint16|int32|uint32|int64|uint64)$' {
+                    @{ type = 'integer' }
+                    break
+                }
+                '^(float|single|double|decimal)$' {
+                    @{ type = 'number' }
+                    break
+                }
+                '^(hashtable|collections\.hashtable|pscredential|management\.automation\.pscredential|ciminstance|microsoft\.management\.infrastructure\.ciminstance)$' {
+                    @{ type = 'object' }
+                    break
+                }
+                default {
+                    # Custom and embedded types can have resource-specific JSON representations.
+                    if ($IsClass) { @{ type = 'object' } } else { @{} }
+                }
+            }
+
+            if ($AllowNull -and $schema.ContainsKey('type')) {
+                $schema.type = @($schema.type) + 'null'
+            }
+
+            if ($Values.Count -gt 0) {
+                if ($schema.type -contains 'integer' -or $schema.type -contains 'number') {
+                    $numericValues = [System.Collections.Generic.List[decimal]]::new()
+                    foreach ($value in $Values) {
+                        $parsed = [decimal]0
+                        if (-not [decimal]::TryParse($value, [Globalization.NumberStyles]::Number, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+                            Write-Warning -Message "Ignoring nonnumeric value map for property type '$PropertyType': '$value'. Numeric type validation is retained."
+                            return $schema
+                        }
+                        $numericValues.Add($parsed)
+                    }
+                    $schema.enum = @($numericValues)
+                    if ($AllowNull) { $schema.enum += $null }
+                } else {
+                    # Enum values provide editor completions; the pattern accepts case variants.
+                    $schema.anyOf = @(@{ enum = @($Values) })
+                    if ($IgnoreCase) {
+                        $schema.anyOf += @{ type = 'string'; pattern = '^(?i:' + (($Values | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')$' }
+                    }
+                    if ($AllowNull) {
+                        $schema.anyOf += @{ type = 'null' }
+                    }
+                }
+            }
+            return $schema
+        }
+
+        function ConvertTo-ResourceSchema {
+            [CmdletBinding()]
+            param($ResourceInfo, [string]$Type)
+
+            try {
+                $propertySchemas = @{
+                    '_inDesiredState' = @{ type = 'boolean'; readOnly = $true }
+                }
+                $requiredProperties = @()
+                foreach ($prop in $ResourceInfo.Properties) {
+                    if ($ResourceInfo.ImplementationDetail -eq 'ScriptBased' -and $prop.Name -in @('DependsOn', 'PsDscRunAsCredential')) {
+                        continue
+                    }
+                    $propertyName = ConvertTo-CanonicalPropertyName -Name $prop.Name
+                    $allowNull = Test-PropertyAllowsNull -Property $prop
+                    $propertySchemas[$propertyName] = ConvertTo-PropertySchema -PropertyType $prop.PropertyType -Values $prop.Values -AllowNull $allowNull -IsClass ([bool]$prop.IsClass) -IgnoreCase ($null -eq $prop.IgnoreCase -or $prop.IgnoreCase)
+                    if ($prop.IsReadOnly) {
+                        $propertySchemas[$propertyName].readOnly = $true
+                    }
+                    if ($prop.IsMandatory) {
+                        $requiredProperties += $propertyName
+                    }
+                }
+                $schema = @{
+                    '$schema' = 'https://json-schema.org/draft/2020-12/schema'
+                    type = 'object'
+                    properties = $propertySchemas
+                    additionalProperties = $false
+                }
+                if ($requiredProperties.Count -gt 0) {
+                    $schema.required = @($requiredProperties)
+                }
+                return $schema
+            } catch {
+                Write-Warning -Message "Failed to generate schema for '$Type': $_"
+                return @{
+                    '$schema' = 'https://json-schema.org/draft/2020-12/schema'
+                    type = 'object'
+                }
+            }
         }
 
         if ($jsonInput) {
@@ -212,8 +375,12 @@ $ps = [PowerShell]::Create().AddScript({
 
                     $properties = @()
                     foreach ($prop in $DscResourceInfo.Properties) {
-                        $properties += $prop.Name
+                        if ($DscResourceInfo.ImplementationDetail -eq 'ScriptBased' -and $prop.Name -in @('DependsOn', 'PsDscRunAsCredential')) {
+                            continue
+                        }
+                        $properties += ConvertTo-CanonicalPropertyName -Name $prop.Name
                     }
+                    $resourceSchema = ConvertTo-ResourceSchema -ResourceInfo $DscResourceInfo -Type $dscResource.Type
 
                     # OUTPUT dsc is expecting the following properties
                     [resourceOutput]@{
@@ -228,6 +395,7 @@ $ps = [PowerShell]::Create().AddScript({
                         properties     = $properties
                         requireAdapter = $requireAdapter
                         description    = $description
+                        schema         = $resourceSchema
                     }
                 }
             }
@@ -243,6 +411,10 @@ $ps = [PowerShell]::Create().AddScript({
                     if ($null -eq $dscResourceCache) {
                         throw ("DSC resource '{0}' module not found." -f $ResourceType)
                     }
+                    $resourceInfo = ($dscResourceCache | Where-Object -Property Type -EQ $ResourceType |
+                        Select-Object -First 1).DscResourceInfo
+                    $resourceProperties = $resourceInfo.Properties
+                    $excludeLcmProperties = $resourceInfo.ImplementationDetail -eq 'ScriptBased'
 
                     $desiredState = $psDscAdapter.invoke(   { param($jsonInput, $type) Get-DscResourceObject -jsonInput $jsonInput -type $type }, $jsonInput, $ResourceType )
                     if ($null -eq $desiredState) {
@@ -265,18 +437,16 @@ $ps = [PowerShell]::Create().AddScript({
                         $actualState = $psDscAdapter.Invoke( { param($ds, $dscResourceCache) Invoke-DscOperation -Operation 'Get' -DesiredState $ds -dscResourceCache $dscResourceCache }, $desiredState, $dscResourceCache)
                     }
 
-                    if ($Operation -eq 'Test') {
-                        $actualState.Properties | Add-Member -MemberType NoteProperty -Name _inDesiredState -Value $inDesiredState -Force
-                    }
-
                     if ($Operation -eq 'Export') {
                         foreach ($instance in $actualState) {
-                            $instance
+                            ConvertTo-ResourceState -State $instance -Properties $resourceProperties -ExcludeLcmProperties $excludeLcmProperties
                         }
                         exit 0
                     }
-
-                    $result = $actualState.Properties
+                    $result = ConvertTo-ResourceState -State $actualState.Properties -Properties $resourceProperties -ExcludeLcmProperties $excludeLcmProperties
+                    if ($Operation -eq 'Test') {
+                        $result['_inDesiredState'] = $inDesiredState
+                    }
                     return $result
                 }
 
@@ -330,14 +500,8 @@ $ps = [PowerShell]::Create().AddScript({
                 }
                 return $result
             }
-            'Validate' {
-                # VALIDATE not implemented
-
-                # OUTPUT
-                @{ valid = $true }
-            }
             Default {
-                Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
+                Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, ClearCache'
             }
         }
 
@@ -354,6 +518,7 @@ $ps = [PowerShell]::Create().AddScript({
             [string[]] $properties
             [string] $requireAdapter
             [string] $description
+            [hashtable] $schema
         }
     }
 }).AddParameter('Operation', $Operation).AddParameter('jsonInput', $jsonInput).AddParameter('ResourceType', $ResourceType).AddParameter('ResourcePath', $ResourcePath).AddParameter('ScriptRoot', $PSScriptRoot)
@@ -462,6 +627,7 @@ Start-Sleep -Milliseconds 200  # wait a bit to ensure all events are processed b
 Clear-EventSubscribers
 Write-TraceQueue
 
+$serializationDepth = if ($Operation -eq 'List') { 100 } else { 10 }
 foreach ($obj in $outputCollection) {
-    $obj | ConvertTo-Json -Depth 10 -Compress
+    $obj | ConvertTo-Json -Depth $serializationDepth -Compress
 }
