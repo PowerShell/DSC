@@ -31,6 +31,11 @@ given shell. DSC can generate completion scripts for the following shells:
 The output for this command is the script itself. To register completions for DSC, execute the
 script.
 
+The script completes the commands that [plug-ins][06] provide in the same way as the built-in
+commands. DSC discovers the available plug-ins when it generates the script, so generate the script
+again after you install or remove a plug-in. The script doesn't complete the arguments of a plug-in
+command, except for file paths.
+
 > [!WARNING]
 > Always review scripts before executing them, especially in an elevated execution context.
 
@@ -111,3 +116,4 @@ ShortSyntax : -h
 [03]: https://fishshell.com/
 [04]: /powershell/scripting/overview
 [05]: https://zsh.sourceforge.io/
+[06]: ../index.md#plug-in-commands

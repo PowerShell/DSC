@@ -284,6 +284,27 @@
 //!    manifest, DSC can only invoke commands that exist in the specified directories. Attempting
 //!    to invoke commands outside of the specified directories raises an error.
 //!
+//! ## Plug-in settings
+//!
+//! A command plug-in adds a top-level command to the `dsc` CLI without being compiled into it.
+//! When the first argument to `dsc` isn't a built-in command, DSC looks for a plug-in manifest
+//! that provides the command and runs the executable that the manifest names. By default, DSC
+//! discovers plug-in manifests in the same directories it searches for every other manifest.
+//!
+//! Users can control whether DSC uses plug-ins by defining the [`plugins.enabled`] field in the
+//! [`Policy`], [`Machine`], [`User`], or [`Workspace`] settings files. The setting can't be
+//! defined as an environment variable or a command line argument.
+//!
+//! When the resolved value for [`plugins.enabled`] is `false`, DSC doesn't discover plug-in
+//! manifests. A command that isn't built in fails as an unrecognized subcommand, the help doesn't
+//! list plug-in commands, and listing the plug-ins returns nothing.
+//!
+//! Defining the field in the [`Policy`] settings file gives an administrator one switch to keep a
+//! machine to the built-in commands, because no other scope can override a policy setting.
+//!
+//! The resource path settings limit where DSC discovers plug-in manifests in the same way they
+//! limit the discovery of every other manifest.
+//!
 //! [scopes]: DscSettingsScope
 //! [`Default`]: DscSettingsScope::Default
 //! [`Machine`]: DscSettingsScope::Machine
@@ -316,6 +337,7 @@
 //! [`append_env_path`]: fields::ResourcePathResolvedSettings::append_env_path
 //! [`resource_path.directories`]: fields::ResourcePathResolvedSettings::directories
 //! [`resource_path.restricted`]: fields::ResourcePathResolvedSettings::restricted
+//! [`plugins.enabled`]: fields::PluginsFileData::enabled
 //! [`new_with_command_line()`]: DscSettings::new_with_command_line
 //! [`load()`]: DscSettings::load
 //! [`try_load()`]: DscSettings::try_load

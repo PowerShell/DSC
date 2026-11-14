@@ -64,6 +64,8 @@ pretty_assertions = { workspace = true }
 test-case = { workspace = true }
 # Enables serializing test execution for shared context stubs
 serial_test = { workspace = true }
+# Enables creating temporary directories for discovery tests
+tempfile = { workspace = true }
 
 [target.'cfg(not(target_os = "windows"))'.dev-dependencies]
 nix = { workspace = true, features = ["user"] }

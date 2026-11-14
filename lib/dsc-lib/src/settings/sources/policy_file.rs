@@ -136,6 +136,24 @@ pub struct PolicyFileData {
         ),
     )]
     pub resource_path: Option<ResourcePathFileData>,
+    /// Defines settings that affect whether DSC discovers and runs command
+    /// plug-ins.
+    ///
+    /// You can control whether DSC dispatches commands that aren't built in
+    /// to a plug-in. Defining `plugins.enabled` as `false` in the policy file
+    /// keeps DSC to the built-in commands for every user, because no other
+    /// scope can override a policy setting.
+    ///
+    /// For more information, see [`PluginsFileData`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(
+        title = schema_i18n!("plugins.title"),
+        description = schema_i18n!("plugins.description"),
+        extend(
+            "markdownDescription" = schema_i18n!("plugins.markdownDescription")
+        ),
+    )]
+    pub plugins: Option<PluginsFileData>,
 }
 
 /// Public API
@@ -209,6 +227,7 @@ impl PolicyFileData {
     pub(crate) fn any_defined(&self) -> bool {
         self.forbid_ignore_settings_file.is_some() ||
         self.ignore_settings_file.is_some() ||
+        self.plugins.is_some() ||
         self.resource_path.is_some() ||
         self.tracing.is_some()
     }

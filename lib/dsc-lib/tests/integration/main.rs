@@ -36,6 +36,7 @@ pub(crate) mod macros {
 
 mod command_resource;
 mod extensions;
+mod plugins;
 #[macro_use] pub(crate) mod schemas;
 mod settings;
 mod types;
