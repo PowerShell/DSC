@@ -4,7 +4,7 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
-use dsc_lib::{progress::ProgressFormat, util::DSC_IGNORE_SETTINGS_FILE};
+use dsc_lib::{progress::ProgressFormat, settings::{DscSettings, DscSettingsScope, global as global_settings, sources::EnvironmentData}};
 use server::start_server;
 use rust_i18n::{i18n, t};
 use std::{env::set_var, io, process::ExitCode};
@@ -78,14 +78,35 @@ fn dsc_main() -> Result<(), ExitCode> {
 
     let args = Args::parse();
 
-    // if args.ignore_settings_file is set, we create an env var called `DSC_IGNORE_SETTINGS_FILE` set to value 1
-    if args.ignore_settings_file {
+    // Initialize with local settings; reload for global after tracing init
+    // to emit messages for settings loading/resolution.
+    let mut settings = DscSettings::new_with_command_line((&args).into());
+    settings.load();
+
+    util::enable_tracing(settings.resolved());
+
+    let mut global_settings = global_settings::get_or_init_with_command_line((&args).into());
+    global_settings.load();
+    global_settings.resolve_all();
+    // if ignoring settings files is set from CLI, we propagate the setting for
+    // recursive invocations by defining `DSC_IGNORE_SETTINGS_FILE`. Since the
+    // only override for the setting from the environment scope is the CLI,
+    // setting the environment variable enables propagation without munging the
+    // recursive invocation arguments.
+    if global_settings.resolved().ignore_settings_file.scope == DscSettingsScope::CommandLine {
+        let value = if global_settings.ignoring_settings_files() { "1" } else { "0" };
         unsafe {
-            set_var(DSC_IGNORE_SETTINGS_FILE, "1");
+            set_var(EnvironmentData::DSC_IGNORE_SETTINGS_FILE_ENV_VAR, value);
         }
     }
-
-    util::enable_tracing(args.trace_level.as_ref(), args.trace_format.as_ref());
+    // Set the DSC_TRACE_LEVEL environment variable for child processes
+    unsafe {
+        env::set_var(
+            EnvironmentData::DSC_TRACE_LEVEL_ENV_VAR,
+            global_settings.resolved().tracing.level.value.clone().to_string()
+        );
+    }
+    drop(global_settings);
 
     debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
@@ -125,6 +146,9 @@ fn dsc_main() -> Result<(), ExitCode> {
 
             subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
         },
+        SubCommand::Action { subcommand } => {
+            subcommand::action(&subcommand, progress_format)?;
+        },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format)?;
         },
@@ -162,7 +186,10 @@ fn ctrlc_handler() {
     warn!("{}", t!("main.ctrlCReceived"));
 
     // get process tree for current process and terminate all processes
-    let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
+    let Ok(sys) = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything())) else {
+        error!("{}", t!("main.failedToGetSystem"));
+        exit(i32::from(util::EXIT_CTRL_C))
+    };
     info!("{}: {}", t!("main.foundProcesses"), sys.processes().len());
     let Ok(current_pid) = get_current_pid() else {
         error!("{}", t!("main.failedToGetPid"));
@@ -217,7 +244,11 @@ fn check_debug() {
 fn check_store() -> Result<(), ExitCode> {
     use std::io::Read;
 
-    let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
+    let Ok(sys) = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything())) else {
+        warn!("{}", t!("main.failedToGetSystem"));
+        return Ok(());
+    };
+
     // get current process
     let Ok(current_pid) = get_current_pid() else {
         return Ok(());

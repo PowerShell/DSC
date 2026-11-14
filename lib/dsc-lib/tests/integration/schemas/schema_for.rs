@@ -94,20 +94,19 @@ macro_rules! test_schema_for {
         #[allow(unused_must_use)]
         #[cfg(test)] mod dscresource {
             test_schema_for!(dsc_lib::dscresources::dscresource::DscResource);
-            test_schema_for!(dsc_lib::dscresources::dscresource::Capability);
             test_schema_for!(dsc_lib::dscresources::dscresource::ImplementedAs);
         }
         #[allow(unused_must_use)]
         #[cfg(test)] mod invoke_result {
-            test_schema_for!(dsc_lib::dscresources::invoke_result::GetResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ResourceGetResponse);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::SetResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ResourceSetResponse);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::TestResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ResourceTestResponse);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ValidateResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ExportResult);
-            test_schema_for!(dsc_lib::dscresources::invoke_result::ResolveResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::GetResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ResourceGetResponse);
+            test_schema_for!(dsc_lib::resources::invoke_result::SetResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ResourceSetResponse);
+            test_schema_for!(dsc_lib::resources::invoke_result::TestResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ResourceTestResponse);
+            test_schema_for!(dsc_lib::resources::invoke_result::ValidateResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ExportResult);
+            test_schema_for!(dsc_lib::resources::invoke_result::ResolveResult);
         }
         #[allow(unused_must_use)]
         #[cfg(test)] mod resource_manifest {
@@ -159,5 +158,26 @@ macro_rules! test_schema_for {
             test_schema_for!(dsc_lib::extensions::secret::SecretMethod);
         }
     }
-
+    mod settings {
+        test_schema_for!(dsc_lib::settings::DscSettings);
+        test_schema_for!(dsc_lib::settings::DscSettingsScope);
+        test_schema_for!(dsc_lib::settings::DscSettingsResolved);
+        mod fields {
+            test_schema_for!(dsc_lib::settings::fields::ForbidIgnoreSettingsFileField);
+            test_schema_for!(dsc_lib::settings::fields::IgnoreSettingsFileField);
+            test_schema_for!(dsc_lib::settings::fields::ResourcePathFileData);
+            test_schema_for!(dsc_lib::settings::fields::ResourcePathResolvedSettings);
+            test_schema_for!(dsc_lib::settings::fields::TracingFileData);
+            test_schema_for!(dsc_lib::settings::fields::TracingFormatField);
+            test_schema_for!(dsc_lib::settings::fields::TracingLevelField);
+            test_schema_for!(dsc_lib::settings::fields::TracingResolvedSettings);
+        }
+        mod sources {
+            test_schema_for!(dsc_lib::settings::sources::DscSettingsCodeDefaults);
+            test_schema_for!(dsc_lib::settings::sources::CommandLineData);
+            test_schema_for!(dsc_lib::settings::sources::EnvironmentData);
+            test_schema_for!(dsc_lib::settings::sources::PolicyFileData);
+            test_schema_for!(dsc_lib::settings::sources::PreferenceFileData);
+        }
+    }
 }

@@ -44,6 +44,18 @@ pub enum TraceFormat {
     PassThrough,
 }
 
+impl From<TraceFormat> for dsc_lib::settings::fields::TracingFormatField {
+    fn from(value: TraceFormat) -> Self {
+        match value {
+            TraceFormat::Default => dsc_lib::settings::fields::TracingFormatField::Default,
+            TraceFormat::Plaintext => dsc_lib::settings::fields::TracingFormatField::Plaintext,
+            TraceFormat::Json => dsc_lib::settings::fields::TracingFormatField::Json,
+            // PassThrough is treated as Json for settings purposes
+            TraceFormat::PassThrough => dsc_lib::settings::fields::TracingFormatField::Json,
+        }
+    }
+}
+
 #[derive(Debug, Parser)]
 #[clap(name = "dsc", version = env!("CARGO_PKG_VERSION"), about = t!("args.about").to_string(), long_about = None)]
 pub struct Args {
@@ -56,8 +68,18 @@ pub struct Args {
     pub trace_format: Option<TraceFormat>,
     #[clap(short = 'p', long, help = t!("args.progressFormat").to_string(), value_enum)]
     pub progress_format: Option<ProgressFormat>,
-    #[clap(long, help = t!("args.ignoreSettingsFile").to_string())]
-    pub ignore_settings_file: bool,
+    #[clap(long, help = t!("args.ignoreSettingsFile").to_string(), num_args=0..=1, default_missing_value="true", require_equals = true)]
+    pub ignore_settings_file: Option<bool>,
+}
+
+impl From<&Args> for dsc_lib::settings::sources::CommandLineData {
+    fn from(value: &Args) -> Self {
+        Self {
+            trace_level: value.trace_level.clone().map(|v| v.into()),
+            trace_format: value.trace_format.clone().map(|v| v.into()),
+            ignore_settings_file: value.ignore_settings_file.map(|v| v.into()),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -85,6 +107,11 @@ pub enum SubCommand {
         // Used to inform when DSC is used as a include group resource
         #[clap(long, hide = true)]
         as_include: bool,
+    },
+    #[clap(name = "action", about = t!("args.actionAbout").to_string())]
+    Action {
+        #[clap(subcommand)]
+        subcommand: ActionSubCommand,
     },
     #[clap(name = "extension", about = t!("args.extensionAbout").to_string())]
     Extension {
@@ -176,6 +203,18 @@ pub enum ConfigSubCommand {
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Subcommand)]
+pub enum ActionSubCommand {
+    #[clap(name = "list", about = t!("args.listActionAbout").to_string())]
+    List {
+        /// Optional action name to filter the list
+        #[clap(default_value_t)]
+        action_name: TypeNameFilter,
+        #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
+        output_format: Option<ListOutputFormat>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]

@@ -3,21 +3,24 @@
 
 use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::parameters::{SecureObject, SecureString, import_parameters, is_secure_value};
+use crate::configure::parameters::{SecureObject, SecureString, import_parameters};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
+use crate::dscresources::dscresource::ResourceCapability;
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
-    invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse}},
-    resource_manifest::{AdapterInputKind, ExportSchemaOrFiltering, Kind},
+    dscresource::{get_diff, validate_properties, get_adapter_input_kind},
+    resource_manifest::{AdapterInputKind, ExportSchemaOrFiltering},
 };
-use crate::DscResource;
-use crate::discovery::Discovery;
+use crate::discovery::{Discovery, ResourceKind};
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
+use crate::resources::{
+    invoke_result::{DeleteResult, DeleteResultKind, GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse},
+    resource_invoke::ResourceInvoke,
+};
 use crate::types::{FullyQualifiedTypeName, SemanticVersion};
-use crate::util::resource_id;
+use crate::util::{resource_id, is_secure_value};
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
@@ -117,27 +120,30 @@ macro_rules! find_resource_or_error {
 ///
 /// This function will return an error if the underlying resource fails.
 pub fn add_resource_export_results_to_configuration(
-    resource: &DscResource,
+    resource: &dyn ResourceInvoke,
     conf: &mut Configuration,
     input: &str,
+    context: &Context
 ) -> Result<ExportResult, DscError> {
     let mut resource_input = input;
     let mut input_filters: Option<Vec<Map<String, Value>>> = None;
+    let mut context = context.clone();
     if !input.is_empty() && !resource_supports_export_filtering(resource) {
         input_filters = Some(parse_export_filter_input(input)?);
         resource_input = "";
-        info!("{}", t!("configure.mod.engineExportFiltering", resource = resource.type_name));
+        context.properties = None;
+        info!("{}", t!("configure.mod.engineExportFiltering", resource = resource.type_name()));
     }
 
     let start_datetime = chrono::Local::now();
-    let mut export_result = resource.export(resource_input)?;
+    let mut export_result = resource.export(resource_input, &context)?;
     let end_datetime = chrono::Local::now();
 
     if let Some(filters) = input_filters.as_deref() {
         export_filter::apply_export_filter(&mut export_result.actual_state, filters);
     }
 
-    if resource.kind == Kind::Exporter {
+    if resource.kind() == ResourceKind::Exporter {
         for instance in &export_result.actual_state {
             let mut resource = serde_json::from_value::<Resource>(instance.clone())?;
             let execution_information = ExecutionInformation::new_with_duration(&start_datetime, &end_datetime);
@@ -147,17 +153,17 @@ pub fn add_resource_export_results_to_configuration(
     } else {
         for (i, instance) in export_result.actual_state.iter().enumerate() {
             let mut r: Resource = config_doc::Resource::new();
-            r.resource_type.clone_from(&resource.type_name);
+            r.resource_type.clone_from(&resource.type_name());
             let mut props: Map<String, Value> = serde_json::from_value(instance.clone())?;
             r.name = if let Some(name) = props.remove("_name") {
                 name.as_str()
                     .map(std::string::ToString::to_string)
                     .ok_or_else(|| DscError::Parser(t!("configure.mod.propertyNotString", name = "_name", value = name).to_string()))?
             } else {
-                let resource_type_short = if let Some(pos) = resource.type_name.find('/') {
-                    &resource.type_name[pos + 1..]
+                let resource_type_short = if let Some(pos) = resource.type_name().find('/') {
+                    &resource.type_name()[pos + 1..]
                 } else {
-                    &resource.type_name
+                    &resource.type_name()
                 };
                 format!("{resource_type_short}-{i}")
             };
@@ -195,13 +201,15 @@ pub fn add_resource_export_results_to_configuration(
 
 /// A resource supports native export filtering unless its manifest export method explicitly
 /// declares `supportsFiltering: false`.
-fn resource_supports_export_filtering(resource: &DscResource) -> bool {
-    !matches!(
-        resource.manifest.as_ref()
-            .and_then(|m| m.export.as_ref())
-            .and_then(|e| e.schema_or_filtering.as_ref()),
-        Some(ExportSchemaOrFiltering::SupportsFiltering(false))
-    )
+fn resource_supports_export_filtering(resource: &dyn ResourceInvoke) -> bool {
+    if let Some(manifest_kind) = resource.manifest() && let Ok(manifest) = manifest_kind.as_resource_manifest() {
+        !matches!(
+            manifest.export.as_ref().and_then(|e| e.schema_or_filtering.as_ref()),
+            Some(ExportSchemaOrFiltering::SupportsFiltering(false))
+        )
+    } else {
+        true
+    }
 }
 
 /// Parse export input into engine filters: a JSON object is a single filter while a JSON array
@@ -285,8 +293,8 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
-    if dsc_resource.kind == Kind::Adapter && get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
+fn add_metadata(dsc_resource: &dyn ResourceInvoke, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata>, context: &Context) -> Result<String, DscError> {
+    if dsc_resource.kind() == ResourceKind::Adapter && get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
         // add metadata to the properties so the adapter knows this is a config
         let mut metadata: Map<String, Value> = Map::new();
         if let Some(resource_metadata) = resource_metadata
@@ -305,6 +313,14 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
         return Ok(serde_json::to_string(&properties)?);
     }
 
+    if dsc_resource.kind() == ResourceKind::Action && dsc_resource.schema_as_map().is_none() {
+        // actions without an input schema take no input, so metadata stays engine-side
+        return match properties {
+            Some(properties) => Ok(serde_json::to_string(&properties)?),
+            None => Ok(String::new()),
+        };
+    }
+
     if let Some(resource_metadata) = resource_metadata {
         let other_metadata = resource_metadata.other;
         let mut props = if let Some(props) = properties {
@@ -314,7 +330,7 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
         };
         props.insert("_metadata".to_string(), Value::Object(other_metadata));
         let modified_props = Value::from(props.clone());
-        if let Ok(()) = validate_properties(dsc_resource, &modified_props) {} else {
+        if let Ok(()) = validate_properties(dsc_resource, &modified_props, context) {} else {
             info!("{}", t!("configure.mod.schemaExcludesMetadata"));
             props.remove("_metadata");
         }
@@ -575,7 +591,7 @@ impl Configurator {
         &mut self.discovery
     }
 
-    fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
+    fn get_properties(&mut self, resource: &Resource, dsc_resource: &dyn ResourceInvoke) -> Result<Option<Map<String, Value>>, DscError> {
         // Restore copy loop context from resource metadata under Microsoft.DSC/copyLoops if present
         if let Some(metadata) = &resource.metadata
             && let Some(microsoft) = &metadata.microsoft
@@ -586,23 +602,22 @@ impl Configurator {
                         self.context.copy_current_loop_name.clone_from(loop_name);
                     }
                 }
-            }
+        }
 
-        let result = match resource_kind {
-            Kind::Group => {
-                // if Group resource, we leave it to the resource to handle expressions
-                Ok(resource.properties.clone())
-            },
-            _ => {
-                Ok(invoke_property_expressions(&mut self.statement_parser, &self.context, resource.properties.as_ref())?)
-            },
+        let result = if dsc_resource.is_group() {
+            // if Group resource, we leave it to the resource to handle expressions
+            resource.properties.clone()
+        } else {
+            invoke_property_expressions(&mut self.statement_parser, &self.context, resource.properties.as_ref())?
         };
+
+        self.context.properties = result.clone();
 
         // Clear copy loop context after processing resource
         self.context.copy.clear();
         self.context.copy_current_loop_name.clear();
 
-        result
+        Ok(result)
     }
 
     /// Invoke the get operation on a resource.
@@ -633,10 +648,10 @@ impl Configurator {
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
-            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
-            let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let properties = self.get_properties(&resource, &*dsc_resource)?;
             let start_datetime = chrono::Local::now();
-            let mut get_result = match dsc_resource.get(&filter) {
+            let filter = add_metadata(&*dsc_resource, properties, resource.metadata.clone(), &self.context)?;
+            let mut get_result = match dsc_resource.get(&filter, &self.context) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -653,12 +668,12 @@ impl Configurator {
                 other: Map::new(),
             };
 
-            match &mut get_result {
-                GetResult::Resource(resource_result) => {
+            match get_result {
+                GetResult::Resource(ref mut resource_result) => {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata, &mut execution_information)?;
                 },
-                GetResult::Group(group) => {
+                GetResult::Group(ref group) => {
                     let mut results = Vec::<Value>::new();
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
@@ -666,6 +681,7 @@ impl Configurator {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
                 },
             }
+
             let resource_result = config_result::ResourceGetResult {
                 execution_information: Some(execution_information),
                 metadata: Some(metadata),
@@ -724,8 +740,9 @@ impl Configurator {
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
-            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
+            let properties = self.get_properties(&resource, &*dsc_resource)?;
             debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
+            let start_datetime = chrono::Local::now();
             // see if the properties contains `_exist` and is false
             let exist = match &properties {
                 Some(property_map) => {
@@ -740,17 +757,15 @@ impl Configurator {
                 }
             };
 
-            let desired = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
+            let desired = add_metadata(&*dsc_resource, properties, resource.metadata.clone(), &self.context)?;
             trace!("{}", t!("configure.mod.desired", state = desired));
 
-            let start_datetime;
             let end_datetime;
             let mut set_result;
             let mut delete_what_if_metadata: Option<DeleteResult> = None;
-            if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
+            if exist || dsc_resource.has_resource_capability(&ResourceCapability::SetHandlesExist) || dsc_resource.kind() == ResourceKind::Action {
                 debug!("{}", t!("configure.mod.handlesExist"));
-                start_datetime = chrono::Local::now();
-                set_result = match dsc_resource.set(&desired, skip_test, &self.context.execution_type) {
+                set_result = match dsc_resource.set(&desired, skip_test, &self.context) {
                     Ok(result) => result,
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
@@ -759,10 +774,10 @@ impl Configurator {
                     },
                 };
                 end_datetime = chrono::Local::now();
-            } else if dsc_resource.capabilities.contains(&Capability::Delete) {
+            } else if dsc_resource.has_resource_capability(&ResourceCapability::Delete) {
                 debug!("{}", t!("configure.mod.implementsDelete"));
 
-                let before_result = match dsc_resource.get(&desired) {
+                let before_result = match dsc_resource.get(&desired, &self.context) {
                     Ok(result) => result,
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
@@ -771,8 +786,7 @@ impl Configurator {
                     },
                 };
 
-                start_datetime = chrono::Local::now();
-                let delete_result = match dsc_resource.delete(&desired, &self.context.execution_type) {
+                let delete_result = match dsc_resource.delete(&desired, &self.context) {
                     Ok(result) => result,
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
@@ -791,7 +805,7 @@ impl Configurator {
                             delete_what_if_metadata = Some(delete_res);
                         }
 
-                        let after_result = match dsc_resource.get(&desired) {
+                        let after_result = match dsc_resource.get(&desired, &self.context) {
                             Ok(result) => result,
                             Err(e) => {
                                 progress.set_failure(get_failure_from_error(&e));
@@ -859,6 +873,7 @@ impl Configurator {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
                 },
             }
+
             let resource_result = config_result::ResourceSetResult {
                 execution_information: Some(execution_information),
                 metadata: Some(metadata),
@@ -913,12 +928,13 @@ impl Configurator {
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
-            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
+            let properties = self.get_properties(&resource, &*dsc_resource)?;
             debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
-            let expected = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
-            trace!("{}", t!("configure.mod.expectedState", state = expected));
+
             let start_datetime = chrono::Local::now();
-            let mut test_result = match dsc_resource.test(&expected) {
+            let expected = add_metadata(&*dsc_resource, properties, resource.metadata.clone(), &self.context)?;
+            trace!("{}", t!("configure.mod.expectedState", state = expected));
+            let mut test_result = match dsc_resource.test(&expected, &self.context) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -947,6 +963,7 @@ impl Configurator {
                     self.context.references.insert(resource_id(&resource.resource_type, &evaluated_name), Value::Array(results.clone()));
                 },
             }
+
             let resource_result = config_result::ResourceTestResult {
                 execution_information: Some(execution_information),
                 metadata: Some(metadata),
@@ -1003,14 +1020,14 @@ impl Configurator {
             check_security_context(resource.metadata.as_ref(), directive_security_context)?;
             let adapter = get_require_adapter_from_directive(&resource.directives);
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
-            let properties = self.get_properties(resource, &dsc_resource.kind)?;
+            let properties = self.get_properties(resource, &*dsc_resource)?;
             debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
-            let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
-            trace!("{}", t!("configure.mod.exportInput", input = input));
+            let input = add_metadata(&*dsc_resource, properties, resource.metadata.clone(), &self.context)?;
             let export_result = match add_resource_export_results_to_configuration(
-                dsc_resource,
+                &*dsc_resource,
                 &mut conf,
-                input.as_str(),
+                &input,
+                &self.context
             ) {
                 Ok(result) => result,
                 Err(e) => {
@@ -1561,6 +1578,7 @@ fn get_failure_from_error(err: &DscError) -> Option<Failure> {
 
 #[cfg(test)]
 mod tests {
+    use crate::dscresources::dscresource::DscResource;
     use super::*;
     use serde_json::json;
 

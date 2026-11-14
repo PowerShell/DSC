@@ -21,6 +21,8 @@
       "NOTICE.txt",
       "osinfo",
       "osinfo.dsc.resource.json",
+      "process",
+      "process.dsc.manifests.json",
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
       "powershell.dsc.resource.json",
@@ -53,6 +55,8 @@
       "NOTICE.txt",
       "osinfo",
       "osinfo.dsc.resource.json",
+      "process",
+      "process.dsc.manifests.json",
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
       "powershell.dsc.resource.json",
@@ -69,6 +73,8 @@
       "y2j"
     ],
     "Windows": [
+      "csp.exe",
+      "csp.dsc.resource.json",
       "appx.dsc.extension.json",
       "appx-discover.ps1",
       "dism_dsc.exe",
@@ -90,6 +96,8 @@
       "optionalfeature.dsc.resource.json",
       "osinfo.exe",
       "osinfo.dsc.resource.json",
+      "process.exe",
+      "process.dsc.manifests.json",
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
       "powershell.dsc.resource.json",
@@ -117,6 +125,10 @@
       "windows_firewall.exe",
       "windows_service.exe",
       "windows_service.dsc.resource.json",
+      "windows_audit_policy.exe",
+      "windows_audit_policy.dsc.manifests.json",
+      "windows_security_policy.exe",
+      "windows_security_policy.dsc.manifests.json",
       "windows_feature.dsc.resource.json",
       "wmi.dsc.resource.json",
       "wmi.resource.ps1",
@@ -381,7 +393,7 @@
       ],
       "CopyFiles": {
         "All": [
-          "process.dsc.resource.json"
+          "process.dsc.manifests.json"
         ]
       }
     },

@@ -79,7 +79,7 @@ resources:
   type: Microsoft/OSInfo
   properties: {}
 - name: Processes
-  type: Microsoft/Process
+  type: Microsoft.System/Process
   properties: {}
 ```
 

@@ -64,6 +64,8 @@ pub struct ResourceManifest {
     pub kind: Option<Kind>,
     /// The version of the resource using semantic versioning.
     pub version: ResourceVersion,
+    /// The author of the resource.
+    pub author: Option<String>,
     /// The description of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -121,6 +123,14 @@ pub enum GetArgKind {
         #[serde(rename = "adaptedContentArg")]
         adapted_content_arg: String,
     },
+    Expression {
+        /// The argument that accepts the result of the expression.
+        arg: Option<String>,
+        /// The expression to be evaluated.  `null` result becomes an empty string.
+        expression: String,
+        /// Indicates if the argument is mandatory.  Default is false.
+        mandatory: Option<bool>,
+    },
     Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]
@@ -162,6 +172,14 @@ pub enum SetDeleteArgKind {
         /// The argument that accepts the JSON content from the manifest.
         #[serde(rename = "adaptedContentArg")]
         adapted_content_arg: String,
+    },
+    Expression {
+        /// The argument that accepts the result of the expression.
+        arg: Option<String>,
+        /// The expression to be evaluated.  `null` result becomes an empty string.
+        expression: String,
+        /// Indicates if the argument is mandatory.  Default is false.
+        mandatory: Option<bool>,
     },
     Json {
         /// The argument that accepts the JSON input object.

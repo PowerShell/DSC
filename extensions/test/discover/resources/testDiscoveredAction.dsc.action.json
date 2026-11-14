@@ -1,0 +1,19 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json",
+    "type": "Test/DiscoveredAction",
+    "version": "0.1.0",
+    "description": "Discovered action",
+    "supportedOperations": [
+        "get"
+    ],
+    "invoke": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-Command",
+            "'{\"Output\": \"Hello Action\"}'"
+        ]
+    }
+}

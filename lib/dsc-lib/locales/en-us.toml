@@ -1,5 +1,14 @@
 _version = 1
 
+[actions.action_manifest]
+actionManifestSchemaTitle = "Action manifest schema URI"
+actionManifestSchemaDescription = "Defines the JSON Schema the action manifest adheres to."
+
+[actions.dscaction]
+inputSchemaNotAvailable = "Input schema is not available"
+whatIfNotSupported = "The action '%{type_name}' does not support WhatIf execution"
+actionUnsupportedOperation = "Unsupported operation '%{operation}' for action '%{action}'"
+
 [configure.config_doc]
 configurationDocumentSchemaTitle = "Configuration document schema URI"
 configurationDocumentSchemaDescription = "Defines the JSON Schema the configuration document adheres to."
@@ -51,7 +60,6 @@ implementsDelete = "Resource implements delete and _exist is false"
 groupNotSupportedForDelete = "Group resources not supported for delete"
 deleteNotSupported = "Resource '%{resource}' does not support `delete` and does not handle `_exist` as false"
 expectedState = "Expected state: %{state}"
-exportInput = "Export input: %{input}"
 engineExportFiltering = "Resource '%{resource}' does not support export filtering, the engine will filter the exported instances (experimental feature)"
 invalidExportFilterInput = "Invalid export filter input: %{error}"
 exportFilterNotObject = "Export filter input must be a JSON object or an array of JSON objects"
@@ -117,9 +125,10 @@ importingParametersFromInput = "Importing parameters from simple input"
 invalidParamsFormat = "Invalid parameters format: %{error}"
 
 [discovery.commandDiscovery]
-couldNotReadSetting = "Could not read 'resourcePath' setting"
 appendingEnvPath = "Appending PATH to resourcePath"
 originalPath = "Original PATH: %{path}"
+updatedPath = "updated PATH to `%{new_path}` from `%{old_path}`"
+updatedPathRestricted = "setting %{setting} resolved as `%{value}`; overriding `%{env}` with restricted directories to `%{new_path}` from `%{old_path}`"
 failedGetEnvPath = "Failed to get PATH environment variable"
 failedJoinEnvPath = "Failed to join PATH environment variable; continuing with existing PATH without adding exe home"
 failedJoinRestrictedPath = "Failed to join restricted path environment variable; check DSC_RESTRICTED_PATH for invalid paths"
@@ -127,15 +136,18 @@ exeHomeAlreadyInPath = "Exe home is already in path: %{path}"
 addExeHomeToPath = "Adding exe home to path: %{path}"
 usingResourcePath = "Using Resource Path: %{path}"
 discoverResources = "Discovering '%{kind}' using filter: %{filter}"
-progressSearching = "Searching for resources"
+actionSearching = "Searching for actions"
 extensionSearching = "Searching for extensions"
+progressSearching = "Searching for resources"
 foundManifest = "Found manifest: %{path}"
 adaptedResourceDeprecatedSchemaUri = "Adapted resource manifest '%{path}' uses the deprecated schema URI '%{uri}'. Update the `$schema` value to '%{default_uri}'"
+actionFound = "Action '%{action}' version %{version} found"
 extensionFound = "Extension '%{extension}' version %{version} found"
 adapterFound = "Resource adapter '%{adapter}' version %{version} found"
 resourceFound = "Resource '%{resource}' version %{version} found"
 adaptedResourceFound = "Adapted resource '%{resource}' version %{version} found"
 executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
+invalidActionManifest = "Invalid manifest for action '%{action}': %{err}"
 invalidResourceManifest = "Invalid manifest for resource '%{resource}': %{err}"
 invalidExtensionManifest = "Invalid manifest for extension '%{resource}': %{err}"
 invalidAdaptedResourceManifest = "Invalid manifest for adapted resource '%{resource}': %{err}"
@@ -155,11 +167,10 @@ resourceMissingRequireAdapter = "Resource '%{resource}' is missing 'require_adap
 extensionDiscoverFailed = "Extension '%{extension}' failed to discover resources: %{error}"
 conditionNotBoolean = "Condition '%{condition}' did not evaluate to a boolean"
 conditionNotMet = "Condition '%{condition}' not met, skipping manifest at '%{path}' for resource '%{resource}'"
+conditionNotMetManifestContent = "Condition '%{condition}' not met, skipping manifest content for resource '%{resource}'"
 adaptedResourcePathNotFound = "Adapted resource '%{resource}' path not found: %{path}"
 invalidManifestFileName = "Invalid manifest file name '%{path}'"
 failedLoadManifest = "Failed to load manifest: %{err}"
-restrictedPath = "DSC_RESTRICTED_PATH: %{path}"
-resourcePath = "DSC_RESOURCE_PATH: %{path}"
 adapterNameFilter = "Using type name filter '%{filter}' as filter for adapter name"
 adapterNameFilterForDiscovery = "Using type name filter '%{filter}' for adapter name"
 resourceNameFilter = "Using type name filter '%{filter}' as filter for resource name"
@@ -172,6 +183,8 @@ failedCreateLookupTableDirectory = "Unable to create parent directories of the l
 failedGetLookupTableDirectory = "Unable to get directory of the lookup_table file %{path}"
 failedSerializeLookupTable = "Unable to serialize lookup_table to json"
 readLookupTable = "Read %{count} items into lookup table from %{path}"
+restrictedResourcePathEmptyDirectories = "unable to discover any manifests - DSC setting `%{restricted_setting}` is `true` and `%{directories_setting}` is empty"
+warnExeHomeNotInRestrictedPath = "cannot discover or invoke built-in resources or extensions - DSC executable home '%{exe_home}' is not included in the restricted resource path directories (%{dirs})"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -233,6 +246,7 @@ writingStdin = "Writing to command STDIN: %{input}"
 processTrace = "PID %{process_id}: %{message}"
 processTraceWithTarget = "PID %{process_id}: %{target}: %{line_number}: %{message}"
 redactedSchemaErrorMessage = "'secureString' and 'secureObject' values are not compatible with the schema, use '.secureString' or '.secureObject' in an expression to convert to string or object"
+invokeNotSupportedForResources = "Operation argument 'invoke' is not supported for resources"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -276,6 +290,8 @@ retrievedSchemaFromCache = "Retrieved schema for resource '%{resource}' with ver
 exportResult = "Export result: %{result}"
 json = "JSON: %{json}"
 schema = "Schema: %{schema}"
+invokeNotSupported = "Invoke operation is not supported for resource '%{resource}'"
+invalidPropertiesJson = "Invalid properties JSON: %{err}"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
@@ -681,6 +697,10 @@ syntax = "path( <string>, <string>, ... )"
 traceArgs = "Executing path function with args: %{args}"
 argsMustBeStrings = "Arguments must all be strings"
 
+[functions.properties]
+description = "Retrieves the properties of the current resourcecontext"
+syntax = "properties()"
+
 [functions.range]
 description = "Creates an array of integers from a starting integer and containing a number of items"
 invoked = "range function"
@@ -920,6 +940,7 @@ booleanConversion = "Function boolean argument conversion"
 exitCode = "exit code"
 commandResource = "Command: Resource"
 commandExecutable = "Command: Executable"
+commandNotInRestrictedDirs = "unable to invoke `%{name}` - DSC setting `resourcePath.restricted` is `true` and executable parent folder `%{parent}` is not in `resourcePath.directories` (%{dirs})"
 manifestDescription = "manifest description"
 commandOperation = "Command: Operation"
 forExecutable = "for executable"
@@ -969,18 +990,69 @@ utf16Conversion = "Failed to convert UTF-16 bytes to string"
 [progress]
 failedToSerialize = "Failed to serialize progress JSON: %{json}"
 
+[settings.dsc_settings]
+debugLoadEnvNoneDefined = "no environment settings defined, skipping"
+debugLoadEnvStart = "attempting to load environment settings"
+debugLoadEnvSuccess = "loaded environment settings"
+debugLoadIgnoringSettingsFiles = "skipping loading preference file settings scopes (%{skipping_scopes}) as defined by %{setting} in %{scope}"
+debugLoadPolicyFileNotFound = "policy settings file `%{path}` does not exist, skipping"
+debugLoadPolicyStart = "attempting to load policy settings from `%{path}`..."
+debugLoadPolicySuccess = "loaded policy settings from `%{path}`"
+debugLoadPreferenceFileNotFound = "%{scope} preference settings file `%{path}` does not exist, skipping"
+debugLoadPreferenceStart = "attempting to load %{scope} preference settings from `%{path}`..."
+debugLoadPreferenceSuccess = "loaded %{scope} preference settings from `%{path}`"
+debugLoadUserForNonUserAccount = "skipping loading user scope preference settings file when running in non-user account context"
+debugResolved = "resolved settings from all loaded sources"
+debugResolvedScope = "resolved settings for %{scope} scope"
+debugResolving = "resolving settings from loaded sources..."
+debugResolvingScope = "resolving settings for %{scope} scope..."
+debugSkippingScope = "skipping resolution for %{scope} scope - no settings defined and loaded for this scope"
+policyFolderNotSecureLinux = "Only root should have write access (no group/other write bits)"
+policyFolderNotSecureWindows = "Only SYSTEM and Administrators should have write access"
+traceResolved = "resolved settings from all loaded sources: %{effective}"
+traceResolvedScope = "resolved settings after applying %{scope}: %{effective}"
+warnCliIgnoreSetting = "ignoring the command line argument `%{cli_arg}` because the `%{policy_field}` policy  is set to `true`"
+warnEnvIgnoreSetting = "ignoring the environment variable `%{env_var}` because the `%{policy_field}` policy  is set to `true`"
+warnLoadScopeFailed = "failed to load %{scope} settings: %{error}"
+warnPolicyIgnoreSetting = "ignoring the policy setting `%{ignore_settings_file}` because the `%{forbid_ignore_settings_file}` policy is set to `true`"
+
+[settings.errors]
+invalidScope = "unable to case-insensitively parse '%{text}' as a valid DSC settings scope - valid scopes are: %{variant_list}, and %{variant_last}"
+invalidTracingLevel = "unable to case-insensitively parse '%{text}' as a valid DSC settings trace level - valid levels are: %{variant_list}, and %{variant_last}"
+invalidTracingFormat = "unable to case-insensitively parse '%{text}' as a valid DSC settings trace format - valid formats are: %{variant_list}, and %{variant_last}"
+dataFileEmpty = "unable to load the %{scope} data file at '%{file_path}' - file contains no text"
+dataFileReadError = "unable to read the %{scope} data file at '%{file_path}' - %{err}"
+dataFileUnparseable = "unable to parse the %{scope} data file at '%{file_path}' - %{err}"
+envVarUnparseableBoolean = "unable to parse the value `%{value}` as a boolean environment variable - expected %{expected_list}, or %{expected_last}"
+loadMultipleErrors = "failed to load settings due to one or more errors - %{err}"
+loadEnvironmentError = "failed to load environment variable `%{env_var}` for settings - %{err}"
+loadEnvironmentMultipleErrors = "failed to load environment variables for settings due to one or more errors - %{err}"
+policyFolderNotSecure = "Policy folder '%{path}' is not secure, settings file will not be used. Required permissions: %{required}"
+
+[settings.sources.environment]
+debugLoadingVar = "trying to load `%{env_var}` for settings..."
+debugUndefinedVar = "skipping `%{env_var}` for settings - variable not defined"
+debugLoadedVar = "loaded `%{env_var}` for settings with effective value `%{value}`"
+warnIgnoreInvalidVar = "ignoring invalid environment variable `%{env_var}` for settings: %{err}"
+
+[settings.sources.policy_file]
+debugLoadingFile = "trying to load %{scope} file from '%{file_path}' for settings..."
+
+[settings.sources.preference_file]
+debugLoadingFile = "trying to load preference file for %{scope} scope from '%{file_path}' for settings..."
+
 [util]
-foundSetting = "Found setting '%{name}' in %{path}"
-notFoundSetting = "Setting '%{name}' not found in %{path}"
 failedToGetExePath = "Can't get 'dsc' executable path"
-settingNotFound = "Setting '%{name}' not found"
 failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
 executableNotFoundInWorkingDirectory = "Executable '%{executable}' not found with working directory '%{cwd}'"
 executableNotFound = "Executable '%{executable}' not found"
-policyFolderNotSecure = "Policy folder '%{path}' is not secure, settings file will not be used. Required permissions: %{required}"
-policyFolderNotSecureLinux = "Only root should have write access (no group/other write bits)"
-policyFolderNotSecureWindows = "Only SYSTEM and Administrators should have write access"
-ignoreSettingsFile = "Ignoring settings file due to environment variable 'DSC_IGNORE_SETTINGS_FILE' being set or '--ignore-settings-file' flag being used"
+
+[resources]
+notAnAction = "Invalid request to retrieve action manifest from a non-action"
+notAResource = "Invalid request to retrieve resource manifest from a non-resource"
+
+[resources.resource_invoke]
+invalidExpression = "Invalid expression '%{expression}' in resource manifest: %{error}"
 
 [types.date_version]
 invalidDay = "day `%{day}` for month `%{month}` is invalid - must be between `01` and `%{max_days}`"

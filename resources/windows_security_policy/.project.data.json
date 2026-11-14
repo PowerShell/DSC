@@ -1,0 +1,14 @@
+{
+    "Name": "windows_security_policy",
+    "Kind": "Resource",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": [
+        "windows_security_policy"
+    ],
+    "CopyFiles": {
+        "Windows": [
+            "windows_security_policy.dsc.manifests.json"
+        ]
+    }
+}

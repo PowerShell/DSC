@@ -104,6 +104,5 @@ seededConfigFromDefault = "Seeded missing sshd_config from '%{source}' to '%{tar
 sshdConfigDefaultNotFound = "'%{path}' does not exist and no default source could be found. Checked: %{paths}. Start the sshd service to initialize it, then retry."
 sshdConfigNotFoundNonWindows = "'%{path}' does not exist. Start the sshd service to initialize it, then retry."
 sshdConfigReadFailed = "failed to read sshd_config at path: '%{path}'"
-sshdElevation = "elevated security context required"
 tempFileCreated = "temporary file created at: %{path}"
 tracingInitError = "Failed to initialize tracing"

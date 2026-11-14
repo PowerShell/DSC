@@ -52,8 +52,10 @@ impl Display for SecurityContextKind {
 pub enum Operation {
     Get,
     Set,
+    Delete,
     Test,
     Export,
+    Invoke,
 }
 
 impl Display for Operation {
@@ -61,8 +63,10 @@ impl Display for Operation {
         let operation_str = match self {
             Operation::Get => "get",
             Operation::Set => "set",
+            Operation::Delete => "delete",
             Operation::Test => "test",
             Operation::Export => "export",
+            Operation::Invoke => "invoke",
         };
         write!(f, "{operation_str}")
     }
@@ -666,8 +670,8 @@ mod test {
                     "requireVersion": "=1.0.0"
                 },
                 {
-                    "type": "Microsoft/Process",
-                    "name": "processResource",
+                    "type": "Test/Export",
+                    "name": "exportResource",
                     "requireVersion": "=0.1.0"
                 }
             ]
@@ -680,8 +684,8 @@ mod test {
         assert_eq!(config.resources[0].resource_type, "Microsoft.DSC.Debug/Echo");
         assert_eq!(config.resources[0].require_version.as_ref().map(|r| r.to_string()), Some("=1.0.0".to_string()));
 
-        assert_eq!(config.resources[1].name, "processResource");
-        assert_eq!(config.resources[1].resource_type, "Microsoft/Process");
+        assert_eq!(config.resources[1].name, "exportResource");
+        assert_eq!(config.resources[1].resource_type, "Test/Export");
         assert_eq!(config.resources[1].require_version.as_ref().map(|r| r.to_string()), Some("=0.1.0".to_string()));
     }
 

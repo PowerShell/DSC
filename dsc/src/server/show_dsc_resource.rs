@@ -2,14 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::server::mcp_server::McpServer;
-use dsc_lib::{
-    DscManager,
-    discovery::discovery_trait::DiscoveryFilter,
-    dscresources::{
-        dscresource::{Capability, Invoke},
-        resource_manifest::Kind
-    }, types::{FullyQualifiedTypeName, ResourceVersion},
-};
+use dsc_lib::{DscManager, discovery::discovery_trait::DiscoveryFilter, dscresources::{dscresource::ResourceCapability, resource_manifest::Kind}, types::{FullyQualifiedTypeName, ResourceVersion}, configure::context::Context};
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
@@ -24,14 +17,13 @@ fn nullable_json_object_schema(_: &mut schemars::SchemaGenerator) -> schemars::S
 #[derive(Serialize, JsonSchema)]
 pub struct DscResource {
     /// The namespaced name of the resource.
-    #[serde(rename="type")]
-    pub type_name: FullyQualifiedTypeName,
+    pub r#type: FullyQualifiedTypeName,
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.
     pub version: ResourceVersion,
     /// The capabilities of the resource.
-    pub capabilities: Vec<Capability>,
+    pub capabilities: Vec<ResourceCapability>,
     /// The description of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -67,12 +59,19 @@ impl McpServer {
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
-            let schema = match resource.schema() {
+
+            let context = Context::new();
+            let schema = match resource.schema(&context) {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
                 Err(_) => None,
             };
+
+            let Some(resource) = resource.as_dsc_resource() else {
+                return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotSupported", type_name = r#type), None));
+            };
+
             Ok(DscResource {
-                type_name: resource.type_name.clone(),
+                r#type: resource.type_name.clone(),
                 kind: resource.kind.clone(),
                 version: resource.version.clone(),
                 capabilities: resource.capabilities.clone(),

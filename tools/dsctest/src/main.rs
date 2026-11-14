@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+mod action;
 mod args;
 mod copy_resource;
 mod delete;
@@ -9,6 +10,7 @@ mod exit_code;
 mod export;
 mod export_schema;
 mod exporter;
+mod expression_arg;
 mod get;
 mod in_desired_state;
 mod metadata;
@@ -29,6 +31,7 @@ use args::{Args, RefreshEnvOperation, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
 use serde_json::Map;
+use crate::action::{ActionInput, ActionOutput};
 use crate::copy_resource::{CopyResource, copy_the_resource};
 use crate::delete::Delete;
 use crate::exist::{Exist, State};
@@ -36,6 +39,7 @@ use crate::exit_code::ExitCode;
 use crate::export::Export;
 use crate::export_schema::{ExportSchema, invoke_export_schema};
 use crate::exporter::{Exporter, Resource};
+use crate::expression_arg::ExpressionArg;
 use crate::get::Get;
 use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
@@ -65,6 +69,15 @@ fn main() -> ProcessExitCode {
 fn run() -> Result<(), u8> {
     let args = Args::parse();
     let json = match args.subcommand {
+        SubCommand::Action { input, expression } => {
+            match action::invoke_action(&input, expression.as_deref()) {
+                Ok(result) => result,
+                Err(err) => {
+                    eprintln!("Error invoking action: {err}");
+                    std::process::exit(1);
+                }
+            }
+        },
         SubCommand::Adapter { input , resource_type, resource_path, resource_version, operation } => {
             match adapter::adapt(&resource_type, &input, &operation, &resource_path, &resource_version) {
                 Ok(result) => result,
@@ -175,6 +188,15 @@ fn run() -> Result<(), u8> {
                 resource.properties.insert("hello".to_string(), serde_json::Value::String("world".to_string()));
                 println!("{}", serde_json::to_string(&resource).unwrap());
             }
+            String::new()
+        },
+        SubCommand::ExpressionArg { arg1, arg2, arg3 } => {
+            let expression_arg = ExpressionArg {
+                first: arg1,
+                second: arg2,
+                third: arg3,
+            };
+            println!("{}", serde_json::to_string(&expression_arg).unwrap());
             String::new()
         },
         SubCommand::Get { input } => {
@@ -328,6 +350,12 @@ fn run() -> Result<(), u8> {
         },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
+                Schemas::ActionInput => {
+                    schema_for!(ActionInput)
+                },
+                Schemas::ActionOutput => {
+                    schema_for!(ActionOutput)
+                },
                 Schemas::Adapter => {
                     schema_for!(adapter::DscResource)
                 },
@@ -354,6 +382,9 @@ fn run() -> Result<(), u8> {
                 },
                 Schemas::Exporter => {
                     schema_for!(Exporter)
+                },
+                Schemas::ExpressionArg => {
+                    schema_for!(ExpressionArg)
                 },
                 Schemas::Get => {
                     schema_for!(Get)

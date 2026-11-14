@@ -2,6 +2,222 @@ _version: 2
 
 schemas:
   example:
+    root:
+      document:
+        title: 
+          en-US: Example document title
+        description:
+          en-US: Example document description
+        markdownDescription:
+          en-US: |-
+            Example document markdown description.
+        fields:
+          string_enum:
+            title:
+              en-US: Example document string enum field
+            description:
+              en-US: >-
+                Example document string enum description.
+            markdownDescription:
+              en-US: |-
+                Example document string enum markdown description.
+          tagged_variant_enum:
+            title:
+              en-US: Example document tagged variant enum field
+            description:
+              en-US: >-
+                Example document tagged variant enum description.
+            markdownDescription:
+              en-US: |-
+                Example document tagged variant enum markdown description.
+          untagged_variant_enum:
+            title:
+              en-US: Example document untagged variant enum field
+            description:
+              en-US: >-
+                Example document untagged variant enum description.
+            markdownDescription:
+              en-US: |-
+                Example document untagged variant enum markdown description.
+          boolean_struct:
+            title:
+              en-US: Example document boolean struct field
+            description:
+              en-US: >-
+                Example document boolean struct description.
+            markdownDescription:
+              en-US: |-
+                Example document boolean struct markdown description.
+          string_struct:
+            title:
+              en-US: Example document string struct field
+            description:
+              en-US: >-
+                Example document string struct description.
+            markdownDescription:
+              en-US: |-
+                Example document string struct markdown description.
+          object_struct:
+            title:
+              en-US: Example document object struct field
+            description:
+              en-US: >-
+                Example document object struct description.
+            markdownDescription:
+              en-US: |-
+                Example document object struct markdown description.
+          schema_version:
+            title:
+              en-US: Schema version
+            description:
+              en-US: >-
+                Defines the schema version with the DscRepoSchema trait.
+            markdownDescription:
+              en-US: |-
+                Defines the schema version with the `DscRepoSchema` trait.
+      fields:
+        string_enum:
+          title:
+            en-US: Example string enum
+          description:
+            en-US: >-
+              Defines a string enum with the DscRepoSchema trait.
+          markdownDescription:
+            en-US: |-
+              Defines a string enum with the `DscRepoSchema` trait.
+          variants:
+            foo:
+              title:
+                en-US: String enum foo variant
+              description:
+                en-US: >-
+                  Defines the foo variant.
+              markdownDescription:
+                en-US: |-
+                  Defines the `foo` variant.
+            bar:
+              title:
+                en-US: String enum bar variant
+              description:
+                en-US: >-
+                  Defines the bar variant.
+              markdownDescription:
+                en-US: |-
+                  Defines the `bar` variant.
+            baz:
+              title:
+                en-US: String enum baz variant
+              description:
+                en-US: >-
+                  Defines the baz variant.
+              markdownDescription:
+                en-US: |-
+                  Defines the `baz` variant.
+        tagged_variant_enum:
+          title:
+            en-US: Example tagged variant enum
+          description:
+            en-US: >-
+              Defines a tagged variant enum with the DscRepoSchema trait.
+          markdownDescription:
+            en-US: |-
+              Defines a tagged variant enum with the `DscRepoSchema` trait.
+          variants:
+            string:
+              title:
+                en-US: String variant
+              description:
+                en-US: >-
+                  Defines the string variant.
+              markdownDescription:
+                en-US: |-
+                  Defines the `string` variant.
+            boolean:
+              title:
+                en-US: Boolean variant
+              description:
+                en-US: >-
+                  Defines the boolean variant.
+              markdownDescription:
+                en-US: |-
+                  Defines the `boolean` variant.
+        untagged_variant_enum:
+          title:
+            en-US: Example untagged variant enum
+          description:
+            en-US: >-
+              Defines an untagged variant enum with the DscRepoSchema trait.
+          markdownDescription:
+            en-US: |-
+              Defines an untagged variant enum with the `DscRepoSchema` trait.
+          variants:
+            string:
+              title:
+                en-US: String variant
+              description:
+                en-US: >-
+                  Defines the string variant.
+              markdownDescription:
+                en-US: |-
+                  Defines the `string` variant.
+            boolean:
+              title:
+                en-US: Boolean variant
+              description:
+                en-US: >-
+                  Defines the boolean variant.
+              markdownDescription:
+                en-US: |-
+                  Defines the `boolean` variant.
+        boolean_struct:
+          title:
+            en-US: Example boolean struct
+          description:
+            en-US: >-
+              Defines a boolean struct with the DscRepoSchema trait.
+          markdownDescription:
+            en-US: |-
+              Defines a boolean struct with the `DscRepoSchema` trait.
+        string_struct:
+          title:
+            en-US: Example string struct
+          description:
+            en-US: >-
+              Defines a string struct with the DscRepoSchema trait.
+          markdownDescription:
+            en-US: |-
+              Defines a string struct with the `DscRepoSchema` trait.
+        object_struct:
+          title:
+            en-US: Example object struct
+          description:
+            en-US: >-
+              Defines an object struct with the DscRepoSchema trait.
+          markdownDescription:
+            en-US: |-
+              Defines an object struct with the `DscRepoSchema` trait.
+          fields:
+            nested_string_enum:
+              title:
+                en-US: Nested string enum field
+              description:
+                en-US: >-
+                  Defines the nested string enum field.
+              markdownDescription:
+                en-US: |-
+                  Defines the `nested_string_enum` field.
+            nested_boolean_struct:
+              title:
+                en-US: Nested boolean struct field
+              description:
+                en-US: >-
+                  Defines the nested boolean struct field.
+              markdownDescription:
+                en-US: |-
+                  Defines the `nested_boolean_struct` field.
+
+    
+    
     valid:
       enum:
         title:

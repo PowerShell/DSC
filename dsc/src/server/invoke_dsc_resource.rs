@@ -3,10 +3,12 @@
 
 use crate::server::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager, configure::config_doc::ExecutionKind,
-    discovery::discovery_trait::DiscoveryFilter,
-    dscresources::{
-        dscresource::Invoke,
+    DscManager, configure::{config_doc::ExecutionKind, context::Context},
+    discovery::{
+        discovery_trait::DiscoveryFilter,
+        ResourceKind,
+    },
+    resources::{
         invoke_result::{
             DeleteResult,
             DeleteResultKind,
@@ -21,6 +23,7 @@ use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrap
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use tokio::task;
 
 #[derive(Deserialize, JsonSchema)]
@@ -54,7 +57,8 @@ pub struct InvokeDscResourceRequest {
     #[schemars(description = "The operation to perform on the DSC resource")]
     pub operation: DscOperation,
     #[schemars(description = "The type name of the DSC resource to invoke")]
-    pub resource_type: FullyQualifiedTypeName,
+    #[serde(alias="resource_type")]
+    pub r#type: FullyQualifiedTypeName,
     #[schemars(description = "The properties to pass to the DSC resource as JSON.  Must match the resource JSON schema from `show_dsc_resource` tool.")]
     pub properties_json: String,
     #[schemars(description = "When true and operation is 'set' or 'delete', simulate the change (what-if / dry-run) instead of applying it. Resources without native what-if support return a synthetic result derived from 'test'. Only valid with the 'set' and 'delete' operations.")]
@@ -74,7 +78,7 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    pub async fn invoke_dsc_resource(&self, Parameters(InvokeDscResourceRequest { operation, resource_type, properties_json, what_if }): Parameters<InvokeDscResourceRequest>) -> Result<Json<InvokeDscResourceResponse>, McpError> {
+    pub async fn invoke_dsc_resource(&self, Parameters(InvokeDscResourceRequest { operation, r#type, properties_json, what_if }): Parameters<InvokeDscResourceRequest>) -> Result<Json<InvokeDscResourceResponse>, McpError> {
         let result = task::spawn_blocking(move || {
             let execution_kind = if what_if.unwrap_or(false) {
                 if !matches!(operation, DscOperation::Set | DscOperation::Delete) {
@@ -85,33 +89,45 @@ impl McpServer {
                 ExecutionKind::Actual
             };
             let mut dsc = DscManager::new();
-            let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&resource_type, None, None)).unwrap_or(None) else {
-                return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.resourceNotFound", resource = resource_type), None));
+            let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
+                return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.resourceNotFound", resource = r#type), None));
             };
+            if matches!(resource.kind(), ResourceKind::Action | ResourceKind::Adapter) {
+                return Err(McpError::invalid_request(t!("server.invoke_dsc_resource.actionNotSupported", resource = r#type), None));
+            }
+            let mut context = Context::new();
+            context.execution_type = execution_kind;
+            if !properties_json.is_empty() {
+                let json_map = match serde_json::from_str::<Map<String, Value>>(&properties_json) {
+                    Ok(map) => map,
+                    Err(e) => return Err(McpError::invalid_params(t!("server.invoke_dsc_resource.invalidPropertiesJson", error = e.to_string()), None)),
+                };
+                context.properties = Some(json_map);
+            }
             match operation {
                 DscOperation::Get => {
-                    let result = match resource.get(&properties_json) {
+                    let result = match resource.get(&properties_json, &context) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::GetResult(result))
                 },
                 DscOperation::Set => {
-                    let result = match resource.set(&properties_json, false, &execution_kind) {
+                    let result = match resource.set(&properties_json, false, &context) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::SetResult(result))
                 },
                 DscOperation::Test => {
-                    let result = match resource.test(&properties_json) {
+                    let result = match resource.test(&properties_json, &context) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::TestResult(result))
                 },
                 DscOperation::Delete => {
-                    match resource.delete(&properties_json, &execution_kind) {
+                    match resource.delete(&properties_json, &context) {
                         Ok(DeleteResultKind::ResourceActual) => Ok(ResourceOperationResult::DeleteResult { success: true }),
                         Ok(DeleteResultKind::ResourceWhatIf(delete_result)) => Ok(ResourceOperationResult::DeleteWhatIfResult(delete_result)),
                         Ok(DeleteResultKind::SyntheticWhatIf(test_result)) => Ok(ResourceOperationResult::TestResult(test_result)),
@@ -119,7 +135,7 @@ impl McpServer {
                     }
                 },
                 DscOperation::Export => {
-                    let result = match resource.export(&properties_json) {
+                    let result = match resource.export(&properties_json, &context) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
