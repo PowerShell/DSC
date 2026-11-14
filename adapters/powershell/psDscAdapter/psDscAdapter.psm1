@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-$script:CurrentCacheSchemaVersion = 5
+$script:CurrentCacheSchemaVersion = 6
 $ErrorActionPreference = 'Stop'
 
 function Import-PSDSCModule {
@@ -63,13 +63,16 @@ function Add-AstMember {
         }
         $skipProperty = $true
         $isRequiredProperty = $false
+        $isReadOnly = $false
         foreach ($attr in $property.Attributes) {
-            if ($attr.TypeName.Name -eq 'DscProperty') {
+            if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?DscProperty(Attribute)?$') {
                 $skipProperty = $false
                 foreach ($attrArg in $attr.NamedArguments) {
                     if ($attrArg.ArgumentName -in @('Key', 'Mandatory') -and $attrArg.Argument.SafeGetValue()) {
                         $isRequiredProperty = $true
-                        break
+                    }
+                    if ($attrArg.ArgumentName -eq 'NotConfigurable' -and $attrArg.Argument.SafeGetValue()) {
+                        $isReadOnly = $true
                     }
                 }
             }
@@ -82,17 +85,24 @@ function Add-AstMember {
         $prop.Name = $property.Name
         $prop.PropertyType = $property.PropertyType.TypeName.Name
         $prop.IsMandatory = $isRequiredProperty
+        $prop.IsReadOnly = $isReadOnly
         $enumTypeName = $prop.PropertyType -replace '^(?:System\.)?Nullable\[(.*)\]$', '$1' -replace '\[\]$', ''
         $enumType = $TypeDefinitionsByName[$enumTypeName]
         if ($enumType.IsEnum) {
             $prop.Values = @($enumType.Members.Name)
         }
+        $prop.IsClass = $null -ne $enumType -and -not $enumType.IsEnum
         foreach ($attr in $property.Attributes) {
             if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?AllowNull(Attribute)?$') {
                 $prop.AllowNull = $true
             }
-            if ($attr.TypeName.Name -eq 'ValidateSet') {
+            if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?ValidateSet(Attribute)?$') {
                 $prop.Values = @($attr.PositionalArguments | ForEach-Object { $_.SafeGetValue() })
+                foreach ($argument in $attr.NamedArguments) {
+                    if ($argument.ArgumentName -eq 'IgnoreCase') {
+                        $prop.IgnoreCase = $argument.Argument.SafeGetValue()
+                    }
+                }
             }
         }
         $Properties.Add($prop)
@@ -753,6 +763,9 @@ class DscResourcePropertyInfo {
     [string] $PropertyType
     [bool] $IsMandatory
     [bool] $AllowNull
+    [bool] $IsReadOnly
+    [bool] $IsClass
+    [bool] $IgnoreCase = $true
     [System.Collections.Generic.List[string]] $Values
 }
 

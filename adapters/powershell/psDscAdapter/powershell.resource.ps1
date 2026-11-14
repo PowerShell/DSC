@@ -158,26 +158,35 @@ $ps = [PowerShell]::Create().AddScript({
 
         function ConvertTo-ResourceState {
             param(
-                [System.Collections.IDictionary]$State,
-                $Properties
+                $State,
+                $Properties,
+                [bool]$ExcludeLcmProperties
             )
 
             $canonicalState = @{}
-            foreach ($name in $State.Keys) {
-                $property = $Properties | Where-Object -Property Name -EQ $name | Select-Object -First 1
-                if ($null -eq $State[$name] -and -not $property.IsMandatory -and -not (Test-PropertyAllowsNull -Property $property)) {
+            $stateProperties = if ($State -is [System.Collections.IDictionary]) { $State.Keys } else { $State.PSObject.Properties.Name }
+            foreach ($name in $stateProperties) {
+                if ($ExcludeLcmProperties -and $name -in @('DependsOn', 'PsDscRunAsCredential')) {
                     continue
                 }
-                $canonicalState[(ConvertTo-CanonicalPropertyName -Name $name)] = $State[$name]
+                $value = if ($State -is [System.Collections.IDictionary]) { $State[$name] } else { $State.$name }
+                $property = $Properties | Where-Object -Property Name -EQ $name | Select-Object -First 1
+                if ($null -eq $value -and -not $property.IsMandatory -and -not (Test-PropertyAllowsNull -Property $property)) {
+                    continue
+                }
+                $canonicalState[(ConvertTo-CanonicalPropertyName -Name $name)] = $value
             }
             return $canonicalState
         }
 
         function ConvertTo-PropertySchema {
+            [CmdletBinding()]
             param(
                 [string]$PropertyType,
                 [string[]]$Values,
-                [bool]$AllowNull
+                [bool]$AllowNull,
+                [bool]$IsClass,
+                [bool]$IgnoreCase = $true
             )
 
             # Windows PowerShell metadata can wrap type names in brackets.
@@ -186,7 +195,7 @@ $ps = [PowerShell]::Create().AddScript({
             if ($typeName.EndsWith('[]')) {
                 return @{
                     type = if ($AllowNull) { @('array', 'null') } else { 'array' }
-                    items = ConvertTo-PropertySchema -PropertyType $typeName.Substring(0, $typeName.Length - 2) -Values $Values
+                    items = ConvertTo-PropertySchema -PropertyType $typeName.Substring(0, $typeName.Length - 2) -Values $Values -IsClass $IsClass -IgnoreCase $IgnoreCase
                 }
             }
 
@@ -218,7 +227,7 @@ $ps = [PowerShell]::Create().AddScript({
                 }
                 default {
                     # Custom and embedded types can have resource-specific JSON representations.
-                    @{}
+                    if ($IsClass) { @{ type = 'object' } } else { @{} }
                 }
             }
 
@@ -228,21 +237,71 @@ $ps = [PowerShell]::Create().AddScript({
 
             if ($Values.Count -gt 0) {
                 if ($schema.type -contains 'integer' -or $schema.type -contains 'number') {
-                    $schema.enum = @($Values | ForEach-Object { [decimal]::Parse($_, [Globalization.CultureInfo]::InvariantCulture) })
-                    if ($AllowNull) {
-                        $schema.enum += $null
+                    $numericValues = [System.Collections.Generic.List[decimal]]::new()
+                    foreach ($value in $Values) {
+                        $parsed = [decimal]0
+                        if (-not [decimal]::TryParse($value, [Globalization.NumberStyles]::Number, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+                            Write-Warning -Message "Ignoring nonnumeric value map for property type '$PropertyType': '$value'. Numeric type validation is retained."
+                            return $schema
+                        }
+                        $numericValues.Add($parsed)
                     }
+                    $schema.enum = @($numericValues)
+                    if ($AllowNull) { $schema.enum += $null }
                 } else {
-                    $schema.anyOf = @(
-                        @{ enum = @($Values) }
-                        @{ type = 'string'; pattern = '^(?i:' + (($Values | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')$' }
-                    )
+                    # Enum values provide editor completions; the pattern accepts case variants.
+                    $schema.anyOf = @(@{ enum = @($Values) })
+                    if ($IgnoreCase) {
+                        $schema.anyOf += @{ type = 'string'; pattern = '^(?i:' + (($Values | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')$' }
+                    }
                     if ($AllowNull) {
                         $schema.anyOf += @{ type = 'null' }
                     }
                 }
             }
             return $schema
+        }
+
+        function ConvertTo-ResourceSchema {
+            [CmdletBinding()]
+            param($ResourceInfo, [string]$Type)
+
+            try {
+                $propertySchemas = @{
+                    '_inDesiredState' = @{ type = 'boolean'; readOnly = $true }
+                }
+                $requiredProperties = @()
+                foreach ($prop in $ResourceInfo.Properties) {
+                    if ($ResourceInfo.ImplementationDetail -eq 'ScriptBased' -and $prop.Name -in @('DependsOn', 'PsDscRunAsCredential')) {
+                        continue
+                    }
+                    $propertyName = ConvertTo-CanonicalPropertyName -Name $prop.Name
+                    $allowNull = Test-PropertyAllowsNull -Property $prop
+                    $propertySchemas[$propertyName] = ConvertTo-PropertySchema -PropertyType $prop.PropertyType -Values $prop.Values -AllowNull $allowNull -IsClass ([bool]$prop.IsClass) -IgnoreCase ($null -eq $prop.IgnoreCase -or $prop.IgnoreCase)
+                    if ($prop.IsReadOnly) {
+                        $propertySchemas[$propertyName].readOnly = $true
+                    }
+                    if ($prop.IsMandatory) {
+                        $requiredProperties += $propertyName
+                    }
+                }
+                $schema = @{
+                    '$schema' = 'https://json-schema.org/draft/2020-12/schema'
+                    type = 'object'
+                    properties = $propertySchemas
+                    additionalProperties = $false
+                }
+                if ($requiredProperties.Count -gt 0) {
+                    $schema.required = @($requiredProperties)
+                }
+                return $schema
+            } catch {
+                Write-Warning -Message "Failed to generate schema for '$Type': $_"
+                return @{
+                    '$schema' = 'https://json-schema.org/draft/2020-12/schema'
+                    type = 'object'
+                }
+            }
         }
 
         if ($jsonInput) {
@@ -311,26 +370,13 @@ $ps = [PowerShell]::Create().AddScript({
                     }
 
                     $properties = @()
-                    $propertySchemas = @{}
-                    $requiredProperties = @()
                     foreach ($prop in $DscResourceInfo.Properties) {
-                        $propertyName = ConvertTo-CanonicalPropertyName -Name $prop.Name
-                        $properties += $propertyName
-                        $allowNull = Test-PropertyAllowsNull -Property $prop
-                        $propertySchemas[$propertyName] = ConvertTo-PropertySchema -PropertyType $prop.PropertyType -Values $prop.Values -AllowNull $allowNull
-                        if ($prop.IsMandatory) {
-                            $requiredProperties += $propertyName
+                        if ($DscResourceInfo.ImplementationDetail -eq 'ScriptBased' -and $prop.Name -in @('DependsOn', 'PsDscRunAsCredential')) {
+                            continue
                         }
+                        $properties += ConvertTo-CanonicalPropertyName -Name $prop.Name
                     }
-
-                    $resourceSchema = @{
-                        '$schema' = 'https://json-schema.org/draft/2020-12/schema'
-                        type = 'object'
-                        properties = $propertySchemas
-                    }
-                    if ($requiredProperties.Count -gt 0) {
-                        $resourceSchema.required = @($requiredProperties)
-                    }
+                    $resourceSchema = ConvertTo-ResourceSchema -ResourceInfo $DscResourceInfo -Type $dscResource.Type
 
                     # OUTPUT dsc is expecting the following properties
                     [resourceOutput]@{
@@ -361,8 +407,10 @@ $ps = [PowerShell]::Create().AddScript({
                     if ($null -eq $dscResourceCache) {
                         throw ("DSC resource '{0}' module not found." -f $ResourceType)
                     }
-                    $resourceProperties = ($dscResourceCache | Where-Object -Property Type -EQ $ResourceType |
-                        Select-Object -First 1).DscResourceInfo.Properties
+                    $resourceInfo = ($dscResourceCache | Where-Object -Property Type -EQ $ResourceType |
+                        Select-Object -First 1).DscResourceInfo
+                    $resourceProperties = $resourceInfo.Properties
+                    $excludeLcmProperties = $resourceInfo.ImplementationDetail -eq 'ScriptBased'
 
                     $desiredState = $psDscAdapter.invoke(   { param($jsonInput, $type) Get-DscResourceObject -jsonInput $jsonInput -type $type }, $jsonInput, $ResourceType )
                     if ($null -eq $desiredState) {
@@ -387,11 +435,11 @@ $ps = [PowerShell]::Create().AddScript({
 
                     if ($Operation -eq 'Export') {
                         foreach ($instance in $actualState) {
-                            ConvertTo-ResourceState -State $instance -Properties $resourceProperties
+                            ConvertTo-ResourceState -State $instance -Properties $resourceProperties -ExcludeLcmProperties $excludeLcmProperties
                         }
                         exit 0
                     }
-                    $result = ConvertTo-ResourceState -State $actualState.Properties -Properties $resourceProperties
+                    $result = ConvertTo-ResourceState -State $actualState.Properties -Properties $resourceProperties -ExcludeLcmProperties $excludeLcmProperties
                     if ($Operation -eq 'Test') {
                         $result['_inDesiredState'] = $inDesiredState
                     }

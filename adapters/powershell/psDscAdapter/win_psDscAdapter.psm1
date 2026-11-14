@@ -3,7 +3,7 @@
 
 $global:ProgressPreference = 'SilentlyContinue'
 $ErrorActionPreference = 'Stop'
-$script:CurrentCacheSchemaVersion = 3
+$script:CurrentCacheSchemaVersion = 4
 
 trap {
     Write-Error -Message ($_ | Format-List -Force | Out-String)
@@ -775,46 +775,73 @@ function GetClassBasedProperties {
         }
         $typeDefinition = $typeDefinitionsByName[$className]
 
-        foreach ($member in $typeDefinition.Members) {
-            $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
-            if (($null -eq $property) -or ($property.IsStatic)) {
-                continue;
+        $pendingTypes = [System.Collections.Generic.Queue[object]]::new()
+        $pendingTypes.Enqueue($typeDefinition)
+        $visitedTypes = @{}
+        $orderedTypes = [System.Collections.Generic.List[object]]::new()
+        while ($pendingTypes.Count -gt 0) {
+            $currentType = $pendingTypes.Dequeue()
+            if ($null -eq $currentType -or $visitedTypes.ContainsKey($currentType.Name)) {
+                continue
             }
-            $skipProperty = $true
-            $isRequiredProperty = $false
-            foreach ($attr in $property.Attributes) {
-                if ($attr.TypeName.Name -eq 'DscProperty') {
-                    $skipProperty = $false
-                    foreach ($attrArg in $attr.NamedArguments) {
-                        if ($attrArg.ArgumentName -in @('Key', 'Mandatory') -and $attrArg.Argument.SafeGetValue()) {
-                            $isRequiredProperty = $true
-                            break
+            $visitedTypes[$currentType.Name] = $true
+            $orderedTypes.Insert(0, $currentType)
+            foreach ($baseType in $currentType.BaseTypes) {
+                $pendingTypes.Enqueue($typeDefinitionsByName[$baseType.TypeName.Name])
+            }
+        }
+        foreach ($currentType in $orderedTypes) {
+            foreach ($member in $currentType.Members) {
+                $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
+                if (($null -eq $property) -or ($property.IsStatic)) {
+                    continue;
+                }
+                $skipProperty = $true
+                $isRequiredProperty = $false
+                $isReadOnly = $false
+                foreach ($attr in $property.Attributes) {
+                    if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?DscProperty(Attribute)?$') {
+                        $skipProperty = $false
+                        foreach ($attrArg in $attr.NamedArguments) {
+                            if ($attrArg.ArgumentName -in @('Key', 'Mandatory') -and $attrArg.Argument.SafeGetValue()) {
+                                $isRequiredProperty = $true
+                            }
+                            if ($attrArg.ArgumentName -eq 'NotConfigurable' -and $attrArg.Argument.SafeGetValue()) {
+                                $isReadOnly = $true
+                            }
                         }
                     }
                 }
-            }
-            if ($skipProperty) {
-                continue;
-            }
+                if ($skipProperty) {
+                    continue;
+                }
 
-            [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
-            $prop.Name = $property.Name
-            $prop.PropertyType = $property.PropertyType.TypeName.Name
-            $prop.IsMandatory = $isRequiredProperty
-            $enumTypeName = $prop.PropertyType -replace '^(?:System\.)?Nullable\[(.*)\]$', '$1' -replace '\[\]$', ''
-            $enumType = $typeDefinitionsByName[$enumTypeName]
-            if ($enumType.IsEnum) {
-                $prop.Values = @($enumType.Members.Name)
-            }
-            foreach ($attr in $property.Attributes) {
-                if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?AllowNull(Attribute)?$') {
-                    $prop.AllowNull = $true
+                [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
+                $prop.Name = $property.Name
+                $prop.PropertyType = $property.PropertyType.TypeName.Name
+                $prop.IsMandatory = $isRequiredProperty
+                $prop.IsReadOnly = $isReadOnly
+                $enumTypeName = $prop.PropertyType -replace '^(?:System\.)?Nullable\[(.*)\]$', '$1' -replace '\[\]$', ''
+                $enumType = $typeDefinitionsByName[$enumTypeName]
+                if ($enumType.IsEnum) {
+                    $prop.Values = @($enumType.Members.Name)
                 }
-                if ($attr.TypeName.Name -eq 'ValidateSet') {
-                    $prop.Values = @($attr.PositionalArguments | ForEach-Object { $_.SafeGetValue() })
+                $prop.IsClass = $null -ne $enumType -and -not $enumType.IsEnum
+                foreach ($attr in $property.Attributes) {
+                    if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?AllowNull(Attribute)?$') {
+                        $prop.AllowNull = $true
+                    }
+                    if ($attr.TypeName.Name -match '^(System\.Management\.Automation\.)?ValidateSet(Attribute)?$') {
+                        $prop.Values = @($attr.PositionalArguments | ForEach-Object { $_.SafeGetValue() })
+                        foreach ($argument in $attr.NamedArguments) {
+                            if ($argument.ArgumentName -eq 'IgnoreCase') {
+                                $prop.IgnoreCase = $argument.Argument.SafeGetValue()
+                            }
+                        }
+                    }
                 }
+                $properties.Add($prop)
             }
-            $properties.Add($prop)
         }
         return $properties
     }
@@ -924,6 +951,9 @@ class DscResourcePropertyInfo {
     [string] $PropertyType
     [bool] $IsMandatory
     [bool] $AllowNull
+    [bool] $IsReadOnly
+    [bool] $IsClass
+    [bool] $IgnoreCase = $true
     [System.Collections.Generic.List[string]] $Values
 }
 

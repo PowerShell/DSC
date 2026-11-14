@@ -32,6 +32,9 @@ enum SchemaEnsure {
 }
 
 class SchemaBase {
+    [DscProperty(Key)]
+    [string] $Name
+
     [DscProperty()]
     [string] $Inherited
 
@@ -41,9 +44,6 @@ class SchemaBase {
 
 [DscResource()]
 class TestSchemaResource : SchemaBase {
-    [DscProperty(Key)]
-    [string] $Name
-
     [DscProperty(Mandatory)]
     [string] $RequiredValue
 
@@ -63,6 +63,16 @@ class TestSchemaResource : SchemaBase {
     [DscProperty()]
     [ValidateSet('One', 'Two')]
     [string] $Choice
+
+    [DscProperty()]
+    [System.Management.Automation.ValidateSetAttribute('One', 'Two', IgnoreCase = $false)]
+    [string] $ExactChoice
+
+    [DscProperty(NotConfigurable)]
+    [string] $Observed
+
+    [DscProperty()]
+    [SchemaBase] $Details
 
     [DscProperty()]
     [ValidateSet('One', 'Two')]
@@ -97,6 +107,14 @@ class TestSchemaResource : SchemaBase {
     [TestSchemaResource] Get() { return $this }
     [void] Set() {}
     [bool] Test() { return $true }
+
+    static [object[]] Export() {
+        return @([pscustomobject]@{ Name = 'export'; RequiredValue = 'value'; Selection = 1; Choice = 'One' })
+    }
+
+    static [object[]] Export([TestSchemaResource] $Filter) {
+        return @([pscustomobject]@{ Name = $Filter.Name; RequiredValue = 'value'; Selection = 1; Choice = 'One' })
+    }
 }
 
 [DscResource()]
@@ -142,6 +160,11 @@ class TestNullableResource {
         $schema = $resource.schema | ConvertTo-Json -Depth 100 -Compress
         $nullableResource = $resources | Where-Object -Property type -EQ 'TestSchemaResource/TestNullableResource'
         $nullableSchema = $nullableResource.schema | ConvertTo-Json -Depth 100 -Compress
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($scriptPath, [ref]$null, [ref]$null)
+        foreach ($functionName in @('ConvertTo-CanonicalPropertyName', 'Test-PropertyAllowsNull', 'ConvertTo-ResourceState', 'ConvertTo-PropertySchema', 'ConvertTo-ResourceSchema')) {
+            $functionAst = $ast.Find({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $functionName }, $true)
+            . ([scriptblock]::Create($functionAst.Extent.Text))
+        }
     }
 
     AfterAll {
@@ -213,6 +236,83 @@ class TestNullableResource {
             Should -BeTrue
     }
 
+    It 'Honors qualified case-sensitive validation attributes and read-only metadata' {
+        $resource.schema.properties.observed.readOnly | Should -BeTrue
+        $resource.schema.properties.details.type | Should -BeExactly 'object'
+        Test-Json -Json '{"name":"test","requiredValue":"value","exactChoice":"One","details":{}}' -Schema $schema -ErrorAction Stop |
+            Should -BeTrue
+        Test-Json -Json '{"name":"test","requiredValue":"value","exactChoice":"one"}' -Schema $schema -ErrorAction Ignore |
+            Should -BeFalse
+        Test-Json -Json '{"name":"test","requiredValue":"value","details":"invalid"}' -Schema $schema -ErrorAction Ignore |
+            Should -BeFalse
+    }
+
+    It 'Warns and retains numeric type validation for nonnumeric value maps' {
+        $warnings = @()
+        $numericSchema = ConvertTo-PropertySchema -PropertyType 'int' -Values @('1', 'Other') -WarningVariable warnings 3>$null
+        $warnings | Should -HaveCount 1
+        $numericSchema.ContainsKey('enum') | Should -BeFalse
+        Test-Json -Json '2' -Schema ($numericSchema | ConvertTo-Json) -ErrorAction Stop | Should -BeTrue
+        Test-Json -Json '"Other"' -Schema ($numericSchema | ConvertTo-Json) -ErrorAction Ignore | Should -BeFalse
+    }
+
+    It 'Normalizes object export states without removing legitimate class properties' {
+        $state = ConvertTo-ResourceState -State ([pscustomobject]@{ Name = 'test'; DependsOn = 'value' }) -Properties @()
+        $state.name | Should -BeExactly 'test'
+        $state.dependsOn | Should -BeExactly 'value'
+        $mofState = ConvertTo-ResourceState -State @{ Name = 'test'; DependsOn = 'LCM'; PsDscRunAsCredential = 'LCM' } -Properties @() -ExcludeLcmProperties $true
+        $mofState.Keys | Should -Not -Contain 'dependsOn'
+        $mofState.Keys | Should -Not -Contain 'psDscRunAsCredential'
+    }
+
+    It 'Filters only LCM metadata from script-based schemas' {
+        $metadata = @{
+            ImplementationDetail = 'ScriptBased'
+            Properties = @(
+                [pscustomobject]@{ Name = 'Name'; PropertyType = '[string]'; IsMandatory = $true }
+                [pscustomobject]@{ Name = 'DependsOn'; PropertyType = '[string[]]' }
+                [pscustomobject]@{ Name = 'PsDscRunAsCredential'; PropertyType = '[PSCredential]' }
+                [pscustomobject]@{ Name = 'State'; PropertyType = '[string]'; Values = @('Running', 'Stopped') }
+            )
+        }
+        $mofSchema = ConvertTo-ResourceSchema -ResourceInfo $metadata -Type 'Test/Script'
+        $mofSchema.properties.Keys | Should -Not -Contain 'dependsOn'
+        $mofSchema.properties.Keys | Should -Not -Contain 'psDscRunAsCredential'
+        Test-Json -Json '{"name":"test","state":"running"}' -Schema ($mofSchema | ConvertTo-Json -Depth 100) -ErrorAction Stop | Should -BeTrue
+        $metadata.ImplementationDetail = 'ClassBased'
+        $classSchema = ConvertTo-ResourceSchema -ResourceInfo $metadata -Type 'Test/Class'
+        $classSchema.properties.Keys | Should -Contain 'dependsOn'
+        $classSchema.properties.Keys | Should -Contain 'psDscRunAsCredential'
+    }
+
+    It 'Isolates a schema-generation failure and warns with the resource type' {
+        Mock ConvertTo-PropertySchema {
+            param($PropertyType)
+            if ($PropertyType -eq 'BrokenType') { throw 'Invalid metadata' }
+            return @{ type = 'string' }
+        }
+        $warnings = @()
+        $broken = ConvertTo-ResourceSchema -ResourceInfo @{ Properties = @(@{ Name = 'Name'; PropertyType = 'BrokenType' }) } -Type 'Test/Broken' -WarningVariable warnings 3>$null
+        $healthy = ConvertTo-ResourceSchema -ResourceInfo @{ Properties = @(@{ Name = 'Name'; PropertyType = 'string'; IsMandatory = $true }) } -Type 'Test/Healthy'
+        $warnings | Should -HaveCount 1
+        $warnings[0].Message | Should -Match 'Test/Broken.*Invalid metadata'
+        Test-Json -Json '{"unknown":"allowed"}' -Schema ($broken | ConvertTo-Json) -ErrorAction Stop | Should -BeTrue
+        $healthy.required | Should -Be @('name')
+        $healthy.properties.name.type | Should -BeExactly 'string'
+    }
+
+    It 'Discovers inherited keys and attribute metadata through the Windows AST reader' {
+        $windowsAst = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $adapterPath 'psDscAdapter/win_psDscAdapter.psm1'), [ref]$null, [ref]$null)
+        $propertyClass = $windowsAst.Find({ param($node) $node -is [System.Management.Automation.Language.TypeDefinitionAst] -and $node.Name -eq 'DscResourcePropertyInfo' }, $true)
+        $reader = $windowsAst.Find({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'GetClassBasedProperties' }, $true)
+        $readProperties = [scriptblock]::Create('param($Path)' + "`n" + $propertyClass.Extent.Text + "`n" + $reader.Extent.Text + "`n" + 'GetClassBasedProperties -filePath $Path -className TestSchemaResource')
+        $windowsProperties = & $readProperties (Join-Path $modulePath 'TestSchemaResource.psd1')
+        ($windowsProperties | Where-Object Name -EQ Name).IsMandatory | Should -BeTrue
+        ($windowsProperties | Where-Object Name -EQ Observed).IsReadOnly | Should -BeTrue
+        ($windowsProperties | Where-Object Name -EQ ExactChoice).IgnoreCase | Should -BeFalse
+        ($windowsProperties | Where-Object Name -EQ Details).IsClass | Should -BeTrue
+    }
+
     It 'Accepts explicit nullability for <Case>' -ForEach @(
         @{ Case = 'required nullable value types'; Json = '{"name":"test","requiredCount":null,"requiredEnsure":null}' }
         @{ Case = 'an AllowNull scalar'; Json = '{"name":"test","requiredCount":1,"requiredEnsure":"present","choice":null}' }
@@ -268,6 +368,8 @@ class TestNullableResource {
         @{ Reason = 'a null SecureString'; Json = '{"name":"test","requiredValue":"value","secret":null}' }
         @{ Reason = 'a non-object credential'; Json = '{"name":"test","requiredValue":"value","credential":"secret"}' }
         @{ Reason = 'noncanonical required property casing'; Json = '{"name":"test","RequiredValue":"value"}' }
+        @{ Reason = 'noncanonical optional property casing'; Json = '{"name":"test","requiredValue":"value","Count":2}' }
+        @{ Reason = 'an unknown property'; Json = '{"name":"test","requiredValue":"value","unknown":"value"}' }
     ) {
         Test-Json -Json $Json -Schema $schema -ErrorAction Ignore | Should -BeFalse
     }
@@ -316,6 +418,8 @@ class TestNullableResource {
                 $windowsResource.requireAdapter | Should -BeExactly $expectedAdapter
                 $windowsResource.schema.properties.Count.type | Should -BeExactly 'integer'
                 $windowsResource.schema.properties.Names.items.type | Should -Contain 'string'
+                $windowsResource.schema.required | Should -Contain 'name'
+                $windowsResource.schema.properties.observed.readOnly | Should -BeTrue
                 $windowsSchema = $windowsResource.schema | ConvertTo-Json -Depth 100
                 Test-Json -Json '{"name":"test","requiredValue":"value","ensure":"present"}' -Schema $windowsSchema -ErrorAction Stop |
                     Should -BeTrue
@@ -335,6 +439,8 @@ class TestNullableResource {
                     $scriptResource = $windowsResources | ConvertFrom-Json |
                         Where-Object -Property type -EQ 'TestScriptBaseDSC/CredentialValidation'
                     $scriptResource.schema.properties.Credential.type | Should -Contain 'object'
+                    $scriptResource.schema.properties.PSObject.Properties.Name | Should -Not -Contain 'dependsOn'
+                    $scriptResource.schema.properties.PSObject.Properties.Name | Should -Not -Contain 'psDscRunAsCredential'
                     $scriptSchema = $scriptResource.schema | ConvertTo-Json -Depth 100
                     Test-Json -Json '{"name":"test","credential":{"username":"user","password":"secret"}}' -Schema $scriptSchema -ErrorAction Stop |
                         Should -BeTrue
@@ -353,10 +459,37 @@ class TestNullableResource {
         ($out | ConvertFrom-Json).properties.Count.type | Should -BeExactly 'integer'
     }
 
+    It 'Preserves embedded schemas in adapter-filtered CLI listing' {
+        $out = dsc resource list 'TestSchemaResource/TestSchemaResource' --adapter Microsoft.Adapter/PowerShell 2> (Join-Path $TestDrive 'list-error.log')
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw (Join-Path $TestDrive 'list-error.log'))
+        $listed = $out | ConvertFrom-Json
+        $listed.schema.type | Should -BeExactly 'object'
+        $listed.schema.required | Should -Be @('name', 'requiredValue')
+    }
+
+    It 'Exports canonical schema-conforming instances with <FilterName>' -ForEach @(
+        @{ FilterName = 'no filter'; Arguments = @(); ExpectedName = 'export' }
+        @{ FilterName = 'a partial filter'; Arguments = @('-i', '{"name":"filtered"}'); ExpectedName = 'filtered' }
+    ) {
+        $out = dsc resource export -r 'TestSchemaResource/TestSchemaResource' @Arguments 2> (Join-Path $TestDrive 'export-error.log')
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw (Join-Path $TestDrive 'export-error.log'))
+        $exported = ($out | ConvertFrom-Json).resources[0].properties
+        $exported.name | Should -BeExactly $ExpectedName
+        $exported.PSObject.Properties.Name -ccontains 'Name' | Should -BeFalse
+        Test-Json -Json ($exported | ConvertTo-Json -Depth 100) -Schema $schema -ErrorAction Stop | Should -BeTrue
+    }
+
     It 'Rejects invalid resource input through the DSC CLI' {
         $null = dsc resource get -r 'TestSchemaResource/TestSchemaResource' -i '{"name":"test","requiredValue":"value","count":"bad"}' 2> (Join-Path $TestDrive 'invalid-error.log')
         $LASTEXITCODE | Should -Not -Be 0
         Get-Content -Raw (Join-Path $TestDrive 'invalid-error.log') | Should -Match 'integer'
+    }
+
+    It 'Allows configuration metadata without passing it to the PowerShell resource' {
+        $json = '{"$schema":"https://aka.ms/dsc/schemas/v3/bundled/config/document.json","resources":[{"name":"test","type":"TestSchemaResource/TestSchemaResource","metadata":{"test":"value"},"properties":{"name":"test","requiredValue":"value","selection":1,"choice":"One"}}]}'
+        $out = dsc config get -i $json 2> (Join-Path $TestDrive 'metadata-error.log')
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw (Join-Path $TestDrive 'metadata-error.log'))
+        ($out | ConvertFrom-Json).results[0].result.actualState.name | Should -BeExactly 'test'
     }
 
     It 'Returns schema-conforming canonical state for <Operation>' -ForEach @(

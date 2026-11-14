@@ -80,6 +80,9 @@
         "return": "state"
     },
     "export": {
+        "schema": {
+            "embedded": { "type": "object" }
+        },
         "executable": "powershell",
         "args": [
             "-NoLogo",
