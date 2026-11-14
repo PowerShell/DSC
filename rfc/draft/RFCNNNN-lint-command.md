@@ -18,9 +18,10 @@ at runtime today, or doesn't report at all. It reports each problem as a diagnos
 a rule identifier, a message, and a JSON pointer to the location in the document, so authors,
 editors, and CI pipelines can act on the result.
 
-The linting engine lives in `dsc-lib` so other hosts can reuse it. The first phase covers
-configuration documents. A second phase extends the same command to resource and extension
-manifests, as suggested in the discussion of [#591][01].
+The linting engine lives in `dsc-lib` so other hosts can reuse it. The command ships as the
+`dsclint` executable, and `dsc lint` runs it through the command plug-ins proposed in
+[#1805][05]. The first phase covers configuration documents. A second phase extends the same
+command to resource and extension manifests, as suggested in the discussion of [#591][01].
 
 ## Motivation
 
@@ -58,12 +59,15 @@ and suggested growing that command into static analysis.
 
 This proposal answers those points as follows:
 
-- Linting is part of the core `dsc` executable and of `dsc-lib`. The rules need the document
-  schema, the expression parser, the function registry, resource discovery, and the dependency
-  resolution logic, all of which live in `dsc-lib`. Putting the engine in the library lets the
-  VS Code extension, the MCP server, and other hosts reuse it without spawning a process.
-  Extensions can't contribute rules in the first version; a `lint` extension capability is a
-  possible later addition.
+- The linting engine is part of `dsc-lib`. The rules need the document schema, the expression
+  parser, the function registry, resource discovery, and the dependency resolution logic, all of
+  which live in `dsc-lib`. Putting the engine in the library lets the VS Code extension, the MCP
+  server, and other hosts reuse it without spawning a process. Extensions can't contribute rules
+  in the first version; a `lint` extension capability is a possible later addition.
+- The command is a plug-in, not a built-in subcommand. The working group preferred to extend
+  `dsc` with commands that ship as their own executables, the way `git` and the .NET CLI do
+  ([#461][06]). The linter ships as `dsclint` with a plug-in manifest, and `dsc lint` runs it.
+  This RFC therefore depends on the command plug-ins RFC ([#1805][05]).
 - One command covers every document kind. `dsc lint` detects the kind of document from its
   `$schema` property. The first phase implements configuration documents and rejects manifests
   with a clear diagnostic; the second phase adds manifests.
@@ -169,6 +173,28 @@ dsc lint [OPTIONS] (--file <FILE>... | --input <INPUT>)
 dsc lint --list-rules [--output-format <FORMAT>]
 ```
 
+`lint` is a plug-in command. The `dsclint` executable ships next to `dsc` with a plug-in manifest
+that registers the `lint` command:
+
+```json
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/plugin/manifest.json",
+  "type": "Microsoft.DSC/Lint",
+  "version": "3.4.0",
+  "description": "Check configuration documents for problems without applying them",
+  "command": {
+    "name": "lint",
+    "executable": "dsclint"
+  }
+}
+```
+
+`dsc lint`, `dsc Microsoft.DSC/Lint`, and `dsclint` accept the same options and return the same
+output and exit code. `dsc` passes the arguments after `lint` to the linter unchanged, together
+with standard input, output, and error. `dsc --help` lists `lint` under the plug-in commands, and
+`dsc help lint` shows the linter's own help. When plug-ins are disabled with the `plugins.enabled`
+setting, `dsc lint` isn't available and `dsclint` still works.
+
 | Option                        | Description                                                                                                                                                      |
 | :---------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `-f, --file <FILE>`           | A document to lint. `-` reads stdin. The option can be repeated; the result then carries the file name on each diagnostic.                                       |
@@ -182,9 +208,18 @@ dsc lint --list-rules [--output-format <FORMAT>]
 | `--list-rules`                | List the rules with the level each reports at in this run instead of linting.                                                                                    |
 | `-o, --output-format <FORMAT>`| `json`, `pretty-json`, or `yaml`, with the same defaults as the other commands.                                                                                  |
 
-The `-p` short option is bound to `--parameters` as it is for `dsc config`; the global
-`--progress-format` option keeps its `-p` short form because it is only accepted before the
-subcommand.
+The `-p` short option is bound to `--parameters` as it is for `dsc config`. The global
+`--progress-format` option keeps its `-p` short form, because `dsc` only reads the options before
+`lint` and leaves everything after it to the linter.
+
+The linter also accepts `--trace-level` and `--trace-format`. When they're given before `lint`,
+`dsc` resolves them and passes the result to the linter in the `DSC_TRACE_LEVEL` and
+`DSC_TRACE_FORMAT` environment variables. The same option after `lint` takes precedence:
+
+```sh
+dsc --trace-level info lint --file ./demo.dsc.yaml
+dsc lint --trace-level info --file ./demo.dsc.yaml
+```
 
 ### Document kind
 
@@ -230,10 +265,15 @@ Every rule has a default level: `error`, `warning`, `info`, or `off`. The effect
 run is resolved in this order, lowest precedence first:
 
 1. The rule's default.
-1. The `lint.rules.<id>.level` setting in `dsc_default.settings.json` and `dsc.settings.json`.
+1. The `lint.rules.<id>.level` setting in the settings files. The user file overrides the machine
+   file, and the workspace file overrides the user file.
 1. The `--rule` options.
 1. The `lint.rules.<id>.level` setting in the policy settings file, which wins so that an
    administrator can enforce a rule.
+
+The `lint` section is a field of the DSC settings files, so `dsc` and `dsclint` read the same
+values. A `lint` section that doesn't match the settings schema is handled like any other invalid
+setting: that file fails to load with a warning and the run continues without it.
 
 Unknown rules in the settings files are logged and ignored so a stale setting can't break every
 run. The fixed rules `parse-error`, `schema-invalid`, `unsupported-document-type`, and
@@ -245,9 +285,12 @@ run. The fixed rules `parse-error`, `schema-invalid`, `unsupported-document-type
 | :--: | :-------------------------------------------------------------------------------------- |
 | `0`  | No diagnostic at or above the `--fail-on` level.                                        |
 | `1`  | Invalid arguments, such as an unknown rule, a malformed `--rule` value, or no input.    |
-| `2`  | Another failure, such as an unreadable `lint` settings section.                         |
+| `2`  | Another failure in the linter itself.                                                   |
+| `3`  | The result couldn't be written in the requested output format.                          |
 | `4`  | A document file or the parameters couldn't be read, or the parameters are malformed.    |
 | `5`  | At least one diagnostic at or above the `--fail-on` level.                              |
+
+`dsc lint` returns the exit code of `dsclint` unchanged.
 
 A document that doesn't parse or doesn't validate against the schema still produces the full
 result object on stdout and exits with code `5`, so a pipeline always has structured output to
@@ -411,8 +454,11 @@ The engine is the `dsc_lib::lint` module:
   `validate_literal_args`, so the rules use the same metadata and messages as the runtime without
   evaluating anything. Schema validation gains `validate_json_all`, which returns every violation
   with its instance path instead of only the first.
-- The CLI reads the raw document text instead of normalizing it to JSON first, so syntax errors
+- `dsclint` reads the raw document text instead of normalizing it to JSON first, so syntax errors
   become diagnostics rather than an early exit.
+- `dsclint` is a thin host: it parses the arguments, loads the settings, calls the engine, and
+  writes the result. The `dsc` MCP server is a second host. It calls the engine in process
+  through the `lint_dsc_config` tool and doesn't start `dsclint`.
 
 ### Relationship to `dsc config validate`
 
@@ -428,14 +474,21 @@ without changing its output shape. That change is out of scope for this RFC.
   Manifests would then need `dsc resource lint` and `dsc extension lint`. A single top-level
   command was chosen because it mirrors `bicep lint`, matches the original proposal in
   [#591][01], gives one entry point for every document kind, and accepts several files in one run.
+- **A built-in `dsc lint` subcommand.** The first version of this RFC compiled the command into
+  the `dsc` executable. That is the simplest to ship and needs no plug-in system, but every new
+  command would then grow `dsc` itself. The working group preferred command plug-ins
+  ([#1805][05]), with the linter as the first one. The user-facing command, options, output, and
+  exit codes are the same either way, so this RFC can fall back to a built-in subcommand if the
+  plug-in RFC isn't accepted.
 - **Growing `dsc config validate`.** [#842][02] suggested a `--schema-only` flag for the internal
   callers and static analysis in `validate`. That mixes a pass-or-fail contract used by three
   resources with a diagnostics contract meant for people and pipelines. Keeping `validate` as is
   and building `lint` next to it avoids a breaking change for the resources.
-- **Linting as an extension.** Extensions today provide discovery, import, and secrets, and run as
-  separate processes. The rules need the parser, function registry, schema, and discovery, which
-  are internal to `dsc-lib`, and editors want to lint in process. Extension-contributed rules
-  remain possible later through a new capability.
+- **Linting as an extension.** Extensions today provide discovery, import, and secrets, and `dsc`
+  calls them during an operation. A plug-in is different: it adds a command the user runs. The
+  rules need the parser, function registry, schema, and discovery, which `dsclint` gets by linking
+  `dsc-lib`, and editors want to lint in process. Extension-contributed rules remain possible
+  later through a new capability.
 - **Relying on Bicep's linter.** Bicep can add DSC-specific rules for Bicep authors, but it
   doesn't help the YAML and JSON authoring community, and the compiled JSON can still be checked
   with `dsc lint`.
@@ -455,8 +508,16 @@ without changing its output shape. That change is out of scope for this RFC.
   and linting manifests.
 - [#842][02] - Asks `dsc config validate` to reject duplicate resource names.
 - [#1429][04] - Deprecates copy loops, which the `copy-loop-deprecated` rule reports.
+- [#1805][05] - RFC for command plug-ins, which this RFC depends on for `dsc lint`.
+- [#461][06] - Asks for a way to extend `dsc` with new commands.
+- [#1808][07] - Implements command plug-ins.
+- [#1809][08] - Implements `dsclint` and the `dsc lint` plug-in command on top of [#1808][07].
 
 [01]: https://github.com/PowerShell/DSC/issues/591
 [02]: https://github.com/PowerShell/DSC/issues/842
 [03]: https://www.rfc-editor.org/rfc/rfc6901
 [04]: https://github.com/PowerShell/DSC/issues/1429
+[05]: https://github.com/PowerShell/DSC/pull/1805
+[06]: https://github.com/PowerShell/DSC/issues/461
+[07]: https://github.com/PowerShell/DSC/pull/1808
+[08]: https://github.com/PowerShell/DSC/pull/1809
