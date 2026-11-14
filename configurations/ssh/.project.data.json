@@ -1,0 +1,9 @@
+{
+    "Name": "configurations/ssh",
+    "Kind": "Configuration",
+    "CopyFiles": {
+        "All": [
+            "ssh_subsystem.dsc.yaml"
+        ]
+    }
+}

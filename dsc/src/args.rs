@@ -70,6 +70,8 @@ pub struct Args {
     pub progress_format: Option<ProgressFormat>,
     #[clap(long, help = t!("args.ignoreSettingsFile").to_string(), num_args=0..=1, default_missing_value="true", require_equals = true)]
     pub ignore_settings_file: Option<bool>,
+    #[clap(long, value_name = "URI", help = t!("args.target").to_string())]
+    pub target: Option<String>,
 }
 
 impl From<&Args> for dsc_lib::settings::sources::CommandLineData {
