@@ -124,6 +124,24 @@ Usage: dsc [OPTIONS] <COMMAND>
 For more information, try '--help'.
 ```
 
+### Choose between plug-ins with the same command
+
+When two plug-ins define the same command, the one DSC finds first provides it. DSC warns about
+the other, and either plug-in can be run by its type name:
+
+```sh
+dsc lint --file ./demo.dsc.yaml
+```
+
+```text
+WARN Command 'lint' is provided by plug-in 'Microsoft.DSC/Lint'. Plug-in 'OpenDSC/Lint' defines
+the same command and is shadowed. To run it, use 'dsc OpenDSC/Lint'.
+```
+
+```sh
+dsc OpenDSC/Lint --file ./demo.dsc.yaml
+```
+
 ### Get help for a plug-in command
 
 `dsc lint --help` and `dsc help lint` both show the help that the plug-in prints.
@@ -288,17 +306,24 @@ DSC applies these rules to what it finds:
    extensions.
 1. When plug-ins of different types use the same command name, the one found first in the search
    order provides the command. Within one directory the type name that sorts first wins. The
-   others are shadowed: `dsc plugin list` marks them, and DSC writes an informational trace
-   message naming them when the command is invoked.
+   others are shadowed: `dsc plugin list` marks them, and they can only be run by their type
+   name, as described in [Dispatch](#dispatch).
 
 ### Dispatch
 
 1. DSC parses its own options and the first positional argument. Built-in commands and their
    aliases match first.
-1. Any other first positional argument is taken as a plug-in command name. DSC keeps every
+1. Any other first positional argument names a plug-in, in one of two ways. DSC keeps every
    argument after it as written, including `--help`, `--version`, and `--`, and doesn't interpret
    them.
-1. When no plug-in provides the command, or plug-ins are disabled, DSC reports the unrecognized
+   - A command name, like `lint`, runs the plug-in that provides the command. When other plug-ins
+     are shadowed for that command, DSC writes a warning that names the plug-in it runs and the
+     shadowed plug-ins, and shows how to run each one by its type name.
+   - A fully qualified type name, like `OpenDSC/Lint`, runs that plug-in, whether it is shadowed
+     or not, and writes no warning. A type name always contains a `/` and a command name never
+     does, so the two forms can't be confused with each other or with a built-in command. Type
+     names are compared case-insensitively, as everywhere in DSC.
+1. When no plug-in matches the name, or plug-ins are disabled, DSC reports the unrecognized
    subcommand error and exits with code `2`, as it does today. The suggestion in the error covers
    built-in commands and plug-in commands.
 1. DSC resolves `command.executable`. When it can't be found or started, DSC reports the error
@@ -325,7 +350,7 @@ DSC sets these variables for the plug-in:
 | :------------------------- | :---------------------------------------------------------------------------------- |
 | `DSC_EXE`                  | The absolute path of the `dsc` executable that started the plug-in.                 |
 | `DSC_VERSION`              | The semantic version of that `dsc`.                                                 |
-| `DSC_PLUGIN_COMMAND`       | The command name the plug-in was invoked as.                                        |
+| `DSC_PLUGIN_COMMAND`       | The name the plug-in was invoked as: its command name or its type name.             |
 | `DSC_PLUGIN_DIR`           | The directory that contains the plug-in manifest.                                   |
 | `DSC_TRACE_LEVEL`          | The resolved trace level. DSC already sets it for every child process.              |
 | `DSC_TRACE_FORMAT`         | The resolved trace format.                                                          |
@@ -346,7 +371,10 @@ given a different meaning without a new RFC.
 
 - `dsc --help` lists the plug-in commands with their descriptions under a separate **Plug-in
   commands** heading, sorted by name.
-- `dsc <command> --help` reaches the plug-in unchanged, like every other argument.
+- Type names aren't listed in the help or in completion scripts. `dsc plugin list` shows the type
+  name of every plug-in.
+- `dsc <command> --help` reaches the plug-in unchanged, like every other argument. A type name
+  works wherever a command name does, including after `dsc help`.
 - `dsc help <command> [<subcommand>...]` runs the plug-in with the subcommands followed by
   `--help`.
 
@@ -376,7 +404,8 @@ on a terminal and one JSON object per line otherwise.
 }
 ```
 
-`shadowed` is `true` when another plug-in found earlier provides the same command. `manifest`
+`shadowed` is `true` when another plug-in found earlier provides the same command. A shadowed
+plug-in still runs when it is invoked by its `type`, like `dsc OpenDSC/Lint`. `manifest`
 holds the manifest as DSC read it. The object is published as a schema under
 `outputs/plugin/list.json`.
 
@@ -580,7 +609,8 @@ This RFC takes the following from them:
   and name (`HELM_PLUGIN_DIR`, `HELM_PLUGIN_NAME`).
 - Help has a separate group for plug-in commands, as in kubectl and the GitHub CLI, and
   `help <command>` runs the plug-in with `--help`, as in cargo and Docker.
-- A second plug-in with the same name is reported as shadowed, as `kubectl plugin list` does.
+- A second plug-in with the same name is reported as shadowed, as `kubectl plugin list` does,
+  and stays reachable by an unambiguous name, as `gh extension exec` allows.
 - A manifest carries the metadata and a static file next to it carries the completions, read only
   when completions are generated, as in Helm.
 
@@ -646,8 +676,8 @@ This RFC takes the following from them:
   optional.
 - **Moving built-in commands out.** `completer`, `server`, and `schema` could become plug-ins to
   shrink the engine further. This RFC doesn't propose it.
-- **Further ideas left out of the first version.** A way to run a shadowed plug-in by type, like
-  `gh extension exec`. A property that states the `dsc` versions a plug-in requires, like the
+- **Further ideas left out of the first version.** A property that states the `dsc` versions a
+  plug-in requires, like the
   minimum version of the Azure CLI extensions. An allow list of plug-in types in the settings.
   Plug-ins found through discovery extensions. Plug-in commands as tools of the MCP server.
 
