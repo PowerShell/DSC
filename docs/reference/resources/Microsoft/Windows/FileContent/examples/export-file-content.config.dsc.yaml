@@ -1,0 +1,6 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Test File
+    type: Microsoft.Filesystem.File/Content
+    properties:
+      path: C:\dsc\config\file-content\test.txt
