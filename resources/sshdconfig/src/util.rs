@@ -3,7 +3,7 @@
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
-use std::{path::PathBuf, process::Command};
+use std::{path::PathBuf, process::{Command, Output}};
 use tracing::{debug, warn, Level};
 use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
@@ -194,6 +194,10 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<St
     let output = command.output()
         .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
 
+    parse_sshd_output(output)
+}
+
+fn parse_sshd_output(output: Output) -> Result<String, SshdConfigError> {
     if output.status.success() {
         let stdout = String::from_utf8(output.stdout)
             .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
@@ -201,11 +205,6 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<St
     } else {
         let stderr = String::from_utf8(output.stderr)
             .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
-        if stderr.contains("sshd: no hostkeys available") || stderr.contains("Permission denied") {
-            return Err(SshdConfigError::CommandError(
-                t!("util.sshdElevation").to_string()
-            ));
-        }
         Err(SshdConfigError::CommandError(stderr))
     }
 }
@@ -316,5 +315,47 @@ pub fn read_sshd_config(input: Option<PathBuf>) -> Result<String, SshdConfigErro
         Ok(sshd_config_content)
     } else {
         Err(SshdConfigError::FileNotFound(filepath.display().to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[cfg(unix)]
+    use std::os::unix::process::ExitStatusExt;
+    #[cfg(windows)]
+    use std::os::windows::process::ExitStatusExt;
+    use std::process::ExitStatus;
+
+    #[test]
+    fn preserves_sshd_failure_diagnostics() {
+        for stderr in [
+            "Unable to load host key: missing_key\nsshd: no hostkeys available -- exiting.\n",
+            "Unable to load host key: protected_key: Permission denied\n",
+            "sshd_config line 1: Bad configuration option: InvalidOption\n",
+        ] {
+            let output = Output {
+                status: ExitStatus::from_raw(1),
+                stdout: Vec::new(),
+                stderr: stderr.as_bytes().to_vec(),
+            };
+
+            match parse_sshd_output(output) {
+                Err(SshdConfigError::CommandError(message)) => assert_eq!(message, stderr),
+                result => panic!("Expected original sshd diagnostic, got {result:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn returns_sshd_stdout_on_success() {
+        let stdout = "port 22\npasswordauthentication yes\n";
+        let output = Output {
+            status: ExitStatus::from_raw(0),
+            stdout: stdout.as_bytes().to_vec(),
+            stderr: b"diagnostic on stderr\n".to_vec(),
+        };
+
+        assert_eq!(parse_sshd_output(output).unwrap(), stdout);
     }
 }
