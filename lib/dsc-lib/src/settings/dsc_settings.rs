@@ -123,6 +123,8 @@ pub struct DscSettings {
     ///   directories: []
     ///   append_env_path: true
     ///   restricted: false
+    /// plugins:
+    ///   enabled: true
     /// ```
     #[schemars(
         title = schema_i18n!("fields.default.title"),
@@ -1319,6 +1321,7 @@ impl DscSettings {
 
         resolve_field!(tracing => [level, format]);
         resolve_field!(resource_path => [append_env_path, directories, restricted]);
+        resolve_field!(plugins => [enabled]);
     }
 
     /// Resolves the policy settings and applies them to the resolved settings.
@@ -1371,6 +1374,7 @@ impl DscSettings {
         // Resolve remaining fields as normal.
         resolve_field!(tracing => [level, format]);
         resolve_field!(resource_path => [append_env_path, directories, restricted]);
+        resolve_field!(plugins => [enabled]);
     }
 
     /// Indicates whether the folder containing the DSC policy settings file has

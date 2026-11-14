@@ -934,6 +934,30 @@ parsingExpression = "Parsing expression"
 unknownExpressionType = "Unknown expression type: %{kind}"
 skippingExpressionProcessing = "Skipping expression processing"
 
+[plugins.command_name]
+invalidName = "invalid plug-in command name '%{name}': %{err}"
+emptyName = "command name cannot be an empty string"
+invalidFirstCharacter = "command name must start with a lowercase ASCII letter, but starts with '%{character}'"
+invalidCharacters = "command name can only contain lowercase ASCII letters, ASCII digits, and hyphens, but contains '%{characters}'"
+misplacedHyphen = "command name cannot end with a hyphen or contain consecutive hyphens"
+
+[plugins.discovery]
+disabled = "Skipping plug-in discovery because the `%{setting}` setting is `false`"
+directoryNotReadable = "Skipping directory '%{path}' because it can't be read"
+failedLoadManifest = "Failed to load plug-in manifest '%{path}': %{err}"
+failedLoadManifestList = "Skipping manifest list '%{path}' for plug-in discovery because it can't be parsed: %{err}"
+pluginsNotArray = "Skipping the plug-ins in manifest list '%{path}' because the `plugins` property isn't an array"
+conditionNotMet = "Condition '%{condition}' not met, skipping plug-in '%{plugin}' in manifest '%{path}'"
+reservedCommand = "Skipping plug-in '%{plugin}' in manifest '%{path}' because its command name '%{command}' is the name of a built-in command"
+newerVersionFound = "Using version %{version} of plug-in '%{plugin}' from manifest '%{path}'"
+pluginFound = "Plug-in '%{plugin}' version %{version} found for command '%{command}'"
+pluginShadowed = "Plug-in '%{plugin}' is shadowed because a plug-in found earlier provides the command '%{command}'"
+
+[plugins.plugin_manifest]
+pluginManifestSchemaTitle = "Plug-in manifest schema URI"
+pluginManifestSchemaDescription = "Defines the JSON Schema the plug-in manifest adheres to."
+pathNotRelative = "The `manifestRelativePath` argument '%{path}' of plug-in '%{plugin}' must be a non-empty path relative to the directory that contains the manifest"
+
 [dscerror]
 adapterNotFound = "Adapter not found"
 booleanConversion = "Function boolean argument conversion"

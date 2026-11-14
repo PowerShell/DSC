@@ -10,6 +10,7 @@ use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq, TypeNameFilter}
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Deserialize;
+use std::ffi::OsString;
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
@@ -123,6 +124,11 @@ pub enum SubCommand {
         #[clap(subcommand)]
         subcommand: FunctionSubCommand,
     },
+    #[clap(name = "plugin", about = t!("args.pluginAbout").to_string())]
+    Plugin {
+        #[clap(subcommand)]
+        subcommand: PluginSubCommand,
+    },
     #[clap(name = "server", alias = "mcp", about = t!("args.serverAbout").to_string())]
     Server,
     #[clap(name = "resource", about = t!("args.resourceAbout").to_string())]
@@ -137,6 +143,11 @@ pub enum SubCommand {
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string(), value_enum)]
         output_format: Option<OutputFormat>,
     },
+    /// A command that isn't built in, which a command plug-in may provide. The first item is the
+    /// command name and the rest are the arguments for the plug-in, exactly as the user specified
+    /// them.
+    #[clap(external_subcommand)]
+    External(Vec<OsString>),
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -224,6 +235,18 @@ pub enum ExtensionSubCommand {
         /// Optional extension name to filter the list
         #[clap(default_value_t)]
         extension_name: TypeNameFilter,
+        #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
+        output_format: Option<ListOutputFormat>,
+    },
+}
+
+#[derive(Debug, PartialEq, Eq, Subcommand)]
+pub enum PluginSubCommand {
+    #[clap(name = "list", about = t!("args.listPluginAbout").to_string())]
+    List {
+        /// Optional plug-in type name to filter the list
+        #[clap(default_value_t)]
+        plugin_name: TypeNameFilter,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<ListOutputFormat>,
     },
@@ -358,6 +381,7 @@ pub enum SchemaType {
     GetResult,
     Include,
     ManifestList,
+    PluginManifest,
     ResolveResult,
     Resource,
     ResourceGetResult,

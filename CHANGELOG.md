@@ -77,6 +77,28 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Added
 
+- Added command plug-ins, which add a top-level command to `dsc` without being part of the DSC
+  executable. A plug-in is defined by a plug-in manifest, a file whose name ends with
+  `.dsc.plugin.json`, `.dsc.plugin.yaml`, or `.dsc.plugin.yml`, or by the new `plugins` property
+  of a manifest list. When the first argument to `dsc` isn't a built-in command, DSC runs the
+  plug-in that defines the command with the remaining arguments and the standard streams of `dsc`,
+  and exits with the plug-in's exit code. Built-in commands always take precedence, and DSC only
+  searches for plug-ins when it needs them. The new `dsc plugin list` command lists the discovered
+  plug-ins, the top-level help lists plug-in commands after the built-in commands,
+  `dsc help <command>` displays the help of a plug-in command, and the scripts from
+  `dsc completer` complete the names of plug-in commands. DSC tells a plug-in how it was invoked
+  with the `DSC_EXE`, `DSC_VERSION`, `DSC_PLUGIN_COMMAND`, and `DSC_PLUGIN_DIR` environment
+  variables and makes the options specified before the command available as `DSC_TRACE_LEVEL`,
+  `DSC_TRACE_FORMAT`, and `DSC_PROGRESS_FORMAT`. The new `plugins.enabled` setting turns plug-ins
+  off, and the `dsc schema` command exposes the new `plugin-manifest` schema.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#461][#461]
+  - PRs: <!-- Add the link to the pull request when it's opened. -->
+
+  </details>
+
 - Added the `Microsoft.Windows/AuditPolicy`, `Microsoft.Windows/AuditPolicyList`, and
   `Microsoft.Windows/AuditPolicyOption` built-in resources for managing the Windows advanced audit
   policy natively, as a replacement for the `AuditPolicyDsc` PowerShell module. `AuditPolicy`

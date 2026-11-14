@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use args::{Args, SubCommand};
-use clap::{CommandFactory, Parser};
+use args::SubCommand;
 use clap_complete::generate;
 use dsc_lib::{progress::ProgressFormat, settings::{DscSettings, DscSettingsScope, global as global_settings, sources::EnvironmentData}};
 use server::start_server;
@@ -19,6 +18,7 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod plugin;
 pub mod resolve;
 pub mod resource_command;
 pub mod server;
@@ -76,7 +76,7 @@ fn dsc_main() -> Result<(), ExitCode> {
         error!("{}", t!("main.failedCtrlCHandler"));
     }
 
-    let args = Args::parse();
+    let args = plugin::parse_args();
 
     // Initialize with local settings; reload for global after tracing init
     // to emit messages for settings loading/resolution.
@@ -115,7 +115,8 @@ fn dsc_main() -> Result<(), ExitCode> {
     match args.subcommand {
         SubCommand::Completer { shell } => {
             info!("{} {:?}", t!("main.generatingCompleter"), shell);
-            let mut cmd = Args::command();
+            // Include the plug-in commands, so the script completes them like built-in commands.
+            let mut cmd = plugin::command_with_plugins(&plugin::discover());
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
@@ -154,6 +155,14 @@ fn dsc_main() -> Result<(), ExitCode> {
         },
         SubCommand::Function { subcommand } => {
             subcommand::function(&subcommand)?;
+        },
+        SubCommand::Plugin { subcommand } => {
+            subcommand::plugin(&subcommand)?;
+        },
+        SubCommand::External(external_args) => {
+            // Only returns when the plug-in couldn't be started; otherwise it exits with the
+            // plug-in's exit code.
+            plugin::dispatch(&external_args, args.progress_format)?;
         },
         SubCommand::Server => {
             if let Err(err) = start_server() {
