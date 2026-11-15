@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 clap          = { workspace = true }
-clap_complete = { workspace = true }
 jsonschema    = { workspace = true }
 rust-i18n     = { workspace = true }
 schemars      = { workspace = true }

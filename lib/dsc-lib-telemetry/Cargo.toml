@@ -7,7 +7,6 @@ edition = "2024"
 doctest = false # Disable doc tests by default for compilation speed
 
 [dependencies]
-thiserror            = { workspace = true }
 tracing              = { workspace = true }
 tracing-indicatif    = { workspace = true }
 tracing-subscriber   = { workspace = true }
