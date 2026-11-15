@@ -1,0 +1,17 @@
+items:
+  - name: Overview
+    href: index.md
+  - name: Defining the plug-in manifest
+    href: plugin-manifest.md
+  - name: Designing the command
+    href: command-design.md
+  - name: Using the context DSC provides
+    href: dsc-context.md
+  - name: Defining exit codes
+    href: exit-codes.md
+  - name: Emitting messages
+    href: emitting-messages.md
+  - name: Examples
+    items:
+      - name: The dsc graph plug-in
+        href: example-graph.md

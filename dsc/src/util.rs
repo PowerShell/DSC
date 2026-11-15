@@ -36,6 +36,7 @@ use dsc_lib::{
         extension_manifest::ExtensionManifest,
     },
     functions::FunctionDefinition,
+    plugins::plugin_manifest::PluginManifest,
     resources::invoke_result::{GetResult, ResolveResult, SetResult, TestResult},
     schemas::dsc_repo::{DscRepoSchema, RecognizedSchemaVersion, SchemaForm, SchemaUriPrefix},
     types::SemanticVersion,
@@ -201,6 +202,9 @@ pub fn get_schema(schema: SchemaType) -> Schema {
         },
         SchemaType::ManifestList => {
             schema_for!(ManifestList)
+        },
+        SchemaType::PluginManifest => {
+            repo_schema::<PluginManifest>()
         },
         SchemaType::ResolveResult => {
             repo_schema::<ResolveResult>()

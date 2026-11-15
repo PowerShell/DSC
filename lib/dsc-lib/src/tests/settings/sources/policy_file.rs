@@ -5,6 +5,7 @@ use crate::settings::DscSettingsError;
 use crate::settings::fields::{
     ForbidIgnoreSettingsFileField,
     IgnoreSettingsFileField,
+    PluginsFileData,
     TracingFileData,
     TracingLevelField,
     TracingFormatField,
@@ -162,6 +163,9 @@ mod from_file {
                 "appendEnvPath": true,
                 "directories": ["dir1", "dir2"],
                 "restricted": false,
+            },
+            "plugins": {
+                "enabled": false
             }
         });
         let json_str = serde_json::to_string_pretty(&json).unwrap();
@@ -191,6 +195,9 @@ mod from_file {
                     PathBuf::from("dir2").into()
                 ]),
                 restricted: Some(false),
+            }),
+            plugins: Some(PluginsFileData {
+                enabled: Some(false),
             }),
             ..Default::default()
         };

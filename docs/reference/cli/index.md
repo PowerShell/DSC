@@ -47,6 +47,15 @@ For more information, see [dsc function][03]
 The `mcp` command starts DSC as a Model Context Protocol (MCP) server. For more information, see
 [dsc mcp][04].
 
+### plugin
+
+The `plugin` command manages DSC command plug-ins. You can use it to:
+
+- List the available plug-ins with the command each one provides.
+
+For more information, see [dsc plugin][07]. For information about running a command that a plug-in
+provides, see [Plug-in commands](#plug-in-commands).
+
 ### resource
 
 The `resource` command manages a DSC Resource. You can use it to:
@@ -79,6 +88,65 @@ gets the help for the `config set` subcommand.
 
 You can also use the [--help](#--help) option on a command to display the help information. For
 example, `dsc config --help` or `dsc config set --help`.
+
+For a command that a plug-in provides, `dsc help <COMMAND>` runs the plug-in with the `--help`
+option, so the plug-in displays its own help.
+
+## Plug-in commands
+
+A command plug-in adds a command to `dsc` without being part of the DSC executable. When the first
+argument to `dsc` isn't one of the built-in [commands](#commands), DSC looks for a plug-in that
+defines a command with that name and runs it:
+
+```sh
+dsc <PLUGIN_COMMAND> [<PLUGIN_ARGUMENTS>...]
+```
+
+For example, a plug-in that defines the command `lint` is invoked as `dsc lint`. Use the
+[dsc plugin list][08] command to see the available plug-ins, or `dsc --help`, which lists the
+plug-in commands after the built-in commands.
+
+A plug-in is defined by a plug-in manifest, a file whose name ends with `.dsc.plugin.json`,
+`.dsc.plugin.yaml`, or `.dsc.plugin.yml`. DSC discovers plug-in manifests in the same directories
+as resource and extension manifests. For more information about defining a plug-in, see the
+[DSC plug-in manifest schema reference][09].
+
+DSC runs a plug-in command with the following behavior:
+
+- Built-in commands always take precedence. A plug-in can't replace a built-in command.
+- DSC only searches for plug-ins when the command isn't built in, when it displays the top-level
+  help, when it lists plug-ins, and when it generates a completion script. Built-in commands never
+  search for plug-ins.
+- DSC passes every argument after the command name to the plug-in as written, including `--help`.
+  DSC doesn't interpret those arguments.
+- The plug-in runs in the current working directory with the standard input, output, and error
+  streams of `dsc`. DSC doesn't modify the output of the plug-in.
+- DSC exits with the exit code of the plug-in. The meaning of an exit code is defined by the
+  plug-in, not by the [exit codes](#exit-codes) of `dsc`.
+- When more than one plug-in defines the same command name, the plug-in DSC discovers first
+  provides the command and DSC writes a warning that names the others, which are shadowed. To run
+  a specific plug-in, shadowed or not, specify its fully qualified type name instead of the command
+  name, like `dsc OpenDSC/Lint`. DSC doesn't write the warning when you use the type name.
+- When no plug-in defines the command, DSC reports the command as an unrecognized subcommand and
+  exits with code `2`.
+
+Options for `dsc` itself, like [`--trace-level`](#--trace-level), must be specified before the
+command name. DSC makes them available to the plug-in as environment variables. DSC sets the
+following environment variables for a plug-in:
+
+| Environment variable       | Value                                                                               |
+| :------------------------- | :---------------------------------------------------------------------------------- |
+| `DSC_EXE`                  | The absolute path to the `dsc` executable that started the plug-in.                 |
+| `DSC_VERSION`              | The semantic version of that `dsc` executable.                                      |
+| `DSC_PLUGIN_COMMAND`       | The name the plug-in was invoked as: its command name or its type name.             |
+| `DSC_PLUGIN_DIR`           | The directory that contains the plug-in manifest.                                   |
+| `DSC_TRACE_LEVEL`          | The trace level in effect, from the `--trace-level` option or the settings.         |
+| `DSC_TRACE_FORMAT`         | The trace format in effect, from the `--trace-format` option or the settings.       |
+| `DSC_PROGRESS_FORMAT`      | The value of the `--progress-format` option. Only set when the option is specified. |
+| `DSC_IGNORE_SETTINGS_FILE` | Set to `1` or `0` when the `--ignore-settings-file` option is specified.            |
+
+To prevent DSC from discovering and running plug-ins, set `plugins.enabled` to `false` in a DSC
+settings file. When the setting is defined in the policy settings file, users can't override it.
 
 ## Options
 
@@ -230,7 +298,7 @@ trace level:
 The `dsc` command uses semantic exit codes. Each exit code represents a different result for the
 execution of the command.
 
-| Exit Code |                                                 Meaning                                                 |
+| Exit Code | Meaning                                                                                                 |
 | :-------: | :------------------------------------------------------------------------------------------------------ |
 |    `0`    | The command executed successfully without any errors.                                                   |
 |    `1`    | The command failed because it received invalid arguments.                                               |
@@ -252,3 +320,6 @@ file, ensure that the input is encoded as UTF-8.
 [04]: server/index.md
 [05]: resource/index.md
 [06]: schema/index.md
+[07]: plugin/index.md
+[08]: plugin/list.md
+[09]: ../schemas/plugin/manifest/root.md

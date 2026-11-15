@@ -1,0 +1,25 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/plugin/manifest.json",
+    "type": "Microsoft.DSC.Samples/Graph",
+    "version": "0.1.0",
+    "description": "Show the dependency graph of a configuration document",
+    "tags": [
+        "sample",
+        "graph",
+        "authoring"
+    ],
+    "condition": "[not(equals(tryWhich('pwsh'), null()))]",
+    "command": {
+        "name": "graph",
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-File",
+            {
+                "manifestRelativePath": "graph.ps1"
+            }
+        ]
+    }
+}

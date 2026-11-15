@@ -51,6 +51,13 @@ can define:
 - [DSC extension manifest discover property schema reference][11]
 - [DSC extension discover operation stdout schema reference][12]
 
+## Plug-in schemas
+
+The article [DSC plug-in manifest schema reference][59] describes the root JSON schema for plug-in
+manifests. The following article describes the subschema for the command a plug-in defines:
+
+- [DSC plug-in manifest command property schema reference][60]
+
 ## Resource schemas
 
 The article [DSC command resource manifest schema reference][13] describes the root JSON schema for
@@ -104,6 +111,7 @@ DSC returns for its commands:
 | `dsc config test`    | [dsc config test result schema reference][43]    |
 | `dsc extension list` | [dsc extension list result schema reference][44] |
 | `dsc function list`  | [dsc function list result schema reference][45]  |
+| `dsc plugin list`    | [dsc plugin list result schema reference][61]    |
 | `dsc resource get`   | [dsc resource get result schema reference][46]   |
 | `dsc resource list`  | [dsc resource list result schema reference][47]  |
 | `dsc resource set`   | [dsc resource set result schema reference][48]   |
@@ -189,3 +197,6 @@ throughout DSC.
 [56]: ./config/function.md
 [57]: ./config/output.md
 [58]: ./config/executionInformation.md
+[59]: ./plugin/manifest/root.md
+[60]: ./plugin/manifest/command.md
+[61]: ./outputs/plugin/list.md

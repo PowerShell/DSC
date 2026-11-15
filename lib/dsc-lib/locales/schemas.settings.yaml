@@ -228,7 +228,29 @@ schemas:
             markdownDescription:
               en-us: |
                 Append environment path to resource paths. If this is set to true, the environment path will be appended to the resource paths.
-    
+      plugins:
+        title:
+          en-us: "Plug-ins"
+        description:
+          en-us: "Settings related to command plug-ins"
+        markdownDescription:
+          en-us: |
+            Settings related to command plug-ins. A command plug-in adds a top-level command to
+            `dsc` without being compiled into it.
+        fields:
+          enabled:
+            title:
+              en-us: "Enabled"
+            description:
+              en-us: "Whether DSC discovers and runs command plug-ins"
+            markdownDescription:
+              en-us: |
+                Whether DSC discovers and runs command plug-ins. The default value is `true`.
+
+                If this is set to `false`, DSC doesn't discover plug-in manifests. A command that
+                isn't built in fails as an unrecognized subcommand, the help doesn't list plug-in
+                commands, and listing the plug-ins returns nothing.
+
     sources:
       default:
         title:
@@ -343,6 +365,14 @@ schemas:
           markdownDescription:
             en-us: |
               Settings related to the resource path. This represents the values for the settings that control the resource path.
+        plugins:
+          title:
+            en-us: "Plug-ins"
+          description:
+            en-us: "Settings related to command plug-ins"
+          markdownDescription:
+            en-us: |
+              Settings related to command plug-ins. This represents the values for the settings that control whether DSC discovers and runs command plug-ins.
       policyFile:
         title:
           en-us: "Policy settings file"
@@ -383,7 +413,15 @@ schemas:
           markdownDescription:
             en-us: |
               Settings related to the resource path. This represents the values for the settings that control the resource path.
-    
+        plugins:
+          title:
+            en-us: "Plug-ins"
+          description:
+            en-us: "Settings related to command plug-ins"
+          markdownDescription:
+            en-us: |
+              Settings related to command plug-ins. This represents the values for the settings that control whether DSC discovers and runs command plug-ins. A value defined as policy can't be overridden, so setting `enabled` to `false` keeps DSC to the built-in commands.
+
     resolved:
       field:
         title:
@@ -436,6 +474,14 @@ schemas:
           markdownDescription:
             en-us: |
               Settings related to the resource path. This represents the values for the settings that control the resource path.
+        plugins:
+          title:
+            en-us: "Plug-ins"
+          description:
+            en-us: "Settings related to command plug-ins"
+          markdownDescription:
+            en-us: |
+              Settings related to command plug-ins. This represents the values for the settings that control whether DSC discovers and runs command plug-ins.
     all:
       title:
         en-us: "DSC settings"
@@ -483,6 +529,8 @@ schemas:
                 directories: []
                 append_env_path: true
                 restricted: false
+              plugins:
+                enabled: true
               ```
         machine:
           title:

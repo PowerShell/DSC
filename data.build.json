@@ -545,6 +545,18 @@
       }
     },
     {
+      "Name": "plugins/graph",
+      "Kind": "Plugin",
+      "RelativePath": "plugins/graph",
+      "TestOnly": true,
+      "CopyFiles": {
+        "All": [
+          "graph.dsc.plugin.json",
+          "graph.ps1"
+        ]
+      }
+    },
+    {
       "Name": "y2j",
       "Kind": "CLI",
       "RelativePath": "y2j",
