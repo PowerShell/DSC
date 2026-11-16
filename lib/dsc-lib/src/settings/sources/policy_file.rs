@@ -61,6 +61,10 @@ use crate::schemas::dsc_repo::{DscRepoSchema, schema_i18n};
     )
 )]
 pub struct PolicyFileData {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_reuse: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_timeouts: Option<ResourceTimeoutsFileData>,
     /// Indicates whether DSC should allow ignoring preference settings files
     /// when loading and resolving settings.
     ///
@@ -207,6 +211,7 @@ impl PolicyFileData {
     ///
     /// `true` if any of the file data fields are populated, otherwise `false`.
     pub(crate) fn any_defined(&self) -> bool {
+        if self.resource_reuse.is_some() || self.resource_timeouts.is_some() { return true; }
         self.forbid_ignore_settings_file.is_some() ||
         self.ignore_settings_file.is_some() ||
         self.resource_path.is_some() ||

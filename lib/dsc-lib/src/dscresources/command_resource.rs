@@ -24,6 +24,40 @@ use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
+fn use_jsonrpc(resource: &DscResource, executable: &str, context: &Context) -> bool {
+    resource.manifest.as_ref().is_some_and(|manifest| manifest.jsonrpc.is_some())
+        && (executable.is_empty() || (context.reuse_resources && context.reuse_resource))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn invoke_native(
+    resource: &DscResource, operation: &str, input: Option<&str>, context: &Context,
+    returns: Option<&ReturnKind>, schema_kind: Option<&str>, executable: &str,
+    fallback: impl FnOnce() -> Result<(i32, String, String), DscError>,
+) -> Result<(i32, String, String), DscError> {
+    resource.manifest.as_ref().ok_or_else(|| DscError::MissingManifest(resource.type_name.to_string()))?.validate_transport()?;
+    if use_jsonrpc(resource, executable, context) {
+        super::jsonrpc::invoke(resource, operation, input, schema_kind, returns, context)
+    } else {
+        fallback()
+    }
+}
+
+fn resource_environment(context: &Context, env: Option<HashMap<String, String>>) -> Option<HashMap<String, String>> {
+    if context.reuse_resources { return env; }
+    let mut env = env.unwrap_or_default();
+    env.insert("DSC_RESOURCE_REUSE_FORBIDDEN".to_string(), "1".to_string());
+    Some(env)
+}
+
+fn native_input(resource: &DscResource, executable: &str, kind: Option<&InputKind>, input: &str, context: &Context) -> Result<CommandInput, DscError> {
+    if use_jsonrpc(resource, executable, context) {
+        Ok(CommandInput { env: None, stdin: None })
+    } else {
+        get_command_input(kind, input)
+    }
+}
+
 /// Invoke the get operation on a resource
 ///
 /// # Arguments
@@ -49,14 +83,16 @@ pub fn invoke_get(resource: &DscResource, filter: &str, context: &Context) -> Re
         None => resource
     };
     validate_security_context(context.target_resource.as_ref(), &get.require_security_context, &command_resource.type_name, &Operation::Get)?;
-    let args = process_get_args(get.args.as_ref(), filter, command_resource, context)?;
+    let args = if use_jsonrpc(resource, &get.executable, context) { None }
+        else { process_get_args(get.args.as_ref(), filter, command_resource, context)? };
     if !filter.is_empty() {
         verify_json_from_manifest(resource, filter, context)?;
-        command_input = get_command_input(get.input.as_ref(), filter)?;
+        command_input = native_input(resource, &get.executable, get.input.as_ref(), filter, context)?;
     }
 
     info!("{}", t!("dscresources.commandResource.invokeGetUsing", resource = &resource.type_name, executable = &get.executable));
-    let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, stderr) = invoke_native(resource, "get", Some(filter), context, None, None, &get.executable, ||
+        invoke_command(&get.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), resource_environment(context, command_input.env), manifest.exit_codes.as_ref()))?;
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.verifyOutputUsing", resource = &resource.type_name, executable = &get.executable));
         verify_json_from_manifest(resource, &stdout, context)?;
@@ -114,10 +150,12 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
             operation_type = "whatif".to_string();
             // Check if set supports native what-if
             let has_native_whatif = manifest.set.as_ref().is_some_and(|set| {
-                let Ok((_, supports_whatif)) = process_set_delete_args(set.args.as_ref(), "", command_resource, context) else {
-                    return false;
-                };
-                supports_whatif
+                if use_jsonrpc(resource, &set.executable, context) {
+                    set.supports_what_if == Some(true)
+                } else {
+                    set.args.as_ref().is_some_and(|args|
+                        args.iter().any(|arg| matches!(arg, SetDeleteArgKind::WhatIf { .. })))
+                }
             });
 
             if has_native_whatif {
@@ -180,11 +218,13 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
         None => resource,
     };
     validate_security_context(context.target_resource.as_ref(), &get.require_security_context, &command_resource.type_name, &Operation::Get)?;
-    let args = process_get_args(get.args.as_ref(), desired, command_resource, context)?;
-    let command_input = get_command_input(get.input.as_ref(), desired)?;
+    let args = if use_jsonrpc(resource, &get.executable, context) { None }
+        else { process_get_args(get.args.as_ref(), desired, command_resource, context)? };
+    let command_input = native_input(resource, &get.executable, get.input.as_ref(), desired, context)?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &command_resource.type_name, executable = &get.executable));
-    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_native(resource, "get", Some(desired), context, None, None, &get.executable, ||
+        invoke_command(&get.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), resource_environment(context, command_input.env), manifest.exit_codes.as_ref()))?;
 
     if resource.kind == Kind::Resource {
         debug!("{}", t!("dscresources.commandResource.setVerifyGet", resource = &resource.type_name, executable = &get.executable));
@@ -212,8 +252,9 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let (args, _) = process_set_delete_args(set.args.as_ref(), desired, command_resource, context)?;
-    match &set.input {
+    let args = if use_jsonrpc(resource, &set.executable, context) { None }
+        else { process_set_delete_args(set.args.as_ref(), desired, command_resource, context)?.0 };
+    match if use_jsonrpc(resource, &set.executable, context) { None } else { set.input.as_ref() } {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
         },
@@ -225,13 +266,16 @@ pub fn invoke_set(resource: &DscResource, desired: &str, skip_test: bool, contex
         },
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, resource.directory.as_deref(), env, manifest.exit_codes.as_ref())?;
-
     let return_kind = if context.execution_type == ExecutionKind::WhatIf {
         set.what_if_returns.as_ref().or(set.returns.as_ref())
     } else {
         set.returns.as_ref()
     };
+
+    let native_operation = if context.execution_type == ExecutionKind::WhatIf
+        && std::ptr::eq(set_method, &manifest.what_if) { "whatIf" } else { "set" };
+    let (exit_code, stdout, stderr) = invoke_native(resource, native_operation, Some(desired), context, return_kind, None, &set.executable, ||
+        invoke_command(&set.executable, args, input_desired, resource.directory.as_deref(), resource_environment(context, env), manifest.exit_codes.as_ref()))?;
 
     match return_kind {
         Some(ReturnKind::State) => {
@@ -335,11 +379,13 @@ pub fn invoke_test(resource: &DscResource, expected: &str, context: &Context) ->
         None => resource,
     };
     validate_security_context(context.target_resource.as_ref(), &test.require_security_context, &command_resource.type_name, &Operation::Test)?;
-    let args = process_get_args(test.args.as_ref(), expected, command_resource, context)?;
-    let command_input = get_command_input(test.input.as_ref(), expected)?;
+    let args = if use_jsonrpc(resource, &test.executable, context) { None }
+        else { process_get_args(test.args.as_ref(), expected, command_resource, context)? };
+    let command_input = native_input(resource, &test.executable, test.input.as_ref(), expected, context)?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &command_resource.type_name, executable = &test.executable));
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
+    let (exit_code, stdout, stderr) = invoke_native(resource, "test", Some(expected), context, test.returns.as_ref(), None, &test.executable, ||
+        invoke_command(&test.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), resource_environment(context, command_input.env), manifest.exit_codes.as_ref()))?;
 
     if command_resource.kind == Kind::Importer {
         debug!("{}", t!("dscresources.commandResource.testGroupTestResponse"));
@@ -453,21 +499,27 @@ fn invoke_synthetic_test(resource: &DscResource, expected: &str, context: &Conte
     };
     let expected_value: Value = serde_json::from_str(expected)?;
     let cached_resource = context.target_resource.as_ref().unwrap_or(resource);
-    let schema: Option<Value> = get_resource_schema(&cached_resource.type_name, &cached_resource.version)
-        .or_else(|| {
-            // Cache miss: parse and use the schema returned by get_schema. This covers cases
-            // where get_schema returns early (e.g. target_resource.schema) without caching.
-            let schema_str = get_schema(resource, context).ok()?;
-            let schema_value: Value = serde_json::from_str(&schema_str).ok()?;
-            // Best-effort cache population for future callers.
-            locked_insert!(
-                RESOURCE_SCHEMAS,
-                cached_resource.type_name.clone(),
-                cached_resource.version.clone(),
-                schema_value.clone()
-            );
-            Some(schema_value)
-        });
+    let schema: Option<Value> = match get_resource_schema(&cached_resource.type_name, &cached_resource.version) {
+        Some(schema) => Some(schema),
+        None => {
+            let schema_str = match get_schema(resource, context) {
+                Ok(schema) => Some(schema),
+                Err(DscError::SchemaNotAvailable(_)) => None,
+                Err(err) if resource.manifest.as_ref().is_some_and(|manifest| manifest.jsonrpc.is_some()) => return Err(err),
+                Err(_) => None,
+            };
+            let schema_value = schema_str.as_deref().map(serde_json::from_str::<Value>).transpose()?;
+            if let Some(schema_value) = &schema_value {
+                locked_insert!(
+                    RESOURCE_SCHEMAS,
+                    cached_resource.type_name.clone(),
+                    cached_resource.version.clone(),
+                    schema_value.clone()
+                );
+            }
+            schema_value
+        },
+    };
     let diff_properties = get_diff_with_schema(&expected_value, &actual_state, schema.as_ref());
     Ok(TestResult::Resource(ResourceTestResponse {
         desired_state: expected_value,
@@ -502,16 +554,19 @@ pub fn invoke_delete(resource: &DscResource, filter: &str, context: &Context) ->
 
     let command_resource = context.target_resource.as_ref().unwrap_or(resource);
     validate_security_context(context.target_resource.as_ref(), &delete.require_security_context, &command_resource.type_name, &Operation::Delete)?;
-    let (args, supports_whatif) = process_set_delete_args(delete.args.as_ref(), filter, command_resource, context)?;
+    let (args, supports_whatif) = if use_jsonrpc(resource, &delete.executable, context) {
+        (None, delete.supports_what_if == Some(true))
+    } else { process_set_delete_args(delete.args.as_ref(), filter, command_resource, context)? };
     if context.execution_type == ExecutionKind::WhatIf && !supports_whatif {
         // perform a synthetic what-if by calling test and wrapping the TestResult in DeleteResultKind::SyntheticWhatIf
         let test_result = invoke_test(resource, filter, context)?;
         return Ok(DeleteResultKind::SyntheticWhatIf(test_result));
     }
-    let command_input = get_command_input(delete.input.as_ref(), filter)?;
+    let command_input = native_input(resource, &delete.executable, delete.input.as_ref(), filter, context)?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = &command_resource.type_name, executable = &delete.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, _stderr) = invoke_native(resource, "delete", Some(filter), context, None, None, &delete.executable, ||
+        invoke_command(&delete.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), resource_environment(context, command_input.env), manifest.exit_codes.as_ref()))?;
     let result = if context.execution_type == ExecutionKind::WhatIf {
         let delete_result: DeleteResult = serde_json::from_str(&stdout)?;
         DeleteResultKind::ResourceWhatIf(delete_result)
@@ -548,11 +603,13 @@ pub fn invoke_validate(resource: &DscResource, config: &str, context: &Context) 
     };
 
     let target_resource = context.target_resource.as_ref().unwrap_or(resource);
-    let args = process_get_args(validate.args.as_ref(), config, target_resource, context)?;
-    let command_input = get_command_input(validate.input.as_ref(), config)?;
+    let args = if use_jsonrpc(resource, &validate.executable, context) { None }
+        else { process_get_args(validate.args.as_ref(), config, target_resource, context)? };
+    let command_input = native_input(resource, &validate.executable, validate.input.as_ref(), config, context)?;
 
     info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = &resource.type_name, executable = &validate.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, _stderr) = invoke_native(resource, "validate", Some(config), context, None, None, &validate.executable, ||
+        invoke_command(&validate.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), resource_environment(context, command_input.env), manifest.exit_codes.as_ref()))?;
     let result: ValidateResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
@@ -590,8 +647,10 @@ pub fn get_schema(resource: &DscResource, context: &Context) -> Result<String, D
 
     let (schema, schema_value) = match schema_kind {
         SchemaKind::Command(command) => {
-            let args = process_schema_args(command.args.as_ref(), target_resource)?;
-            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, resource.directory.as_deref(), None, manifest.exit_codes.as_ref())?;
+            let (_exit_code, stdout, _stderr) = invoke_native(resource, "schema", None, context, None, Some("resource"), &command.executable, || {
+                let args = process_schema_args(command.args.as_ref(), target_resource)?;
+                invoke_command(&command.executable, args, None, resource.directory.as_deref(), resource_environment(context, None), manifest.exit_codes.as_ref())
+            })?;
             let schema_value: Value = serde_json::from_str(&stdout)?;
             (stdout, schema_value)
         },
@@ -618,8 +677,10 @@ fn verify_with_export_schema(input: &str, resource: &DscResource, context: &Cont
 
     let schema = match export.schema_or_filtering {
         Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Command(ref command))) => {
-            let args = process_schema_args(command.args.as_ref(), command_resource)?;
-            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, args, None, resource.directory.as_deref(), None, manifest.exit_codes.as_ref())?;
+            let (_exit_code, stdout, _stderr) = invoke_native(resource, "schema", None, context, None, Some("exportInput"), &command.executable, || {
+                let args = process_schema_args(command.args.as_ref(), command_resource)?;
+                invoke_command(&command.executable, args, None, resource.directory.as_deref(), resource_environment(context, None), manifest.exit_codes.as_ref())
+            })?;
             stdout
         },
         Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Embedded(ref schema))) => {
@@ -717,15 +778,18 @@ pub fn invoke_export(resource: &DscResource, input: Option<&str>, context: &Cont
 
             verify_with_export_schema(input, resource, context)?;
 
-            command_input = get_command_input(export.input.as_ref(), input)?;
+            command_input = native_input(resource, &export.executable, export.input.as_ref(), input, context)?;
         }
 
-        args = process_get_args(export.args.as_ref(), input, command_resource, context)?;
+        args = if use_jsonrpc(resource, &export.executable, context) { None }
+            else { process_get_args(export.args.as_ref(), input, command_resource, context)? };
     } else {
-        args = process_get_args(export.args.as_ref(), "", command_resource, context)?;
+        args = if use_jsonrpc(resource, &export.executable, context) { None }
+            else { process_get_args(export.args.as_ref(), "", command_resource, context)? };
     }
 
-    let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, stderr) = invoke_native(resource, "export", input, context, None, None, &export.executable, ||
+        invoke_command(&export.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), resource_environment(context, command_input.env), manifest.exit_codes.as_ref()))?;
     let mut instances: Vec<Value> = Vec::new();
     for line in stdout.lines()
     {
@@ -773,11 +837,13 @@ pub fn invoke_resolve(resource: &DscResource, input: &str, context: &Context) ->
     let mut command_resource = DscResource::new();
     command_resource.type_name = resource.type_name.clone();
     command_resource.path = resource.path.clone();
-    let args = process_get_args(resolve.args.as_ref(), input, &command_resource, context)?;
-    let command_input = get_command_input(resolve.input.as_ref(), input)?;
+    let args = if use_jsonrpc(resource, &resolve.executable, context) { None }
+        else { process_get_args(resolve.args.as_ref(), input, &command_resource, context)? };
+    let command_input = native_input(resource, &resolve.executable, resolve.input.as_ref(), input, context)?;
 
     info!("{}", t!("dscresources.commandResource.invokeResolveUsing", resource = &resource.type_name, executable = &resolve.executable));
-    let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), command_input.env, manifest.exit_codes.as_ref())?;
+    let (_exit_code, stdout, _stderr) = invoke_native(resource, "resolve", Some(input), context, None, None, &resolve.executable, ||
+        invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), resource.directory.as_deref(), resource_environment(context, command_input.env), manifest.exit_codes.as_ref()))?;
     let result: ResolveResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }

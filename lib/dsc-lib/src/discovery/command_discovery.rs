@@ -1104,6 +1104,7 @@ pub fn load_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDsc
 }
 
 fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
+    manifest.validate_transport()?;
     if manifest.version.is_date_version() {
         warn!("{}", t!(
             "discovery.commandDiscovery.invalidManifestVersion",
@@ -1122,6 +1123,9 @@ fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> R
 
     let mut capabilities: HashSet<ResourceCapability> = HashSet::new();
     let parent = path.and_then(|p| p.parent());
+    if let Some(rpc) = &manifest.jsonrpc {
+        verify_executable(&manifest.resource_type, "jsonrpc", &rpc.executable, parent);
+    }
     if let Some(get) = &manifest.get {
         verify_executable(&manifest.resource_type, "get", &get.executable, parent);
         capabilities.insert(ResourceCapability::Get);
@@ -1132,7 +1136,7 @@ fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> R
         if set.handles_exist == Some(true) {
             capabilities.insert(ResourceCapability::SetHandlesExist);
         }
-        if let Some(args) = &set.args && args_contains_what_if(args) {
+        if set.supports_what_if == Some(true) || set.args.as_ref().is_some_and(|args| args_contains_what_if(args)) {
             capabilities.insert(ResourceCapability::SetWhatIf);
         }
     }
@@ -1143,7 +1147,7 @@ fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> R
     if let Some(delete) = &manifest.delete {
         verify_executable(&manifest.resource_type, "delete", &delete.executable, parent);
         capabilities.insert(ResourceCapability::Delete);
-        if let Some(args) = &delete.args && args_contains_what_if(args) {
+        if delete.supports_what_if == Some(true) || delete.args.as_ref().is_some_and(|args| args_contains_what_if(args)) {
             capabilities.insert(ResourceCapability::DeleteWhatIf);
         }
     }
@@ -1226,6 +1230,7 @@ fn load_extension_manifest(path: Option<&Path>, manifest: &ExtensionManifest) ->
 }
 
 pub fn verify_executable(resource: &str, operation: &str, executable: &str, directory: Option<&Path>) {
+    if executable.is_empty() { return; }
     if canonicalize_which(executable, directory).is_err() {
         info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }

@@ -530,8 +530,12 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
-        let context = Context::new();
-        validate_properties(&*resource, &resource_block["properties"], &context)?;
+        let mut context = Context::new();
+        context.restrict_resource_reuse(
+            config.directives.as_ref().and_then(|directives| directives.reuse_resources),
+            resource_block["directives"]["reuseResource"].as_bool(),
+        );
+        context.complete_resource_operation(validate_properties(&*resource, &resource_block["properties"], &context))?;
     }
 
     Ok(())

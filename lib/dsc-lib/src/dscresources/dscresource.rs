@@ -137,7 +137,7 @@ impl DscResource {
         }
     }
 
-    fn create_config_for_adapter(self, adapter: &FullyQualifiedTypeName, input: &str) -> Result<Configurator, DscError> {
+    fn create_config_for_adapter(self, adapter: &FullyQualifiedTypeName, input: &str, context: &Context) -> Result<Configurator, DscError> {
         // create new configuration with adapter and use this as the resource
         let mut configuration = Configuration::new();
         let mut property_map = Map::new();
@@ -160,11 +160,12 @@ impl DscResource {
         let mut configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
         // don't process expressions again as they would have already been processed before being passed to the adapter
         configurator.context.process_mode = ProcessMode::NoExpressionEvaluation;
+        configurator.context.reuse_resources &= context.reuse_resources;
         Ok(configurator)
     }
 
     fn invoke_get_with_adapter(&self, adapter: &FullyQualifiedTypeName, filter: &str, context: &Context) -> Result<GetResult, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+        let mut configurator = self.clone().create_config_for_adapter(adapter, filter, context)?;
         let adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
             return adapter.get(filter, context);
@@ -187,7 +188,7 @@ impl DscResource {
     }
 
     fn invoke_set_with_adapter(&self, adapter: &FullyQualifiedTypeName, desired: &str, skip_test: bool, context: &Context) -> Result<SetResult, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
+        let mut configurator = self.clone().create_config_for_adapter(adapter, desired, context)?;
         let adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
             return adapter.set(desired, skip_test, context);
@@ -219,7 +220,7 @@ impl DscResource {
     }
 
     fn invoke_test_with_adapter(&self, adapter: &FullyQualifiedTypeName, expected: &str, context: &Context) -> Result<TestResult, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
+        let mut configurator = self.clone().create_config_for_adapter(adapter, expected, context)?;
         let adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
             return adapter.test(expected, context);
@@ -252,7 +253,7 @@ impl DscResource {
     }
 
     fn invoke_delete_with_adapter(&self, adapter: &FullyQualifiedTypeName, filter: &str, context: &Context) -> Result<DeleteResultKind, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+        let mut configurator = self.clone().create_config_for_adapter(adapter, filter, context)?;
         let adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
             if adapter.has_resource_capability(&ResourceCapability::Delete) {
@@ -266,7 +267,7 @@ impl DscResource {
     }
 
     fn invoke_export_with_adapter(&self, adapter: &FullyQualifiedTypeName, input: &str, context: &Context) -> Result<ExportResult, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
+        let mut configurator = self.clone().create_config_for_adapter(adapter, input, context)?;
         let adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
             return adapter.export(input, context);
@@ -295,7 +296,7 @@ impl DscResource {
     }
 
     fn invoke_schema_with_adapter(&self, adapter: &FullyQualifiedTypeName, context: &Context) -> Result<String, DscError> {
-        let mut configurator = self.clone().create_config_for_adapter(adapter, "")?;
+        let mut configurator = self.clone().create_config_for_adapter(adapter, "", context)?;
         let adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&*adapter)? == AdapterInputKind::Single {
             return adapter.schema(context);
@@ -401,9 +402,14 @@ impl ResourceInvoke for DscResource {
                         }
                     };
                     let schema: Option<Value> = if let Some(s) = &self.schema {
-                        serde_json::to_value(s).ok()
+                        Some(serde_json::to_value(s)?)
                     } else {
-                        self.schema(context).ok().and_then(|s| serde_json::from_str(&s).ok())
+                        match self.schema(context) {
+                            Ok(schema) => Some(serde_json::from_str(&schema)?),
+                            Err(DscError::SchemaNotAvailable(_)) => None,
+                            Err(err) if manifest.jsonrpc.is_some() => return Err(err),
+                            Err(_) => None,
+                        }
                     };
                     let diff_properties = get_diff_with_schema( &desired_state, &actual_state, schema.as_ref());
                     desired_state = redact(&desired_state);
@@ -853,8 +859,11 @@ pub fn validate_properties(resource: &dyn ResourceInvoke, properties: &Value, co
         }
         // use schema validation
         trace!("{}: {type_name}", t!("dscresources.dscresource.resourceDoesNotImplementValidate"));
-        let Ok(schema) = resource.schema(context) else {
-            return Err(DscError::Validation(format!("{}: {type_name}", t!("dscresources.dscresource.noSchemaOrValidate"))));
+        let schema = match resource.schema(context) {
+            Ok(schema) => schema,
+            Err(DscError::SchemaNotAvailable(_)) =>
+                return Err(DscError::Validation(format!("{}: {type_name}", t!("dscresources.dscresource.noSchemaOrValidate")))),
+            Err(err) => return Err(err),
         };
         let schema = serde_json::from_str(&schema)?;
         return validate_json(&resource.type_name(), &schema, properties)
@@ -893,6 +902,28 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod jsonrpc_tests {
+    use super::*;
+
+    #[test]
+    fn adapter_wrapper_inherits_only_document_reuse_restriction() {
+        for document_reuse in [false, true] {
+            let mut context = Context::new();
+            context.reuse_resources = document_reuse;
+            context.reuse_resource = false;
+            let mut resource = DscResource::new();
+            resource.type_name = "Adapted/JsonRpcOne".parse().unwrap();
+            let wrapper = resource.create_config_for_adapter(
+                &"Test/JsonRpcAdapter".parse().unwrap(), "{}", &context,
+            ).unwrap();
+            assert_eq!(wrapper.context.reuse_resources, document_reuse);
+            assert!(wrapper.context.reuse_resource);
+            assert!(!std::sync::Arc::ptr_eq(&wrapper.context.resource_processes, &context.resource_processes));
+        }
+    }
 }
 
 /// Compares two arrays independent of order

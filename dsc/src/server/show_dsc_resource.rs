@@ -14,6 +14,20 @@ fn nullable_json_object_schema(_: &mut schemars::SchemaGenerator) -> schemars::S
     json_schema!({"oneOf": [{"type": "null"}, {"type": "object"}]})
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn jsonrpc_resource_without_schema_can_be_shown() {
+        let Json(resource) = McpServer::new().show_dsc_resource(Parameters(ShowResourceRequest {
+            r#type: "Test/JsonRpcValidate".parse().unwrap(),
+        })).await.unwrap();
+        assert!(resource.schema.is_none());
+        assert!(resource.capabilities.contains(&ResourceCapability::Get));
+    }
+}
+
 #[derive(Serialize, JsonSchema)]
 pub struct DscResource {
     /// The namespaced name of the resource.
@@ -61,8 +75,11 @@ impl McpServer {
             };
 
             let context = Context::new();
-            let schema = match resource.schema(&context) {
+            let schema = match context.complete_resource_operation(resource.schema(&context)) {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
+                Err(dsc_lib::dscerror::DscError::SchemaNotAvailable(_)) => None,
+                Err(err) if resource.as_dsc_resource().and_then(|resource| resource.manifest.as_ref()).is_some_and(|manifest| manifest.jsonrpc.is_some()) =>
+                    return Err(McpError::internal_error(err.to_string(), None)),
                 Err(_) => None,
             };
 

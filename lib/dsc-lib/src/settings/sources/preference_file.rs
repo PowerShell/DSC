@@ -72,6 +72,10 @@ pub(in crate::settings) mod _implementation_guidance {
     )
 )]
 pub struct PreferenceFileData {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_reuse: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_timeouts: Option<ResourceTimeoutsFileData>,
     /// Defines settings that affect how DSC emits trace messages.
     ///
     /// You can control the level of the messages DSC emits and the format that
@@ -175,6 +179,7 @@ impl PreferenceFileData {
     ///
     /// `true` if any of the file data fields are populated, otherwise `false`.
     pub(crate) fn any_defined(&self) -> bool {
+        if self.resource_reuse.is_some() || self.resource_timeouts.is_some() { return true; }
         self.resource_path.is_some() ||
         self.tracing.is_some()
     }

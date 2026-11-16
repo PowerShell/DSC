@@ -13,6 +13,7 @@ mod exporter;
 mod expression_arg;
 mod get;
 mod in_desired_state;
+mod jsonrpc;
 mod metadata;
 mod operation;
 mod adapter;
@@ -69,6 +70,14 @@ fn main() -> ProcessExitCode {
 fn run() -> Result<(), u8> {
     let args = Args::parse();
     let json = match args.subcommand {
+        SubCommand::Jsonrpc { operation, input } => {
+            let result = if let Some(operation) = operation {
+                jsonrpc::fallback(&operation, input.as_deref())
+            } else {
+                jsonrpc::serve()
+            };
+            return result.map_err(|err| { eprintln!("JSON-RPC test resource: {err}"); 1 });
+        },
         SubCommand::Action { input, expression } => {
             match action::invoke_action(&input, expression.as_deref()) {
                 Ok(result) => result,

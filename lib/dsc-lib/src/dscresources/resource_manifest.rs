@@ -32,6 +32,7 @@ pub enum Kind {
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 #[schemars(
+    transform = ResourceManifest::transport_constraints,
     transform = ResourceManifest::transform_export_schema_uris,
     transform = ResourceManifest::transform_schema_docs,
 )]
@@ -46,6 +47,9 @@ pub enum Kind {
     )
 )]
 pub struct ResourceManifest {
+    /// Persistent JSON-RPC entry point. Operation commands are optional fallbacks.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub jsonrpc: Option<JsonRpc>,
     /// The version of the resource manifest schema.
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "ResourceManifest::recognized_schema_uris_subschema")]
@@ -285,6 +289,7 @@ pub enum ExportSchemaKind {
 #[schemars(inline)]
 pub struct SchemaCommand {
     /// The command to run to get the schema.
+    #[serde(default, deserialize_with = "deserialize_executable", skip_serializing_if = "String::is_empty")]
     pub executable: String,
     /// The arguments to pass to the command.
     pub args: Option<Vec<SchemaArgKind>>,
@@ -314,6 +319,7 @@ pub enum ReturnKind {
 )]
 pub struct GetMethod {
     /// The command to run to get the state of the resource.
+    #[serde(default, deserialize_with = "deserialize_executable", skip_serializing_if = "String::is_empty")]
     pub executable: String,
     /// The arguments to pass to the command to perform a Get.
     pub args: Option<Vec<GetArgKind>>,
@@ -332,7 +338,11 @@ pub struct GetMethod {
     transform = SetMethod::transform_schema_docs,
 )]
 pub struct SetMethod {
+    /// Whether JSON-RPC set supports native what-if.
+    #[serde(rename = "supportsWhatIf", skip_serializing_if = "Option::is_none")]
+    pub supports_what_if: Option<bool>,
     /// The command to run to set the state of the resource.
+    #[serde(default, deserialize_with = "deserialize_executable", skip_serializing_if = "String::is_empty")]
     pub executable: String,
     /// The arguments to pass to the command to perform a Set.
     pub args: Option<Vec<SetDeleteArgKind>>,
@@ -363,6 +373,7 @@ pub struct SetMethod {
 )]
 pub struct TestMethod {
     /// The command to run to test the state of the resource.
+    #[serde(default, deserialize_with = "deserialize_executable", skip_serializing_if = "String::is_empty")]
     pub executable: String,
     /// The arguments to pass to the command to perform a Test.
     pub args: Option<Vec<GetArgKind>>,
@@ -383,7 +394,11 @@ pub struct TestMethod {
     transform = DeleteMethod::transform_schema_docs,
 )]
 pub struct DeleteMethod {
+    /// Whether JSON-RPC delete supports native what-if.
+    #[serde(rename = "supportsWhatIf", skip_serializing_if = "Option::is_none")]
+    pub supports_what_if: Option<bool>,
     /// The command to run to delete the state of the resource.
+    #[serde(default, deserialize_with = "deserialize_executable", skip_serializing_if = "String::is_empty")]
     pub executable: String,
     /// The arguments to pass to the command to perform a Delete.
     pub args: Option<Vec<SetDeleteArgKind>>,
@@ -402,6 +417,7 @@ pub struct DeleteMethod {
 )]
 pub struct ValidateMethod { // TODO: enable validation via schema or command
     /// The command to run to validate the state of the resource.
+    #[serde(default, deserialize_with = "deserialize_executable", skip_serializing_if = "String::is_empty")]
     pub executable: String,
     /// The arguments to pass to the command to perform a Validate.
     pub args: Option<Vec<GetArgKind>>,
@@ -425,6 +441,7 @@ pub enum ExportSchemaOrFiltering {
 )]
 pub struct ExportMethod {
     /// The command to run to enumerate instances of the resource.
+    #[serde(default, deserialize_with = "deserialize_executable", skip_serializing_if = "String::is_empty")]
     pub executable: String,
     /// The arguments to pass to the command to perform a Export.
     pub args: Option<Vec<GetArgKind>>,
@@ -433,8 +450,17 @@ pub struct ExportMethod {
     /// The security context required to run the Export method.  Default if not specified is `current`.
     #[serde(rename = "requireSecurityContext", skip_serializing_if = "Option::is_none")]
     pub require_security_context: Option<SecurityContextKind>,
-    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    #[serde(flatten, deserialize_with = "deserialize_export_schema_or_filtering", skip_serializing_if = "Option::is_none")]
     pub schema_or_filtering: Option<ExportSchemaOrFiltering>,
+}
+
+fn deserialize_export_schema_or_filtering<'de, D: serde::Deserializer<'de>>(deserializer: D)
+    -> Result<Option<ExportSchemaOrFiltering>, D::Error>
+{
+    let mut fields = Map::<String, Value>::deserialize(deserializer)?;
+    fields.retain(|name, value| matches!(name.as_str(), "schema" | "supportsFiltering") && !value.is_null());
+    if fields.is_empty() { return Ok(None); }
+    serde_json::from_value(Value::Object(fields)).map(Some).map_err(serde::de::Error::custom)
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
@@ -445,6 +471,7 @@ pub struct ExportMethod {
 )]
 pub struct ResolveMethod {
     /// The command to run to enumerate instances of the resource.
+    #[serde(default, deserialize_with = "deserialize_executable", skip_serializing_if = "String::is_empty")]
     pub executable: String,
     /// The arguments to pass to the command to perform a Export.
     pub args: Option<Vec<GetArgKind>>,
@@ -489,6 +516,143 @@ pub struct ListMethod {
     pub args: Option<Vec<String>>,
 }
 
+fn deserialize_executable<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
+    let executable = String::deserialize(deserializer)?;
+    if executable.is_empty() {
+        return Err(serde::de::Error::custom(t!("dscresources.jsonrpc.emptyExecutable")));
+    }
+    Ok(executable)
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+#[schemars(inline)]
+pub struct JsonRpc {
+    #[schemars(length(min = 1))]
+    pub executable: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub args: Option<Vec<String>>,
+    #[serde(rename = "initializeTimeoutMS", skip_serializing_if = "Option::is_none")]
+    #[schemars(range(min = 1))]
+    pub initialize_timeout_ms: Option<u64>,
+    #[serde(rename = "requestTimeoutMS", skip_serializing_if = "Option::is_none")]
+    pub request_timeout_ms: Option<u64>,
+    #[serde(rename = "shutdownTimeoutMS", skip_serializing_if = "Option::is_none")]
+    #[schemars(range(min = 1))]
+    pub shutdown_timeout_ms: Option<u64>,
+}
+
+impl ResourceManifest {
+    fn transport_constraints(schema: &mut schemars::Schema) {
+        let fallback = serde_json::json!({"anyOf": [{"type": "null"}, {"required": ["executable"]}]});
+        let mut properties = Map::new();
+        let mut fallbacks = Map::new();
+        let mut constraints = Vec::new();
+        for operation in ["get", "set", "whatIf", "test", "delete", "export", "resolve", "validate"] {
+            properties.insert(operation.to_string(), serde_json::json!({
+                "properties": {"executable": {"minLength": 1}},
+                "if": {"not": {"required": ["executable"]}},
+                "then": {"properties": {"args": {"type": "null"}, "input": {"type": "null"}}}
+            }));
+            fallbacks.insert(operation.to_string(), fallback.clone());
+        }
+        fallbacks.insert("schema".to_string(), serde_json::json!({"properties": {"command": fallback}}));
+        fallbacks.get_mut("export").unwrap()["properties"] =
+            serde_json::json!({"schema": {"properties": {"command": fallback}}});
+        constraints.push(serde_json::json!({
+            "if": {"not": {"required": ["jsonrpc"], "properties": {"jsonrpc": {"type": "object"}}}},
+            "then": {"properties": fallbacks}
+        }));
+        properties.insert("schema".to_string(), serde_json::json!({"properties": {"command": {
+            "properties": {"executable": {"minLength": 1}},
+            "if": {"not": {"required": ["executable"]}},
+            "then": {"properties": {"args": {"type": "null"}}}
+        }}}));
+        properties.get_mut("export").unwrap()["properties"]["schema"] = serde_json::json!({"properties": {"command": {
+            "properties": {"executable": {"minLength": 1}},
+            "if": {"not": {"required": ["executable"]}},
+            "then": {"properties": {"args": {"type": "null"}}}
+        }}});
+        constraints.push(serde_json::json!({"properties": properties}));
+        constraints.push(serde_json::json!({
+            "if": {"required": ["jsonrpc"], "properties": {"jsonrpc": {"type": "object"}}},
+            "then": {"properties": {"adapter": {"properties": {"inputKind": {"const": "single"}}}}}
+        }));
+        for operation in ["set", "delete"] {
+            constraints.push(serde_json::json!({
+                "if": {
+                    "required": [operation],
+                    "properties": {(operation): {
+                        "type": "object", "required": ["supportsWhatIf"],
+                        "properties": {"supportsWhatIf": {"const": true}}
+                    }}
+                },
+                "then": {
+                    "required": ["jsonrpc"],
+                    "properties": {
+                        "jsonrpc": {"type": "object"},
+                        (operation): {
+                            "if": {"required": ["executable"]},
+                            "then": {"required": ["args"], "properties": {"args": {"type": "array", "contains": {
+                                "type": "object", "required": ["whatIfArg"]
+                            }}}}
+                        }
+                    }
+                }
+            }));
+        }
+        schema.insert("allOf".to_string(), Value::Array(constraints));
+    }
+
+    pub(crate) fn validate_transport(&self) -> Result<(), crate::DscError> {
+        let value = serde_json::to_value(self)?;
+        let invalid = || crate::DscError::InvalidManifest(
+            t!("dscresources.jsonrpc.invalidManifest", resource = self.resource_type).to_string()
+        );
+        if let Some(rpc) = &self.jsonrpc
+            && (rpc.executable.is_empty()
+                || rpc.initialize_timeout_ms == Some(0)
+                || rpc.shutdown_timeout_ms == Some(0)
+                || self.adapter.as_ref().is_some_and(|adapter| adapter.input_kind != AdapterInputKind::Single))
+        {
+                return Err(invalid());
+        }
+        for operation in ["get", "set", "whatIf", "test", "delete", "export", "resolve", "validate"] {
+            let Some(method) = value.get(operation).filter(|v| !v.is_null()) else { continue };
+            let executable = method.get("executable").and_then(Value::as_str);
+            if executable.is_none_or(str::is_empty) {
+                if self.jsonrpc.is_none() || method.get("args").is_some_and(|v| !v.is_null())
+                    || method.get("input").is_some_and(|v| !v.is_null())
+                {
+                    return Err(invalid());
+                }
+            } else if method.get("supportsWhatIf") == Some(&Value::Bool(true))
+                && !method.get("args").and_then(Value::as_array).is_some_and(|args|
+                    args.iter().any(|arg| arg.get("whatIfArg").is_some()))
+            {
+                return Err(invalid());
+            }
+            if method.get("supportsWhatIf") == Some(&Value::Bool(true)) && self.jsonrpc.is_none() {
+                return Err(invalid());
+            }
+        }
+        let resource_schema = match &self.schema {
+            Some(SchemaKind::Command(command)) => Some(command),
+            _ => None,
+        };
+        let export_schema = match self.export.as_ref().and_then(|export| export.schema_or_filtering.as_ref()) {
+            Some(ExportSchemaOrFiltering::Schema(ExportSchemaKind::Command(command))) => Some(command),
+            _ => None,
+        };
+        for command in [resource_schema, export_schema].into_iter().flatten() {
+            if command.executable.is_empty() && (self.jsonrpc.is_none() || command.args.is_some()) {
+                return Err(invalid());
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Validate a semantic version string.
 ///
 /// # Arguments
@@ -512,6 +676,58 @@ mod test {
     use crate::schemas::dsc_repo::{DscRepoSchema, UnrecognizedSchemaUriError};
 
     use crate::dscresources::resource_manifest::ResourceManifest;
+
+    #[test]
+    fn jsonrpc_manifest_constraints() {
+        use serde_json::json;
+        let schema = crate::dsc_repo_schema_for!(ResourceManifest);
+        let validator = jsonschema::Validator::new(schema.as_value()).unwrap();
+        let base = json!({
+            "$schema": ResourceManifest::default_schema_id_uri(),
+            "type": "Test/JsonRpc", "version": "0.1.0", "get": {},
+            "jsonrpc": {"executable": "dsctest"}
+        });
+        for update in [
+            json!({}),
+            json!({"set": {"return": "stateAndDiff", "supportsWhatIf": true}}),
+            json!({"schema": {"command": {}}}),
+            json!({"export": {"schema": {"command": {}}}}),
+            json!({"adapter": {"inputKind": "single"}}),
+        ] {
+            let mut manifest = base.clone();
+            manifest.as_object_mut().unwrap().extend(update.as_object().unwrap().clone());
+            assert!(serde_json::from_value::<ResourceManifest>(manifest.clone()).unwrap().validate_transport().is_ok(), "{manifest}");
+            assert!(validator.is_valid(&manifest), "{manifest}: {:?}", validator.iter_errors(&manifest).collect::<Vec<_>>());
+        }
+        for update in [
+            json!({"get": {"executable": ""}}),
+            json!({"export": {"executable": ""}}),
+            json!({"schema": {"command": {"executable": ""}}}),
+            json!({"export": {"schema": {"command": {"executable": ""}}}}),
+        ] {
+            let mut manifest = base.clone();
+            manifest.as_object_mut().unwrap().extend(update.as_object().unwrap().clone());
+            assert!(serde_json::from_value::<ResourceManifest>(manifest.clone()).is_err(), "{manifest}");
+            assert!(!validator.is_valid(&manifest), "{manifest}");
+        }
+        for update in [
+            json!({"jsonrpc": null}),
+            json!({"get": {"args": ["ignored"]}}),
+            json!({"get": {"input": "stdin"}}),
+            json!({"schema": {"command": {"args": []}}}),
+            json!({"export": {"schema": {"command": {"args": []}}}}),
+            json!({"adapter": {"inputKind": "full"}}),
+            json!({"adapter": {"inputKind": "sequence"}}),
+            json!({"jsonrpc": {"executable": "dsctest", "initializeTimeoutMS": 0}}),
+            json!({"jsonrpc": {"executable": "dsctest", "shutdownTimeoutMS": 0}}),
+            json!({"set": {"executable": "dsctest", "supportsWhatIf": true}}),
+        ] {
+            let mut manifest = base.clone();
+            manifest.as_object_mut().unwrap().extend(update.as_object().unwrap().clone());
+            assert!(serde_json::from_value::<ResourceManifest>(manifest.clone()).unwrap().validate_transport().is_err(), "{manifest}");
+            assert!(!validator.is_valid(&manifest), "{manifest}");
+        }
+    }
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {

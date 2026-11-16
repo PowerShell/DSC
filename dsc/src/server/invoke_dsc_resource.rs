@@ -104,44 +104,28 @@ impl McpServer {
                 };
                 context.properties = Some(json_map);
             }
-            match operation {
+            let result = match operation {
                 DscOperation::Get => {
-                    let result = match resource.get(&properties_json, &context) {
-                        Ok(res) => res,
-                        Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
-                    };
-                    Ok(ResourceOperationResult::GetResult(result))
+                    resource.get(&properties_json, &context).map(ResourceOperationResult::GetResult)
                 },
                 DscOperation::Set => {
-                    let result = match resource.set(&properties_json, false, &context) {
-                        Ok(res) => res,
-                        Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
-                    };
-                    Ok(ResourceOperationResult::SetResult(result))
+                    resource.set(&properties_json, false, &context).map(ResourceOperationResult::SetResult)
                 },
                 DscOperation::Test => {
-                    let result = match resource.test(&properties_json, &context) {
-                        Ok(res) => res,
-                        Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
-                    };
-                    Ok(ResourceOperationResult::TestResult(result))
+                    resource.test(&properties_json, &context).map(ResourceOperationResult::TestResult)
                 },
                 DscOperation::Delete => {
-                    match resource.delete(&properties_json, &context) {
-                        Ok(DeleteResultKind::ResourceActual) => Ok(ResourceOperationResult::DeleteResult { success: true }),
-                        Ok(DeleteResultKind::ResourceWhatIf(delete_result)) => Ok(ResourceOperationResult::DeleteWhatIfResult(delete_result)),
-                        Ok(DeleteResultKind::SyntheticWhatIf(test_result)) => Ok(ResourceOperationResult::TestResult(test_result)),
-                        Err(e) => Err(McpError::internal_error(e.to_string(), None)),
-                    }
+                    resource.delete(&properties_json, &context).map(|result| match result {
+                        DeleteResultKind::ResourceActual => ResourceOperationResult::DeleteResult { success: true },
+                        DeleteResultKind::ResourceWhatIf(delete_result) => ResourceOperationResult::DeleteWhatIfResult(delete_result),
+                        DeleteResultKind::SyntheticWhatIf(test_result) => ResourceOperationResult::TestResult(test_result),
+                    })
                 },
                 DscOperation::Export => {
-                    let result = match resource.export(&properties_json, &context) {
-                        Ok(res) => res,
-                        Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
-                    };
-                    Ok(ResourceOperationResult::ExportResult(result))
+                    resource.export(&properties_json, &context).map(ResourceOperationResult::ExportResult)
                 }
-            }
+            };
+            context.complete_resource_operation(result).map_err(|e| McpError::internal_error(e.to_string(), None))
         }).await.map_err(|e| McpError::internal_error(e.to_string(), None))??;
 
         Ok(Json(InvokeDscResourceResponse { result }))

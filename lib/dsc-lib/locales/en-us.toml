@@ -1,5 +1,17 @@
 _version = 1
 
+[dscresources.jsonrpc]
+applicationError = "JSON-RPC resource error"
+protocolError = "Invalid JSON-RPC resource protocol message"
+invalidManifest = "Invalid JSON-RPC transport or executable fallback declaration for '%{resource}'"
+emptyExecutable = "A declared resource executable must not be empty"
+runFailed = "The JSON-RPC invocation scope has already failed"
+timeout = "JSON-RPC resource '%{resource}' timed out waiting for '%{method}' after %{timeout}ms"
+timeoutOutOfRange = "JSON-RPC timeout %{timeout}ms exceeds the supported clock range"
+unexpectedExit = "JSON-RPC resource '%{resource}' exited unexpectedly: %{status}"
+operationsMismatch = "JSON-RPC operations do not match the manifest for '%{resource}'"
+readerFailed = "JSON-RPC resource stream reader failed"
+
 [actions.action_manifest]
 actionManifestSchemaTitle = "Action manifest schema URI"
 actionManifestSchemaDescription = "Defines the JSON Schema the action manifest adheres to."

@@ -256,6 +256,9 @@ impl ExecutionInformation {
 )]
 #[dsc_repo_schema(base_name = "directive", folder_path = "config")]
 pub struct ConfigDirective {
+    /// Allow persistent resource processes for this document and nested runs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reuse_resources: Option<bool>,
     /// Indicates if resources are discovered pre-deployment or during deployment
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_discovery: Option<ResourceDiscoveryMode>,
@@ -275,6 +278,9 @@ pub struct ConfigDirective {
 )]
 #[dsc_repo_schema(base_name = "directive", folder_path = "resource")]
 pub struct ResourceDirective {
+    /// Allow persistent resource processes for this instance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reuse_resource: Option<bool>,
     /// Specify specific adapter type used for implicit operations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_adapter: Option<FullyQualifiedTypeName>,

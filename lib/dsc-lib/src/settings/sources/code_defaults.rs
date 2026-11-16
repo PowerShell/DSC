@@ -37,6 +37,8 @@ pub(in crate::settings) mod _implementation_guidance {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "default", folder_path = "settings/sources")]
 pub struct DscSettingsCodeDefaults {
+    pub resource_reuse: bool,
+    pub resource_timeouts: ResourceTimeoutsFileData,
     /// Indicates whether to allow users to ignore settings files.
     ///
     /// The code default for this setting is `false`, which means that users
@@ -163,6 +165,12 @@ impl JsonSchema for DscSettingsCodeDefaults {
 ///   restricted: false
 /// ```
 pub const DSC_SETTINGS_CODE_DEFAULTS: DscSettingsCodeDefaults = DscSettingsCodeDefaults {
+    resource_reuse: true,
+    resource_timeouts: ResourceTimeoutsFileData {
+        initialize_timeout_ms: std::num::NonZeroU64::new(250),
+        request_timeout_ms: Some(0),
+        shutdown_timeout_ms: std::num::NonZeroU64::new(250),
+    },
     forbid_ignore_settings_file: CODE_DEFAULT_FORBID_IGNORE_SETTINGS_FILE,
     ignore_settings_file: CODE_DEFAULT_IGNORE_SETTINGS_FILE,
     tracing: CODE_DEFAULT_TRACING,
