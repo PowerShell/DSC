@@ -84,6 +84,10 @@ fn dsc_main() -> Result<(), ExitCode> {
     settings.load();
 
     util::enable_tracing(settings.resolved());
+    let root_span = tracing::trace_span!("root");
+    let _root_guard = root_span.enter();
+    info!("Trace-level is {:?}", settings.resolved().tracing.level.value);
+    debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
     let mut global_settings = global_settings::get_or_init_with_command_line((&args).into());
     global_settings.load();
