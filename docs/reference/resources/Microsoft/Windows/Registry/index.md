@@ -43,7 +43,9 @@ resources:
 ## Description
 
 The `Microsoft.Windows/Registry` resource enables you to idempotently manage registry keys and
-values. The resource can:
+values. DSC invokes the resource over a reusable JSON-RPC process by default. When resource reuse
+is disabled, DSC uses the existing executable commands instead. You can also continue to invoke
+the `registry config` commands directly. The resource can:
 
 - Add and remove registry keys.
 - Add, update, and remove registry values.

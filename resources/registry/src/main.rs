@@ -20,6 +20,7 @@ use types::RegistryList;
 mod adapter;
 mod args;
 mod error;
+mod jsonrpc;
 mod types;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
@@ -37,6 +38,12 @@ fn main() -> ExitCode {
 
     let args = Arguments::parse();
     match args.subcommand {
+        SubCommand::JsonRpc => {
+            if let Err(err) = jsonrpc::serve(std::io::stdin().lock(), &mut std::io::stdout().lock()) {
+                error!("{err}");
+                return ExitCode::from(EXIT_REGISTRY_ERROR);
+            }
+        },
         SubCommand::Adapter { subcommand } => {
             let result = match subcommand {
                 AdapterSubCommand::Get { input, adapted_resource } => {
