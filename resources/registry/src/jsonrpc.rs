@@ -9,6 +9,8 @@ use schemars::schema_for;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use crate::types::RegistryList;
+
 #[derive(Default, PartialEq)]
 enum State {
     #[default]
@@ -50,30 +52,55 @@ struct InvokeParams {
 
 fn invoke(params: Value) -> Result<Value, RpcError> {
     let params: InvokeParams = serde_json::from_value(params).map_err(RpcError::invalid_params)?;
-    if params.resource_type != "Microsoft.Windows/Registry" {
-        return Err(RpcError::invalid_params(t!("jsonrpc.unsupportedResource", resource = params.resource_type)));
-    }
+    let list = match params.resource_type.as_str() {
+        "Microsoft.Windows/Registry" => false,
+        "Microsoft.Windows/RegistryList" => true,
+        _ => return Err(RpcError::invalid_params(t!("jsonrpc.unsupportedResource", resource = params.resource_type))),
+    };
     if params.operation == "schema" {
-        return serde_json::to_value(schema_for!(Registry)).map_err(|err| RpcError::new(-32603, err));
+        let schema = if list { schema_for!(RegistryList) } else { schema_for!(Registry) };
+        return serde_json::to_value(schema).map_err(|err| RpcError::new(-32603, err));
     }
-    if !matches!(params.operation.as_str(), "get" | "set" | "delete") {
+    if !matches!(params.operation.as_str(), "get" | "set" | "delete")
+        || (list && params.operation == "delete")
+    {
         return Err(RpcError::invalid_params(t!("jsonrpc.unsupportedOperation", operation = params.operation)));
     }
     let properties = params.properties.filter(Value::is_object)
         .ok_or_else(|| RpcError::invalid_params(t!("jsonrpc.invalidParams")))?;
+    if list {
+        let mut registry_list: RegistryList = serde_json::from_value(properties).map_err(RpcError::invalid_params)?;
+        registry_list.inherit_registry_file_path();
+        let mut entries = Vec::new();
+        for registry in registry_list.registry_entries {
+            let result = invoke_registry(&params.operation, &params.execution_type, &registry)?;
+            if params.operation == "get" || params.execution_type == ExecutionType::WhatIf {
+                entries.push(result);
+            }
+        }
+        return if params.operation == "set" && params.execution_type == ExecutionType::Actual {
+            Ok(Value::Null)
+        } else {
+            Ok(json!({"registryEntries": entries}))
+        };
+    }
     let registry: Registry = serde_json::from_value(properties).map_err(RpcError::invalid_params)?;
-    let mut helper = RegistryHelper::new_from_registry(&registry).map_err(RpcError::invalid_params)?;
-    if params.execution_type == ExecutionType::WhatIf {
+    invoke_registry(&params.operation, &params.execution_type, &registry)
+}
+
+fn invoke_registry(operation: &str, execution_type: &ExecutionType, registry: &Registry) -> Result<Value, RpcError> {
+    let mut helper = RegistryHelper::new_from_registry(registry).map_err(RpcError::invalid_params)?;
+    if *execution_type == ExecutionType::WhatIf {
         helper.enable_what_if();
     }
-    let result = match params.operation.as_str() {
+    let result = match operation {
         "get" => helper.get().map(Some),
         "delete" => helper.remove(),
         // Match the CLI's _exist handling, including synthetic deletion during set.
         _ if registry.exist == Some(false) => helper.remove(),
         _ => helper.set(),
     }.map_err(|err| RpcError::new(-32000, err))?;
-    if params.operation != "get" && params.execution_type == ExecutionType::Actual {
+    if operation != "get" && *execution_type == ExecutionType::Actual {
         return Ok(Value::Null);
     }
     // An offline delete of a missing key has no preview; return its unchanged state.
@@ -191,6 +218,47 @@ mod tests {
         assert_eq!(responses[1]["result"], serde_json::to_value(schema_for!(Registry)).unwrap());
         assert_eq!(responses[1]["result"], responses[2]["result"]);
         assert_eq!(responses[3]["result"], Value::Null);
+    }
+
+    #[test]
+    fn selects_schema_for_each_resource_type() {
+        let mut params = json!({"operation": "schema", "executionType": "actual",
+            "resourceType": "Microsoft.Windows/Registry"});
+        let single = request(2, params.clone());
+        params["resourceType"] = json!("Microsoft.Windows/RegistryList");
+        let responses = run(&[initialize(), single, request(3, params), shutdown(), exit()]);
+        assert_eq!(responses[1]["result"], serde_json::to_value(schema_for!(Registry)).unwrap());
+        assert_eq!(responses[2]["result"], serde_json::to_value(schema_for!(RegistryList)).unwrap());
+    }
+
+    #[test]
+    fn empty_list_preserves_operation_return_contracts() {
+        let params = json!({"operation": "get", "executionType": "actual",
+            "resourceType": "Microsoft.Windows/RegistryList", "properties": {"registryEntries": []}});
+        for (operation, execution, expected) in [
+            ("get", "actual", json!({"registryEntries": []})),
+            ("set", "actual", Value::Null),
+            ("set", "whatIf", json!({"registryEntries": []})),
+        ] {
+            let mut params = params.clone();
+            params["operation"] = json!(operation);
+            params["executionType"] = json!(execution);
+            assert_eq!(invoke(params).ok(), Some(expected));
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_list_input_and_undeclared_delete() {
+        for (operation, properties) in [
+            ("delete", json!({"registryEntries": []})),
+            ("get", json!({})),
+            ("set", json!({"registryEntries": {}})),
+            ("set", json!({"registryEntries": [{"keyPath": "HKCU"}, {}]})),
+        ] {
+            let result = invoke(json!({"operation": operation, "executionType": "actual",
+                "resourceType": "Microsoft.Windows/RegistryList", "properties": properties}));
+            assert_eq!(result.err().map(|err| err.code), Some(-32602));
+        }
     }
 
     #[test]

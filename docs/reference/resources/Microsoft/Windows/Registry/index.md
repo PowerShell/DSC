@@ -51,6 +51,11 @@ the `registry config` commands directly. The resource can:
 - Add, update, and remove registry values.
 - Retrieve and configure registry key access control lists (ACLs).
 
+The companion `Microsoft.Windows/RegistryList` resource also supports JSON-RPC for `get`, `set`,
+what-if, and schema operations. It processes the entries in `registryEntries` in order, including
+entries with `_exist: false`. A list-level `registryFilePath` applies to entries that don't specify
+their own offline hive file path.
+
 > [!NOTE]
 > This resource is installed with DSC itself on Windows systems.
 >

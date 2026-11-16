@@ -14,3 +14,15 @@ pub struct RegistryList {
     #[serde(rename = "registryFilePath", skip_serializing_if = "Option::is_none")]
     pub registry_file_path: Option<String>,
 }
+
+impl RegistryList {
+    pub fn inherit_registry_file_path(&mut self) {
+        if let Some(file_path) = &self.registry_file_path {
+            for entry in &mut self.registry_entries {
+                if entry.registry_file_path.is_none() {
+                    entry.registry_file_path = Some(file_path.clone());
+                }
+            }
+        }
+    }
+}

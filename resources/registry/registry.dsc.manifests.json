@@ -80,6 +80,12 @@
                 "Windows"
             ],
             "version": "1.0.0",
+            "jsonrpc": {
+                "executable": "registry",
+                "args": [
+                    "jsonrpc"
+                ]
+            },
             "get": {
                 "executable": "registry",
                 "args": [
@@ -93,6 +99,7 @@
                 ]
             },
             "set": {
+                "supportsWhatIf": true,
                 "executable": "registry",
                 "args": [
                     "config",
