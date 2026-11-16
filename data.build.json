@@ -36,6 +36,7 @@
       "sshd_config.dsc.resource.json",
       "sshd-subsystem.dsc.resource.json",
       "sshd-subsystemList.dsc.resource.json",
+      "ssh_subsystem.dsc.yaml",
       "y2j"
     ],
     "macOS": [
@@ -70,6 +71,7 @@
       "sshd_config.dsc.resource.json",
       "sshd-subsystem.dsc.resource.json",
       "sshd-subsystemList.dsc.resource.json",
+      "ssh_subsystem.dsc.yaml",
       "y2j"
     ],
     "Windows": [
@@ -117,6 +119,7 @@
       "sshd_config.dsc.resource.json",
       "sshd-subsystem.dsc.resource.json",
       "sshd-subsystemList.dsc.resource.json",
+      "ssh_subsystem.dsc.yaml",
       "windowspowershell.dsc.resource.json",
       "WindowsPowerShell_adapter.dsc.resource.json",
       "windowsupdate.dsc.resource.json",
@@ -191,6 +194,16 @@
         "Windows": [
           "windows_baseline.dsc.yaml",
           "windows_inventory.dsc.yaml"
+        ]
+      }
+    },
+    {
+      "Name": "configurations/ssh",
+      "Kind": "Configuration",
+      "RelativePath": "configurations/ssh",
+      "CopyFiles": {
+        "All": [
+          "ssh_subsystem.dsc.yaml"
         ]
       }
     },

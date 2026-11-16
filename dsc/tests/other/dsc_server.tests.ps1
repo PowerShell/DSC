@@ -47,6 +47,9 @@ Describe 'Tests for DSC server' {
             $response.id | Should -Be 1
             $response.result.capabilities.tools | Should -Not -Be $null
             $response.result.instructions | Should -Not -BeNullOrEmpty
+            # the server identifies itself as DSC so that clients can check its version
+            $response.result.serverInfo.name | Should -BeExactly 'dsc'
+            $response.result.serverInfo.version | Should -BeExactly (dsc --version).Split(' ')[1]
 
             $notifyInitialized = @{
                 jsonrpc = "2.0"
@@ -926,6 +929,8 @@ resources:
         $response.id | Should -Be 17
         $response.error.code | Should -Be -32600
         $response.error.message | Should -Match 'Invalid configuration'
+        # the error carries the exit code the CLI returns for the same failure
+        $response.error.data.exitCode | Should -Be 2
     }
 
     It 'Calling invoke_dsc_config with invalid parameters returns error' {
@@ -961,6 +966,7 @@ resources:
         $response.id | Should -Be 18
         $response.error.code | Should -Be -32600
         $response.error.message | Should -Match 'Invalid parameters'
+        $response.error.data.exitCode | Should -Be 4
     }
 
     It 'Calling show_dsc_schema works' {

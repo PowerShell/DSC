@@ -19,6 +19,7 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod remote;
 pub mod resolve;
 pub mod resource_command;
 pub mod server;
@@ -112,6 +113,13 @@ fn dsc_main() -> Result<(), ExitCode> {
 
     let progress_format = args.progress_format.unwrap_or( ProgressFormat::Default );
 
+    // Validate the remote target and the command before reading any input, so that an
+    // unsupported combination never opens a connection.
+    let remote_target = match args.target.as_deref() {
+        Some(target) => Some(remote::resolve_target(target, &args.subcommand)?),
+        None => None,
+    };
+
     match args.subcommand {
         SubCommand::Completer { shell } => {
             info!("{} {:?}", t!("main.generatingCompleter"), shell);
@@ -144,7 +152,11 @@ fn dsc_main() -> Result<(), ExitCode> {
                 (None, None) => None,
             };
 
-            subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
+            if let Some(target) = &remote_target {
+                remote::config(target, &subcommand, merged_parameters.as_deref())?;
+            } else {
+                subcommand::config(&subcommand, &merged_parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format)?;
+            }
         },
         SubCommand::Action { subcommand } => {
             subcommand::action(&subcommand, progress_format)?;

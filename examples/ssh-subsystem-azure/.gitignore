@@ -1,0 +1,2 @@
+# Created by deploy.ps1: the demo SSH key pair, the dsc package and the connection details.
+.demo/

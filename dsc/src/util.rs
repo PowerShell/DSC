@@ -72,6 +72,7 @@ pub const EXIT_DSC_RESOURCE_NOT_FOUND: u8 = 7;
 pub const EXIT_DSC_ASSERTION_FAILED: u8 = 8;
 pub const EXIT_SERVER_FAILED: u8 = 9;
 pub const EXIT_BICEP_FAILED: u8 = 10;
+pub const EXIT_REMOTE_FAILED: u8 = 11;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 
