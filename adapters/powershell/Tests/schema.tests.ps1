@@ -161,7 +161,7 @@ class TestNullableResource {
         $nullableResource = $resources | Where-Object -Property type -EQ 'TestSchemaResource/TestNullableResource'
         $nullableSchema = $nullableResource.schema | ConvertTo-Json -Depth 100 -Compress
         $ast = [System.Management.Automation.Language.Parser]::ParseFile($scriptPath, [ref]$null, [ref]$null)
-        foreach ($functionName in @('ConvertTo-CanonicalPropertyName', 'Test-PropertyAllowsNull', 'ConvertTo-ResourceState', 'ConvertTo-PropertySchema', 'ConvertTo-ResourceSchema')) {
+        foreach ($functionName in @('ConvertTo-CanonicalPropertyName', 'Test-PropertyAllowsNull', 'Test-ScriptBasedResource', 'ConvertTo-ResourceState', 'ConvertTo-PropertySchema', 'ConvertTo-ResourceSchema')) {
             $functionAst = $ast.Find({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $functionName }, $true)
             . ([scriptblock]::Create($functionAst.Extent.Text))
         }
@@ -265,9 +265,12 @@ class TestNullableResource {
         $mofState.Keys | Should -Not -Contain 'psDscRunAsCredential'
     }
 
-    It 'Filters only LCM metadata from script-based schemas' {
+    It 'Filters only LCM metadata for <Representation> implementation metadata' -ForEach @(
+        @{ Representation = 'named'; ScriptImplementation = 'ScriptBased'; ClassImplementation = 'ClassBased' }
+        @{ Representation = 'JSON-cached numeric'; ScriptImplementation = 0; ClassImplementation = 1 }
+    ) {
         $metadata = @{
-            ImplementationDetail = 'ScriptBased'
+            ImplementationDetail = $ScriptImplementation
             Properties = @(
                 [pscustomobject]@{ Name = 'Name'; PropertyType = '[string]'; IsMandatory = $true }
                 [pscustomobject]@{ Name = 'DependsOn'; PropertyType = '[string[]]' }
@@ -279,10 +282,15 @@ class TestNullableResource {
         $mofSchema.properties.Keys | Should -Not -Contain 'dependsOn'
         $mofSchema.properties.Keys | Should -Not -Contain 'psDscRunAsCredential'
         Test-Json -Json '{"name":"test","state":"running"}' -Schema ($mofSchema | ConvertTo-Json -Depth 100) -ErrorAction Stop | Should -BeTrue
-        $metadata.ImplementationDetail = 'ClassBased'
+        $mofState = ConvertTo-ResourceState -State @{ Name = 'test'; DependsOn = 'LCM'; PsDscRunAsCredential = 'LCM' } -Properties $metadata.Properties -ExcludeLcmProperties (Test-ScriptBasedResource -ResourceInfo $metadata)
+        $mofState.Keys | Should -Not -Contain 'dependsOn'
+        $mofState.Keys | Should -Not -Contain 'psDscRunAsCredential'
+        $metadata.ImplementationDetail = $ClassImplementation
         $classSchema = ConvertTo-ResourceSchema -ResourceInfo $metadata -Type 'Test/Class'
         $classSchema.properties.Keys | Should -Contain 'dependsOn'
         $classSchema.properties.Keys | Should -Contain 'psDscRunAsCredential'
+        $classState = ConvertTo-ResourceState -State @{ Name = 'test'; DependsOn = @('value') } -Properties $metadata.Properties -ExcludeLcmProperties (Test-ScriptBasedResource -ResourceInfo $metadata)
+        $classState.Keys | Should -Contain 'dependsOn'
     }
 
     It 'Isolates a schema-generation failure and warns with the resource type' {

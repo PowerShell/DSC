@@ -156,6 +156,13 @@ $ps = [PowerShell]::Create().AddScript({
             return $Property.AllowNull -or ($Property.IsMandatory -and $Property.PropertyType -match '^\[?(?:System\.)?Nullable\[')
         }
 
+        function Test-ScriptBasedResource {
+            param($ResourceInfo)
+
+            # JSON caches serialize the ScriptBased enum member as 0.
+            return $ResourceInfo.ImplementationDetail -in @('ScriptBased', 0)
+        }
+
         function ConvertTo-ResourceState {
             param(
                 $State,
@@ -272,7 +279,7 @@ $ps = [PowerShell]::Create().AddScript({
                 }
                 $requiredProperties = @()
                 foreach ($prop in $ResourceInfo.Properties) {
-                    if ($ResourceInfo.ImplementationDetail -eq 'ScriptBased' -and $prop.Name -in @('DependsOn', 'PsDscRunAsCredential')) {
+                    if ((Test-ScriptBasedResource -ResourceInfo $ResourceInfo) -and $prop.Name -in @('DependsOn', 'PsDscRunAsCredential')) {
                         continue
                     }
                     $propertyName = ConvertTo-CanonicalPropertyName -Name $prop.Name
@@ -371,7 +378,7 @@ $ps = [PowerShell]::Create().AddScript({
 
                     $properties = @()
                     foreach ($prop in $DscResourceInfo.Properties) {
-                        if ($DscResourceInfo.ImplementationDetail -eq 'ScriptBased' -and $prop.Name -in @('DependsOn', 'PsDscRunAsCredential')) {
+                        if ((Test-ScriptBasedResource -ResourceInfo $DscResourceInfo) -and $prop.Name -in @('DependsOn', 'PsDscRunAsCredential')) {
                             continue
                         }
                         $properties += ConvertTo-CanonicalPropertyName -Name $prop.Name
@@ -410,7 +417,7 @@ $ps = [PowerShell]::Create().AddScript({
                     $resourceInfo = ($dscResourceCache | Where-Object -Property Type -EQ $ResourceType |
                         Select-Object -First 1).DscResourceInfo
                     $resourceProperties = $resourceInfo.Properties
-                    $excludeLcmProperties = $resourceInfo.ImplementationDetail -eq 'ScriptBased'
+                    $excludeLcmProperties = Test-ScriptBasedResource -ResourceInfo $resourceInfo
 
                     $desiredState = $psDscAdapter.invoke(   { param($jsonInput, $type) Get-DscResourceObject -jsonInput $jsonInput -type $type }, $jsonInput, $ResourceType )
                     if ($null -eq $desiredState) {
