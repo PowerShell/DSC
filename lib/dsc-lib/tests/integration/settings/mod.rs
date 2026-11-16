@@ -6,6 +6,7 @@ mod builders;
 mod fields {
     mod ignore_settings_file;
     mod forbid_ignore_settings_file;
+    mod plugins;
     mod resource_path;
     mod tracing;
 }

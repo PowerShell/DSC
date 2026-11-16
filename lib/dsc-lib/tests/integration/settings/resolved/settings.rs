@@ -9,6 +9,7 @@ crate::macros::test_dsc_repo_schema! {
             IGNORE_SETTINGS_FILE_SCHEMA => "ignoreSettingsFile",
             TRACING_SCHEMA => "tracing",
             RESOURCE_PATH_SCHEMA => "resourcePath",
+            PLUGINS_SCHEMA => "plugins",
         }
     },
     test_meta_schema: {},
@@ -28,6 +29,9 @@ crate::macros::test_dsc_repo_schema! {
         resource_path_title => (RESOURCE_PATH_SCHEMA, "title"),
         resource_path_description => (RESOURCE_PATH_SCHEMA, "description"),
         resource_path_markdown_description => (RESOURCE_PATH_SCHEMA, "markdownDescription"),
+        plugins_title => (PLUGINS_SCHEMA, "title"),
+        plugins_description => (PLUGINS_SCHEMA, "description"),
+        plugins_markdown_description => (PLUGINS_SCHEMA, "markdownDescription"),
     },
     test_validation: {
         with_all_defined_is_valid => {
@@ -63,9 +67,55 @@ crate::macros::test_dsc_repo_schema! {
                         "value": true,
                         "scope": "policy"
                     },
+                },
+                "plugins": {
+                    "enabled": {
+                        "value": false,
+                        "scope": "policy"
+                    },
                 }
             }),
             expected_valid: true,
+        },
+        with_plugins_enabled_as_bare_boolean_is_invalid => {
+            input_json: json!({
+                "forbidIgnoreSettingsFile": {
+                    "value": false,
+                    "scope": "default"
+                },
+                "ignoreSettingsFile": {
+                    "value": false,
+                    "scope": "default"
+                },
+                "tracing": {
+                    "level": {
+                        "value": "warn",
+                        "scope": "default"
+                    },
+                    "format": {
+                        "value": "default",
+                        "scope": "default"
+                    }
+                },
+                "resourcePath": {
+                    "appendEnvPath": {
+                        "value": true,
+                        "scope": "default"
+                    },
+                    "directories": {
+                        "value": [],
+                        "scope": "default"
+                    },
+                    "restricted": {
+                        "value": false,
+                        "scope": "default"
+                    },
+                },
+                "plugins": {
+                    "enabled": false
+                }
+            }),
+            expected_valid: false,
         }
     }
 }
@@ -92,10 +142,38 @@ mod serde {
                 directories: DscSettingsResolvedField::for_policy(vec!["/dsc/resources".into(), "/dsc/extensions".into()]),
                 restricted: DscSettingsResolvedField::for_policy(true.into()),
             },
+            plugins: PluginsResolvedSettings {
+                enabled: DscSettingsResolvedField::for_policy(false),
+            },
         };
 
-        serde_json::to_value(&settings)
+        let value = serde_json::to_value(&settings)
             .expect("serialization should never fail");
+
+        pretty_assertions::assert_eq!(
+            value["plugins"],
+            serde_json::json!({
+                "enabled": {
+                    "value": false,
+                    "scope": "policy"
+                }
+            })
+        );
+    }
+
+    #[test] fn default_enables_plugins_from_code_defaults() {
+        let value = serde_json::to_value(DscSettingsResolved::default())
+            .expect("serialization should never fail");
+
+        pretty_assertions::assert_eq!(
+            value["plugins"],
+            serde_json::json!({
+                "enabled": {
+                    "value": true,
+                    "scope": "default"
+                }
+            })
+        );
     }
 
     // No tests for deserializing, as the type only implements Serialize.

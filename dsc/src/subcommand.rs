@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, SchemaType, ActionSubCommand, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
+use crate::args::{ConfigSubCommand, SchemaType, ActionSubCommand, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, PluginSubCommand, ResourceSubCommand};
+use crate::plugin::reserved_commands;
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
@@ -18,6 +19,7 @@ use dsc_lib::{configure::{config_doc::{Configuration, ExecutionKind, Resource},
     dscresources::dscresource::{validate_json, validate_properties},
     extensions::dscextension::Capability as ExtensionCapability,
     functions::{FunctionCategory, FunctionDispatcher},
+    plugins::discovery::discover_plugins,
     progress::ProgressFormat,
     resources::invoke_result::{TestResult, ValidateResult, ResolveResult},
     util::convert_wildcard_to_regex,
@@ -559,6 +561,24 @@ pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressForm
     Ok(())
 }
 
+/// Runs a subcommand of the `plugin` command.
+///
+/// # Arguments
+///
+/// * `subcommand` - The subcommand to run.
+///
+/// # Errors
+///
+/// Returns the exit code for the failure when the subcommand fails.
+pub fn plugin(subcommand: &PluginSubCommand) -> Result<(), ExitCode> {
+    match subcommand {
+        PluginSubCommand::List { plugin_name, output_format } => {
+            list_plugins(plugin_name, output_format.as_ref())?;
+        },
+    }
+    Ok(())
+}
+
 pub fn function(subcommand: &FunctionSubCommand) -> Result<(), ExitCode> {
     let functions = FunctionDispatcher::new();
     match subcommand {
@@ -794,6 +814,84 @@ fn list_extensions(dsc: &mut DscManager, extension_name: &TypeNameFilter, format
                 // insert newline separating instances if writing to console
                 if io::stdout().is_terminal() { println!(); }
             }
+        }
+    }
+
+    if write_table {
+        let truncate = format != Some(&ListOutputFormat::TableNoTruncate);
+        table.print(truncate);
+    }
+    Ok(())
+}
+
+/// Lists the discovered command plug-ins.
+///
+/// The plug-ins are listed in the order DSC found them, which is the order that decides which
+/// plug-in provides a command when more than one defines it. A plug-in that doesn't provide its
+/// command because of that is marked as shadowed.
+///
+/// # Arguments
+///
+/// * `plugin_name` - The filter for the type name of the plug-ins to list.
+/// * `format` - The output format, if the user specified one.
+///
+/// # Errors
+///
+/// Returns the exit code for a DSC error when DSC can't resolve the directories to search, and the
+/// exit code for a JSON error when a plug-in can't be serialized.
+fn list_plugins(plugin_name: &TypeNameFilter, format: Option<&ListOutputFormat>) -> Result<(), ExitCode> {
+    let write_table = should_write_table(format);
+
+    let mut table = Table::new(&[
+        t!("subcommand.tableHeader_command").to_string().as_ref(),
+        t!("subcommand.tableHeader_type").to_string().as_ref(),
+        t!("subcommand.tableHeader_version").to_string().as_ref(),
+        t!("subcommand.tableHeader_description").to_string().as_ref(),
+    ]);
+
+    let plugins = match discover_plugins(&reserved_commands()) {
+        Ok(plugins) => plugins,
+        Err(err) => {
+            error!("{}: {err}", t!("subcommand.failedDiscoverPlugins"));
+            return Err(ExitCode::from(EXIT_DSC_ERROR));
+        }
+    };
+
+    let mut include_separator = false;
+
+    for plugin in plugins.iter().filter(|plugin| plugin_name.is_match(&plugin.type_name)) {
+        if write_table {
+            let command = if plugin.shadowed {
+                t!("subcommand.pluginShadowed", command = plugin.command).to_string()
+            } else {
+                plugin.command.to_string()
+            };
+            table.add_row(vec![
+                command,
+                plugin.type_name.to_string(),
+                plugin.version.to_string(),
+                plugin.description.clone().unwrap_or_default()
+            ]);
+        }
+        else {
+            // convert to json
+            let json = match serde_json::to_string(plugin) {
+                Ok(json) => json,
+                Err(err) => {
+                    error!("JSON: {err}");
+                    return Err(ExitCode::from(EXIT_JSON_ERROR));
+                }
+            };
+            let format = match format {
+                Some(ListOutputFormat::Json) => Some(OutputFormat::Json),
+                Some(ListOutputFormat::PrettyJson) => Some(OutputFormat::PrettyJson),
+                Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
+                _ => None,
+            };
+            write_object(&json, format.as_ref(), include_separator)?;
+            include_separator = true;
+            // insert newline separating instances if writing to console
+            if io::stdout().is_terminal() { println!(); }
         }
     }
 

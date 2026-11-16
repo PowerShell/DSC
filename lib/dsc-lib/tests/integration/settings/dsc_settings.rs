@@ -453,6 +453,167 @@ mod methods {
         }
     }
 
+    mod resolved_plugins {
+        use super::*;
+        use dsc_lib::settings::sources::{PolicyFileData, PreferenceFileData};
+        use test_case::test_case;
+
+        /// Builds preference file data that only defines `plugins.enabled`.
+        ///
+        /// # Arguments
+        ///
+        /// - `enabled` - The value for the `plugins.enabled` field.
+        ///
+        /// # Returns
+        ///
+        /// An instance of [`PreferenceFileData`] with only `plugins.enabled` defined.
+        fn preference(enabled: bool) -> PreferenceFileData {
+            PreferenceFileDataBuilder::new()
+                .with_plugins(PluginsFileDataBuilder::new().with_enabled(enabled).build())
+                .build()
+        }
+
+        /// Builds policy file data that only defines `plugins.enabled`.
+        ///
+        /// # Arguments
+        ///
+        /// - `enabled` - The value for the `plugins.enabled` field.
+        ///
+        /// # Returns
+        ///
+        /// An instance of [`PolicyFileData`] with only `plugins.enabled` defined.
+        fn policy(enabled: bool) -> PolicyFileData {
+            PolicyFileDataBuilder::new()
+                .with_plugins(PluginsFileDataBuilder::new().with_enabled(enabled).build())
+                .build()
+        }
+
+        /// Builds settings from the optional `plugins.enabled` value for each file-based scope.
+        ///
+        /// # Arguments
+        ///
+        /// - `machine` - The value for the machine preference file, if it defines one.
+        /// - `user` - The value for the user preference file, if it defines one.
+        /// - `workspace` - The value for the workspace preference file, if it defines one.
+        /// - `policy_value` - The value for the policy file, if it defines one.
+        ///
+        /// # Returns
+        ///
+        /// An instance of [`DscSettings`] with the specified scopes loaded.
+        fn settings_for(
+            machine: Option<bool>,
+            user: Option<bool>,
+            workspace: Option<bool>,
+            policy_value: Option<bool>,
+        ) -> DscSettings {
+            let mut builder = DscSettingsBuilder::new();
+            if let Some(enabled) = machine {
+                builder = builder.with_machine(preference(enabled));
+            }
+            if let Some(enabled) = user {
+                builder = builder.with_user(preference(enabled));
+            }
+            if let Some(enabled) = workspace {
+                builder = builder.with_workspace(preference(enabled));
+            }
+            if let Some(enabled) = policy_value {
+                builder = builder.with_policy(policy(enabled));
+            }
+
+            builder.build()
+        }
+
+        #[test_case(None, None, None, None => (true, DscSettingsScope::Default); "code default enables plugins")]
+        #[test_case(Some(false), None, None, None => (false, DscSettingsScope::Machine); "machine overrides code default")]
+        #[test_case(Some(false), Some(true), None, None => (true, DscSettingsScope::User); "user overrides machine")]
+        #[test_case(Some(true), Some(false), None, None => (false, DscSettingsScope::User); "user disables after machine enables")]
+        #[test_case(Some(false), Some(false), Some(true), None => (true, DscSettingsScope::Workspace); "workspace overrides user and machine")]
+        #[test_case(None, None, Some(false), None => (false, DscSettingsScope::Workspace); "workspace overrides code default")]
+        #[test_case(None, None, None, Some(false) => (false, DscSettingsScope::Policy); "policy overrides code default")]
+        #[test_case(Some(true), Some(true), Some(true), Some(false) => (false, DscSettingsScope::Policy); "policy disabling overrides every preference")]
+        #[test_case(Some(false), Some(false), Some(false), Some(true) => (true, DscSettingsScope::Policy); "policy enabling overrides every preference")]
+        fn enabled(
+            machine: Option<bool>,
+            user: Option<bool>,
+            workspace: Option<bool>,
+            policy_value: Option<bool>,
+        ) -> (bool, DscSettingsScope) {
+            let settings = &mut settings_for(machine, user, workspace, policy_value);
+            let resolved = settings.resolved().plugins.enabled.clone();
+
+            (resolved.value, resolved.scope)
+        }
+
+        #[test] fn only_plugins_differs_from_code_defaults() {
+            let settings = &mut settings_for(None, Some(false), None, None);
+            let expected = DscSettingsResolvedBuilder::new()
+                .with_plugins(
+                    PluginsResolvedSettingsBuilder::new()
+                        .with_enabled(false, DscSettingsScope::User)
+                        .build()
+                )
+                .build();
+            let actual = settings.resolved().clone();
+            pretty_assertions::assert_eq!(actual, expected)
+        }
+
+        #[test] fn container_without_enabled_keeps_lower_scope_value() {
+            let settings = &mut DscSettingsBuilder::new()
+                .with_machine(preference(false))
+                .with_user(
+                    PreferenceFileDataBuilder::new()
+                        .with_plugins(PluginsFileDataBuilder::new().build())
+                        .build()
+                )
+                .build();
+            let resolved = settings.resolved().plugins.enabled.clone();
+            pretty_assertions::assert_eq!(resolved.value, false);
+            pretty_assertions::assert_eq!(resolved.scope, DscSettingsScope::Machine);
+        }
+
+        #[test] fn ignoring_settings_files_skips_preferences() {
+            let settings = &mut DscSettingsBuilder::new()
+                .with_machine(preference(false))
+                .with_user(preference(false))
+                .with_workspace(preference(false))
+                .with_environment(
+                    EnvironmentDataBuilder::new()
+                        .with_ignore_settings_file(true)
+                        .build()
+                )
+                .build();
+            let resolved = settings.resolved().plugins.enabled.clone();
+            pretty_assertions::assert_eq!(resolved.value, true);
+            pretty_assertions::assert_eq!(resolved.scope, DscSettingsScope::Default);
+        }
+
+        #[test] fn ignoring_settings_files_keeps_policy() {
+            let settings = &mut DscSettingsBuilder::new()
+                .with_user(preference(true))
+                .with_policy(policy(false))
+                .with_command_line(
+                    CommandLineDataBuilder::new()
+                        .with_ignore_settings_file(true)
+                        .build()
+                )
+                .build();
+            let resolved = settings.resolved().plugins.enabled.clone();
+            pretty_assertions::assert_eq!(resolved.value, false);
+            pretty_assertions::assert_eq!(resolved.scope, DscSettingsScope::Policy);
+        }
+
+        #[test] fn environment_and_command_line_cannot_override() {
+            let settings = &mut DscSettingsBuilder::new()
+                .with_user(preference(false))
+                .with_environment(ENVIRONMENT_DATA.clone())
+                .with_command_line(COMMAND_LINE_DATA.clone())
+                .build();
+            let resolved = settings.resolved().plugins.enabled.clone();
+            pretty_assertions::assert_eq!(resolved.value, false);
+            pretty_assertions::assert_eq!(resolved.scope, DscSettingsScope::User);
+        }
+    }
+
     #[test] fn resolve_all() {
         let settings = &mut DscSettingsBuilder::new()
             .with_machine(MACHINE_DATA.clone())

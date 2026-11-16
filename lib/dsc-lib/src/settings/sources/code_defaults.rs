@@ -128,6 +128,29 @@ pub struct DscSettingsCodeDefaults {
     /// [`Environment`]: crate::settings::DscSettingsScope::Environment
     /// [`EnvironmentData`]: crate::settings::sources::EnvironmentData
     pub resource_path: ResourcePathCodeDefaults,
+    /// Defines whether DSC discovers and runs command plug-ins.
+    ///
+    /// The code default for this container field is defined by
+    /// [`CODE_DEFAULT_PLUGINS`].
+    ///
+    /// You can override this setting in the file-based scopes only. It can't
+    /// be defined in the [`Environment`] or [`CommandLine`] scopes. For more
+    /// information, see:
+    ///
+    /// - [`PolicyFileData::plugins`] to define this setting in the [`Policy`]
+    ///   scope.
+    /// - [`PreferenceFileData::plugins`] to define this setting as a
+    ///   preference in the [`Machine`], [`User`], and [`Workspace`] scopes.
+    ///
+    /// [`Environment`]: crate::settings::DscSettingsScope::Environment
+    /// [`CommandLine`]: crate::settings::DscSettingsScope::CommandLine
+    /// [`Policy`]: crate::settings::DscSettingsScope::Policy
+    /// [`Machine`]: crate::settings::DscSettingsScope::Machine
+    /// [`User`]: crate::settings::DscSettingsScope::User
+    /// [`Workspace`]: crate::settings::DscSettingsScope::Workspace
+    /// [`PolicyFileData::plugins`]: crate::settings::sources::PolicyFileData::plugins
+    /// [`PreferenceFileData::plugins`]: crate::settings::sources::PreferenceFileData::plugins
+    pub plugins: PluginsCodeDefaults,
 }
 
 impl JsonSchema for DscSettingsCodeDefaults {
@@ -161,12 +184,15 @@ impl JsonSchema for DscSettingsCodeDefaults {
 ///   append_env_path: true
 ///   directories: []
 ///   restricted: false
+/// plugins:
+///   enabled: true
 /// ```
 pub const DSC_SETTINGS_CODE_DEFAULTS: DscSettingsCodeDefaults = DscSettingsCodeDefaults {
     forbid_ignore_settings_file: CODE_DEFAULT_FORBID_IGNORE_SETTINGS_FILE,
     ignore_settings_file: CODE_DEFAULT_IGNORE_SETTINGS_FILE,
     tracing: CODE_DEFAULT_TRACING,
     resource_path: CODE_DEFAULT_RESOURCE_PATH,
+    plugins: CODE_DEFAULT_PLUGINS,
 };
 
 impl Default for DscSettingsCodeDefaults {

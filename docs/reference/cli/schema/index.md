@@ -189,6 +189,7 @@ schema the application returns:
 - `get-result` ([reference documentation][ai]) - Represents the output from the `dsc resource get` command.
 - `include` ([reference documentation][aj]) - represents the instance schema for the built-in `Microsoft.DSC/Include` importer resource.
 - `manifest-list` ([reference documentation][ak])
+- `plugin-manifest` ([reference documentation][as]) - Validates a plug-in's manifest. DSC skips a plug-in with an invalid manifest and writes a warning.
 - `resolve-result` ([reference documentation][al]) - Represents the resolved form of the configuration document an `importer` resource emits.
 - `resource` ([reference documentation][am]) - Represents an instance of a resource in a configuration document.
 - `resource-manifest` ([reference documentation][an]) - Validates a command resource's manifest. If the manifest is invalid, DSC raises an error.
@@ -211,6 +212,7 @@ ValidValues: [
                get-result
                include
                manifest-list
+               plugin-manifest
                resolve-result
                resource-manifest
                restart-required
@@ -297,3 +299,4 @@ For more information about the formatting of the output data, see the
 [ap]: ../../schemas/outputs/resource/set.md
 [aq]: ../../schemas/outputs/resource/test.md
 [ar]: https://jsonlines.org/
+[as]: ../../schemas/plugin/manifest/root.md

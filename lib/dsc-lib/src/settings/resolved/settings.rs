@@ -197,6 +197,35 @@ pub struct DscSettingsResolved {
         )
     )]
     pub resource_path: ResourcePathResolvedSettings,
+    /// Indicates whether DSC should discover and run command plug-ins during
+    /// command execution.
+    ///
+    /// These settings control whether DSC looks for plug-in manifests, lists
+    /// plug-in commands in the help, and dispatches commands that aren't
+    /// built in to the plug-in that provides them.
+    ///
+    /// The following snippet shows the effective code defaults as YAML data:
+    ///
+    /// ```yaml
+    /// plugins:
+    ///   enabled: true
+    /// ```
+    ///
+    /// These settings can only be defined in the [policy settings file] and
+    /// the [preference settings files]. For more information on defining
+    /// them, see [`PluginsFileData`].
+    ///
+    /// [`PluginsFileData`]: crate::settings::fields::PluginsFileData
+    /// [policy settings file]: crate::settings::sources::PolicyFileData
+    /// [preference settings files]: crate::settings::sources::PreferenceFileData
+    #[schemars(
+        title = schema_i18n!("plugins.title"),
+        description = schema_i18n!("plugins.description"),
+        extend(
+            "markdownDescription" = schema_i18n!("plugins.markdownDescription")
+        )
+    )]
+    pub plugins: PluginsResolvedSettings,
 }
 
 impl Default for DscSettingsResolved {
@@ -206,6 +235,7 @@ impl Default for DscSettingsResolved {
             ignore_settings_file: DscSettingsResolvedField::for_code_default(CODE_DEFAULT_IGNORE_SETTINGS_FILE),
             tracing: TracingResolvedSettings::default(),
             resource_path: ResourcePathResolvedSettings::default(),
+            plugins: PluginsResolvedSettings::default(),
         }
     }
 }

@@ -157,12 +157,56 @@ impl ResourcePathFileDataBuilder {
     }
 }
 
+/// Builder for [`PluginsFileData`]
+pub struct PluginsFileDataBuilder {
+    enabled: Option<bool>,
+}
+
+impl PluginsFileDataBuilder {
+    /// Creates a new instance of the builder with all fields undefined.
+    ///
+    /// # Returns
+    ///
+    /// An instance of [`PluginsFileDataBuilder`].
+    pub fn new() -> Self {
+        Self {
+            enabled: None,
+        }
+    }
+
+    /// Adds the specified enabled flag to the builder.
+    ///
+    /// # Arguments
+    ///
+    /// - `enabled` - A boolean indicating whether DSC discovers and runs command plug-ins.
+    ///
+    /// # Returns
+    ///
+    /// The updated instance of [`PluginsFileDataBuilder`].
+    pub fn with_enabled(mut self, enabled: bool) -> Self {
+        self.enabled = Some(enabled);
+        self
+    }
+
+    /// Builds the [`PluginsFileData`] instance from the specified fields.
+    ///
+    /// # Returns
+    ///
+    /// An instance of [`PluginsFileData`].
+    pub fn build(self) -> PluginsFileData {
+        PluginsFileData {
+            enabled: self.enabled,
+        }
+    }
+}
+
 /// Builder for [`PolicyFileData`]
 pub struct PolicyFileDataBuilder {
     pub forbid_ignore_settings_file: Option<ForbidIgnoreSettingsFileField>,
     pub ignore_settings_file: Option<IgnoreSettingsFileField>,
     pub tracing: Option<TracingFileData>,
     pub resource_path: Option<ResourcePathFileData>,
+    pub plugins: Option<PluginsFileData>,
 }
 
 impl PolicyFileDataBuilder {
@@ -177,6 +221,7 @@ impl PolicyFileDataBuilder {
             ignore_settings_file: None,
             tracing: None,
             resource_path: None,
+            plugins: None,
         }
     }
     /// Adds the specified forbid ignore settings file flag to the builder.
@@ -231,6 +276,19 @@ impl PolicyFileDataBuilder {
         self.resource_path = Some(resource_path);
         self
     }
+    /// Adds the specified plug-in configuration to the builder.
+    ///
+    /// # Arguments
+    ///
+    /// - `plugins` - An instance of [`PluginsFileData`].
+    ///
+    /// # Returns
+    ///
+    /// The updated instance of [`PolicyFileDataBuilder`].
+    pub fn with_plugins(mut self, plugins: PluginsFileData) -> Self {
+        self.plugins = Some(plugins);
+        self
+    }
     /// Builds the [`PolicyFileData`] instance from the specified fields.
     ///
     /// # Returns
@@ -242,6 +300,7 @@ impl PolicyFileDataBuilder {
             ignore_settings_file: self.ignore_settings_file,
             tracing: self.tracing,
             resource_path: self.resource_path,
+            plugins: self.plugins,
         }
     }
 }
@@ -250,6 +309,7 @@ impl PolicyFileDataBuilder {
 pub struct PreferenceFileDataBuilder {
     pub tracing: Option<TracingFileData>,
     pub resource_path: Option<ResourcePathFileData>,
+    pub plugins: Option<PluginsFileData>,
 }
 impl PreferenceFileDataBuilder {
     /// Creates a new instance of the [`PreferenceFileDataBuilder`] with default values.
@@ -261,6 +321,7 @@ impl PreferenceFileDataBuilder {
         Self {
             tracing: None,
             resource_path: None,
+            plugins: None,
         }
     }
 
@@ -292,6 +353,20 @@ impl PreferenceFileDataBuilder {
         self
     }
 
+    /// Adds the specified plug-in configuration to the builder.
+    ///
+    /// # Arguments
+    ///
+    /// - `plugins` - An instance of [`PluginsFileData`].
+    ///
+    /// # Returns
+    ///
+    /// The updated instance of [`PreferenceFileDataBuilder`].
+    pub fn with_plugins(mut self, plugins: PluginsFileData) -> Self {
+        self.plugins = Some(plugins);
+        self
+    }
+
     /// Builds the [`PreferenceFileData`] instance from the specified fields.
     ///
     /// # Returns
@@ -301,6 +376,7 @@ impl PreferenceFileDataBuilder {
         PreferenceFileData {
             tracing: self.tracing,
             resource_path: self.resource_path,
+            plugins: self.plugins,
         }
     }
 }
@@ -773,12 +849,60 @@ impl TracingResolvedSettingsBuilder {
     }
 }
 
+/// Builder for constructing instances of [`PluginsResolvedSettings`].
+pub struct PluginsResolvedSettingsBuilder {
+    pub enabled: Option<DscSettingsResolvedField<bool>>,
+}
+
+impl PluginsResolvedSettingsBuilder {
+    /// Creates a new instance of the builder with default values.
+    ///
+    /// # Returns
+    ///
+    /// The newly created instance of [`PluginsResolvedSettingsBuilder`].
+    pub fn new() -> Self {
+        Self {
+            enabled: None,
+        }
+    }
+
+    /// Adds the specified enabled setting to the builder.
+    ///
+    /// # Arguments
+    ///
+    /// - `value` - The value to set for the enabled setting.
+    /// - `scope` - The scope of the setting.
+    ///
+    /// # Returns
+    ///
+    /// The updated instance of [`PluginsResolvedSettingsBuilder`].
+    pub fn with_enabled(mut self, value: bool, scope: DscSettingsScope) -> Self {
+        self.enabled = Some(DscSettingsResolvedField::new(value, scope));
+        self
+    }
+
+    /// Builds the final instance of [`PluginsResolvedSettings`] from the builder.
+    ///
+    /// # Returns
+    ///
+    /// The constructed instance of [`PluginsResolvedSettings`].
+    pub fn build(self) -> PluginsResolvedSettings {
+        let mut resolved = PluginsResolvedSettings::default();
+        if let Some(enabled) = self.enabled {
+            resolved.enabled = enabled;
+        }
+
+        resolved
+    }
+}
+
 /// Builder for constructing instances of [`DscSettingsResolved`].
 pub struct DscSettingsResolvedBuilder {
     pub forbid_ignore_settings_file: Option<DscSettingsResolvedField<ForbidIgnoreSettingsFileField>>,
     pub ignore_settings_file: Option<DscSettingsResolvedField<IgnoreSettingsFileField>>,
     pub tracing: Option<TracingResolvedSettings>,
     pub resource_path: Option<ResourcePathResolvedSettings>,
+    pub plugins: Option<PluginsResolvedSettings>,
 }
 
 impl DscSettingsResolvedBuilder {
@@ -793,6 +917,7 @@ impl DscSettingsResolvedBuilder {
             ignore_settings_file: None,
             tracing: None,
             resource_path: None,
+            plugins: None,
         }
     }
 
@@ -853,6 +978,20 @@ impl DscSettingsResolvedBuilder {
         self.resource_path = Some(resource_path);
         self
     }
+
+    /// Adds the specified plug-in settings to the builder.
+    ///
+    /// # Arguments
+    ///
+    /// - `plugins` - The plug-in settings to set.
+    ///
+    /// # Returns
+    ///
+    /// The updated instance of [`DscSettingsResolvedBuilder`].
+    pub fn with_plugins(mut self, plugins: PluginsResolvedSettings) -> Self {
+        self.plugins = Some(plugins);
+        self
+    }
     /// Builds the final instance of [`DscSettingsResolved`] using the settings provided to the builder.
     ///
     /// # Returns
@@ -871,6 +1010,9 @@ impl DscSettingsResolvedBuilder {
         }
         if let Some(resource_path) = self.resource_path {
             settings.resource_path = resource_path;
+        }
+        if let Some(plugins) = self.plugins {
+            settings.plugins = plugins;
         }
 
         settings

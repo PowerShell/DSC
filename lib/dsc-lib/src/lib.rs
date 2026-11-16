@@ -18,6 +18,7 @@ pub mod dscresources;
 pub mod extensions;
 pub mod functions;
 pub mod parser;
+pub mod plugins;
 pub mod progress;
 pub mod resources;
 pub mod schemas;
