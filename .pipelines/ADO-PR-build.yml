@@ -1,0 +1,176 @@
+name: DSC-$(Build.BuildId)
+trigger: none
+
+pr:
+  branches:
+    include:
+      - release/*
+
+variables:
+  - name: CDP_DEFINITION_BUILD_COUNT
+    value: $[counter('', 0)]  # needed for onebranch.pipeline.version task https://aka.ms/obpipelines/versioning
+  - name: WindowsContainerImage
+    value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
+  - group: DSC-Rust.SDK
+  - name: RustVersion
+    value: ms-prod-1.97.1
+
+resources:
+  repositories:
+  - repository: templates
+    type: git
+    name: OneBranch.Pipelines/GovernedTemplates
+    ref: refs/heads/main
+
+extends:
+  template: v2/OneBranch.NonOfficial.CrossPlat.yml@templates  # https://aka.ms/obpipelines/templates
+  parameters:
+    featureFlags:
+      WindowsHostVersion:
+        Version: 2022
+    cloudvault:  # https://aka.ms/obpipelines/cloudvault
+      enabled: false
+    globalSdl:  # https://aka.ms/obpipelines/sdl
+      tsa:
+        enabled: false  # onebranch publish all SDL results to TSA. If TSA is disabled all SDL tools will forced into 'break' build mode.
+      # credscan:
+        # suppressionsFile: $(Build.SourcesDirectory)\.config\CredScanSuppressions.json
+      binskim:
+        break: true  # always break the build on binskim issues in addition to TSA upload
+      policheck:
+        break: true  # always break the build on policheck issues. You can disable it by setting to 'false'
+      # suppression:
+      #   suppressionFile: $(Build.SourcesDirectory)\.gdn\global.gdnsuppress
+
+    stages:
+    - stage: BuildStage
+      jobs:
+      - job: BuildWindows
+        displayName: Build Windows
+        strategy:
+          matrix:
+            x86_64:
+              buildName: x86_64-pc-windows-msvc
+            aarch64:
+              buildName: aarch64-pc-windows-msvc
+        pool:
+          type: windows
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: $(RustVersion)
+            toolchainFeed: '$(Rust.SDK)'
+            additionalTargets: $(buildName)
+          displayName: Install rust
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: '.cargo/config.toml'
+          displayName: Authenticate with Azure Artifacts
+        - task: NugetAuthenticate@1
+        - pwsh: |
+            Write-Verbose -Verbose "BuildName: $(buildName)"
+            ./build.ps1 -Release -Architecture $(buildName)
+        condition: succeeded()
+
+      - job: BuildLinuxMusl
+        variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: Linux-x64-musl
+        pool:
+          type: linux
+        steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ${{ variables.RustVersion }}
+            toolchainFeed: $(Rust.SDK)
+            additionalTargets: x86_64-unknown-linux-musl
+          displayName: Install Rust
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: '.cargo/config.toml'
+          displayName: Authenticate with Azure Artifacts
+        - pwsh: |
+            apt update
+            apt -y install musl-tools rpm dpkg build-essential protobuf-compiler
+            ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
+          displayName: 'Build x86_64-unknown-linux-musl'
+          condition: succeeded()
+
+      - job: BuildLinuxArm64Musl
+        variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204-arm64:latest'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: Linux-ARM64-musl
+        pool:
+          type: linux
+          hostArchitecture: arm64
+        steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ${{ variables.RustVersion }}
+            toolchainFeed: $(Rust.SDK)
+            additionalTargets: aarch64-unknown-linux-musl
+          displayName: Install Rust
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: '.cargo/config.toml'
+          displayName: Authenticate with Azure Artifacts
+        - pwsh: |
+            $env:CC_aarch64_unknown_linux_musl='clang'
+            $env:AR_aarch64_unknown_linux_musl='llvm-ar'
+            $env:CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Clink-self-contained=yes -Clinker=rust-lld"
+            apt update
+            apt -y install clang
+            apt -y install llvm
+            apt -y install musl-tools
+            apt -y install musl-gcc
+            #apt -y install gcc-multilib
+            apt -y install libssl-dev
+            apt -y install pkg-config
+            apt -y install rpm
+            apt -y install dpkg
+            apt -y install build-essential
+            apt install -y protobuf-compiler
+            msrustup default stable-aarch64-unknown-linux-musl
+            if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
+              $env:OPENSSL_LIB_DIR = $matches['dir']
+            }
+            ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
+          displayName: 'Build aarch64-unknown-linux-musl'
+          condition: succeeded()
+
+      - job: BuildMac
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: BuildMac
+        pool:
+          type: linux
+          isCustom: true
+          name: Azure Pipelines
+          vmImage: 'macOS-latest'
+        strategy:
+          matrix:
+            macOS x64:
+              buildName: x86_64-apple-darwin
+            macOS arm64:
+              buildName: aarch64-apple-darwin
+        steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ${{ variables.RustVersion }}
+            toolchainFeed: $(Rust.SDK)
+            additionalTargets: $(buildName)
+          displayName: Install Rust
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: '.cargo/config.toml'
+          displayName: Authenticate with Azure Artifacts
+        - pwsh: |
+            Write-Verbose -Verbose "Building for $(buildName)"
+            ./build.ps1 -Release -Architecture $(buildName)
+          displayName: 'Build $(buildName)'
+          condition: succeeded()
