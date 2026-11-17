@@ -910,7 +910,6 @@ dependencies = [
 name = "dsc-lib-telemetry"
 version = "0.0.0"
 dependencies = [
- "chrono",
  "futures-util",
  "opentelemetry",
  "opentelemetry-semantic-conventions",

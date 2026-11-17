@@ -7,7 +7,6 @@ edition = "2024"
 doctest = false # Disable doc tests by default for compilation speed
 
 [dependencies]
-chrono                             = { workspace = true }
 futures-util                       = { workspace = true }
 opentelemetry                      = { workspace = true }
 opentelemetry_sdk                  = { workspace = true, features = ["testing"] }
