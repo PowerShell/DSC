@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Microsoft.Filesystem/ACL tests' -Skip:(!$IsWindows) {
+Describe 'Microsoft.Windows.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
     BeforeAll {
-        $resourceType = 'Microsoft.Filesystem/ACL'
+        $resourceType = 'Microsoft.Windows.Filesystem/AccessControlList'
         $currentSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
         $desiredSddl = "D:(D;;FR;;;AN)(A;;FA;;;$currentSid)"
 
