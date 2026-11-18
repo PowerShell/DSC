@@ -3,6 +3,9 @@ name = "dsc-resource-registry"
 version = "1.3.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [[bin]]
 name = "registry"
 path = "src/main.rs"
