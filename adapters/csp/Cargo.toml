@@ -3,6 +3,9 @@ name = "csp"
 version = "0.1.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [dependencies]
 clap = { workspace = true }
 rust-i18n = { workspace = true }

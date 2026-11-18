@@ -3,6 +3,9 @@ name = "xtask"
 version = "0.0.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [dependencies]
 clap          = { workspace = true }
 jsonschema    = { workspace = true }

@@ -16,5 +16,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build_client(false)
         .file_descriptor_set_path(&descriptor_path)
         .compile_protos(&["proto/bicep.proto"], &["proto"])?;
+
+    if env::var("CARGO_CFG_TARGET_OS").unwrap() == "windows" {
+        let res = winresource::WindowsResource::new();
+        res.compile()?;
+    }
+
     Ok(())
 }
