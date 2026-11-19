@@ -269,10 +269,10 @@ Describe 'PowerShell adapter resource tests' {
               directives:
                 $directive$adapter
               properties:
-                Name: 'TestClassResource1'
-                HashTableProp:
+                name: 'TestClassResource1'
+                hashTableProp:
                   Name: 'DSCv3'
-                Prop1: foo
+                prop1: foo
 "@
     $out = dsc -l trace config $operation -i $yaml 2> $TestDrive/tracing.txt
     $text = $out | Out-String
@@ -332,8 +332,8 @@ Describe 'PowerShell adapter resource tests' {
         - name: Class-resource credential info
           type: TestClassResource/TestClassResource
           properties:
-            Name: 'TestClassResource'
-            Credential:
+            name: 'TestClassResource'
+            credential:
               UserName: 'User'
               OtherProperty: 'Password'
 "@
@@ -350,8 +350,8 @@ Describe 'PowerShell adapter resource tests' {
         - name: Class-resource Info
           type: TestClassResource/TestClassResource
           properties:
-            Name: 'TestClassResource'
-            Ensure: 'Present'
+            name: 'TestClassResource'
+            ensure: 'Present'
 "@
 
     $out = dsc config get -i $yaml | ConvertFrom-Json
@@ -385,9 +385,9 @@ Describe 'PowerShell adapter resource tests' {
         - name: Class-resource Info
           type: TestClassResource/TestClassResource
           properties:
-            Name: EchoBack
-            Prop1: "[[this is a string literal]"
-            EnumProp: 'Expected'
+            name: EchoBack
+            prop1: "[[this is a string literal]"
+            enumProp: 'Expected'
 "@
     $out = dsc config get -i $yaml | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
@@ -396,4 +396,3 @@ Describe 'PowerShell adapter resource tests' {
     $out.results.result.actualState.EnumProp | Should -BeExactly 'Expected'
   }
 }
-

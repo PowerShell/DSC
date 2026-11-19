@@ -191,7 +191,7 @@ Describe 'Tests for adapter support' {
                 - name: Test2
                   type: TestClassResource/TestClassResource
                   properties:
-                    Name: 'Bye'
+                    name: 'Bye'
                   directives:
                     requireAdapter: Microsoft.Adapter/PowerShell
 '@
@@ -204,6 +204,7 @@ Describe 'Tests for adapter support' {
             $out.results[1].type | Should -BeExactly 'TestClassResource/TestClassResource'
             $out.results[1].Name | Should -Be 'Test2'
             $out.results[1].result.actualState.Name | Should -BeExactly 'Bye'
+            $out.results[1].result.actualState.PSObject.Properties.Name -ccontains 'name' | Should -BeTrue
             "$TestDrive/error.log" | Should -FileContentMatch "Invoking get for 'Microsoft.DSC/PowerShell'" -Because (Get-Content $TestDrive/error.log | Out-String)
             "$TestDrive/error.log" | Should -FileContentMatch "Invoking get for 'Microsoft.Adapter/PowerShell'" -Because (Get-Content $TestDrive/error.log | Out-String)
         }

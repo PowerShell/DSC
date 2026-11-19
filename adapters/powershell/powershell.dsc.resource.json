@@ -79,18 +79,26 @@
       "input": "stdin",
       "return": "state"
       },
-    "validate": {
-        "executable": "pwsh",
-        "args": [
-          "-NoLogo",
-          "-NonInteractive",
-          "-NoProfile",
-          "-ExecutionPolicy",
-          "Bypass",
-          "-Command",
-          "$Input | ./psDscAdapter/powershell.resource.ps1 Validate"
-          ],
-        "input": "stdin"
+    "schema": {
+        "embedded": {
+            "type": "object",
+            "required": ["resources"],
+            "properties": {
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["name", "type"],
+                        "properties": {
+                            "name": { "type": "string" },
+                            "type": { "type": "string" },
+                            "properties": { "type": "object" }
+                        }
+                    }
+                },
+                "psmodulepath": { "type": "string" }
+            }
+        }
       },
     "exitCodes": {
       "0": "Success",

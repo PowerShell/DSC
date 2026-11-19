@@ -32,8 +32,8 @@ resources:
   directives:
     requireAdapter: Microsoft.Adapter/WindowsPowerShell
   properties:
-    Name: Spooler
-    StartupType: Automatic
+    name: Spooler
+    startupType: Automatic
 ```
 
 Copy the configuration document and save it as `spooler.dsc.yaml`.
@@ -106,39 +106,31 @@ results:
   type: PSDesiredStateConfiguration/Service
   result:
     desiredState:
-      Name: Spooler
-      StartupType: Automatic
+      name: Spooler
+      startupType: Automatic
     actualState:
-      Status: null
-      Description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
-      DisplayName: Print Spooler
-      ResourceId: null
-      PsDscRunAsCredential: null
-      Name: Spooler
-      Credential: null
-      PSComputerName: localhost
-      ConfigurationName: null
-      Ensure: null
-      DependsOn: null
-      SourceInfo: null
-      BuiltInAccount: LocalSystem
-      StartupType: Manual
-      State: Running
-      ModuleVersion: '1.1'
-      ModuleName: PSDesiredStateConfiguration
-      Path: C:\WINDOWS\System32\spoolsv.exe
-      Dependencies:
+      description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
+      displayName: Print Spooler
+      name: Spooler
+      psComputerName: localhost
+      builtInAccount: LocalSystem
+      startupType: Manual
+      state: Running
+      moduleVersion: '1.1'
+      moduleName: PSDesiredStateConfiguration
+      path: C:\WINDOWS\System32\spoolsv.exe
+      dependencies:
       - RPCSS
       - http
       _inDesiredState: false
     inDesiredState: false
     differingProperties:
-    - StartupType
+    - startupType
 messages: []
 hadErrors: false
 ```
 
-The `inDesiredState` field is `false` and `differingProperties` shows that `StartupType` differs.
+The `inDesiredState` field is `false` and `differingProperties` shows that `startupType` differs.
 
 ## Ensure a service is running with automatic startup
 
@@ -178,51 +170,35 @@ results:
   type: PSDesiredStateConfiguration/Service
   result:
     beforeState:
-      Status: null
-      Description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
-      DisplayName: Print Spooler
-      ResourceId: null
-      PsDscRunAsCredential: null
-      Name: Spooler
-      Credential: null
-      PSComputerName: localhost
-      ConfigurationName: null
-      Ensure: null
-      DependsOn: null
-      SourceInfo: null
-      BuiltInAccount: LocalSystem
-      StartupType: Manual
-      State: Running
-      ModuleVersion: '1.1'
-      ModuleName: PSDesiredStateConfiguration
-      Path: C:\WINDOWS\System32\spoolsv.exe
-      Dependencies:
+      description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
+      displayName: Print Spooler
+      name: Spooler
+      psComputerName: localhost
+      builtInAccount: LocalSystem
+      startupType: Manual
+      state: Running
+      moduleVersion: '1.1'
+      moduleName: PSDesiredStateConfiguration
+      path: C:\WINDOWS\System32\spoolsv.exe
+      dependencies:
       - RPCSS
       - http
     afterState:
-      Status: null
-      Description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
-      DisplayName: Print Spooler
-      ResourceId: null
-      PsDscRunAsCredential: null
-      Name: Spooler
-      Credential: null
-      PSComputerName: localhost
-      ConfigurationName: null
-      Ensure: null
-      DependsOn: null
-      SourceInfo: null
-      BuiltInAccount: LocalSystem
-      StartupType: Automatic
-      State: Running
-      ModuleVersion: '1.1'
-      ModuleName: PSDesiredStateConfiguration
-      Path: C:\WINDOWS\System32\spoolsv.exe
-      Dependencies:
+      description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
+      displayName: Print Spooler
+      name: Spooler
+      psComputerName: localhost
+      builtInAccount: LocalSystem
+      startupType: Automatic
+      state: Running
+      moduleVersion: '1.1'
+      moduleName: PSDesiredStateConfiguration
+      path: C:\WINDOWS\System32\spoolsv.exe
+      dependencies:
       - RPCSS
       - http
     changedProperties:
-    - StartupType
+    - startupType
 messages: []
 hadErrors: false
 ```
@@ -261,28 +237,20 @@ results:
   type: PSDesiredStateConfiguration/Service
   result:
     desiredState:
-      Name: Spooler
-      StartupType: Automatic
+      name: Spooler
+      startupType: Automatic
     actualState:
-      Status: null
-      Description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
-      DisplayName: Print Spooler
-      ResourceId: null
-      PsDscRunAsCredential: null
-      Name: Spooler
-      Credential: null
-      PSComputerName: localhost
-      ConfigurationName: null
-      Ensure: null
-      DependsOn: null
-      SourceInfo: null
-      BuiltInAccount: LocalSystem
-      StartupType: Automatic
-      State: Running
-      ModuleVersion: '1.1'
-      ModuleName: PSDesiredStateConfiguration
-      Path: C:\WINDOWS\System32\spoolsv.exe
-      Dependencies:
+      description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
+      displayName: Print Spooler
+      name: Spooler
+      psComputerName: localhost
+      builtInAccount: LocalSystem
+      startupType: Automatic
+      state: Running
+      moduleVersion: '1.1'
+      moduleName: PSDesiredStateConfiguration
+      path: C:\WINDOWS\System32\spoolsv.exe
+      dependencies:
       - RPCSS
       - http
       _inDesiredState: true
@@ -298,9 +266,9 @@ To stop the service and set startup type to manual, use the [`dsc resource set`]
 
 ```powershell
 dsc resource set PSDesiredStateConfiguration/Service --input @'
-Name:        Spooler
-State:       Stopped
-StartupType: Manual
+name:        Spooler
+state:       Stopped
+startupType: Manual
 '@
 ```
 
