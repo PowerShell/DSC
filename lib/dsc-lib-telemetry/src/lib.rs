@@ -11,15 +11,24 @@
 //! OpenTelemetry support. This functionality bundles the [`tracing`] crate and related crates to
 //! provide a simple way to emit trace events to stderr in a human-readable format.
 
-pub mod basic;
+// Re-export the tracing* and opentlemetry* crates for convenience so that
+// other crates can use them by taking a dependency only on the telemetry crate.
+pub use opentelemetry as otel;
+pub use opentelemetry_sdk as otel_sdk;
+pub use opentelemetry_semantic_conventions as otel_conventions;
+pub use tracing;
+pub use tracing_indicatif;
+pub use tracing_log;
+pub use tracing_opentelemetry as tracing_otel;
+pub use tracing_subscriber;
 
-/// Represents the different formats that can be used for stderr output in tracing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StderrFormat {
-    /// Emit trace events as human-readable text to stderr with ANSI color codes.
-    Default,
-    /// Emit trace events as human-readable text to stderr without ANSI color codes.
-    Plaintext,
-    /// Emit trace events as JSON to stderr.
-    Json,
+mod formatters {
+    pub(super) mod tracing_event_formatter;
 }
+pub use formatters::tracing_event_formatter::DscTracingEventFormatter;
+
+mod options;
+pub use options::DscTracingOptions;
+
+mod stderr_format;
+pub use stderr_format::StderrFormat;

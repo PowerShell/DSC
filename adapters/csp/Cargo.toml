@@ -3,6 +3,9 @@ name = "csp"
 version = "0.1.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [dependencies]
 clap = { workspace = true }
 rust-i18n = { workspace = true }
@@ -12,6 +15,12 @@ serde_json = { workspace = true }
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true }
 wmi = { workspace = true }
+
+[dev-dependencies]
+test-case = { workspace = true }
+
+[target.'cfg(windows)'.dev-dependencies]
+is_elevated = { workspace = true }
 
 [package.metadata.i18n]
 available-locales = ["en-us"]

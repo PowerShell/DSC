@@ -21,9 +21,10 @@ path = "bindings/rust/lib.rs"
 doctest = false
 
 [dependencies]
-tree-sitter-rust = { workspace = true }
-tree-sitter = { workspace = true }
 tree-sitter-language = { workspace = true }
 
 [build-dependencies]
 cc = { workspace = true }
+
+[dev-dependencies]
+tree-sitter = { workspace = true }

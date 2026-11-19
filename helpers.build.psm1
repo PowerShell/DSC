@@ -1749,8 +1749,14 @@ function Copy-BuildArtifact {
                 continue
             }
             Write-Verbose "Copying '$($p.Name)' project files..."
-            # Next, copy other files
-            foreach ($file in $p.CopyFiles.All) {
+            $files = @($p.CopyFiles.All)
+            foreach ($platform in @('Linux', 'macOS', 'Windows')) {
+                if (Test-ShouldSkipFileForArchitecture -Architecture $Architecture -OperatingSystem $platform) {
+                    continue
+                }
+                $files += $p.CopyFiles.$platform
+            }
+            foreach ($file in $files | Where-Object { $_ }) {
                 $source = Join-Path $PSScriptRoot $p.RelativePath $file
                 $source = Resolve-Path $source
                 $destination = $artifactDirectory.Bin
@@ -1763,32 +1769,16 @@ function Copy-BuildArtifact {
                     New-Item -Path $destination -ItemType Directory -Force
                 }
                 Write-Verbose "Copying '$($p.Name)' project file: '$file'`n`tSource: '$source'`n`tDestination: '$destination'"
-                $source | Copy-Item @copyParams -Destination $destination
-            }
-            foreach ($platform in @('Linux', 'macOS', 'Windows')) {
-                $files = $p.CopyFiles.$platform
-                if ($null -eq $files) {
-                    continue
-                }
-                if (Test-ShouldSkipFileForArchitecture -Architecture $Architecture -OperatingSystem $platform) {
-                    Write-Verbose "Skipping copying '$($p.Name)' project files for $platform"
-                    continue
-                }
-                Write-Verbose "Copying '$($p.Name)' project files for $platform"
-                foreach ($file in $p.CopyFiles.$platform) {
-                    $source = Join-Path $PSScriptRoot $p.RelativePath $file
-                    $source = Resolve-Path $source
-                    $destination = $artifactDirectory.Bin
-                    if ($file -match '/') {
-                        $segments = ($file -split '/' | Select-Object -SkipLast 1)
+                $source | Copy-Item @copyParams -Destination $destination -ErrorAction Stop
 
-                        $destination = Join-Path $destination $segments
+                # A manifest list can replace a same-named standalone resource manifest.
+                if ($file -like '*.dsc.manifests.json') {
+                    $oldName = [System.IO.Path]::GetFileName($file) -replace '\.dsc\.manifests\.json$', '.dsc.resource.json'
+                    $oldSource = Join-Path (Split-Path $source -Parent) $oldName
+                    $oldDestination = Join-Path $destination $oldName
+                    if (-not (Test-Path -LiteralPath $oldSource) -and (Test-Path -LiteralPath $oldDestination -PathType Leaf)) {
+                        Remove-Item -LiteralPath $oldDestination -ErrorAction Stop
                     }
-                    if (-not (Test-Path -Path $destination)) {
-                        New-Item -Path $destination -ItemType Directory -Force
-                    }
-                    Write-Verbose "Copying '$($p.Name)' project file: '$file'`n`tSource: '$source'`n`tDestination: '$destination'"
-                    $source | Copy-Item @copyParams -Destination $destination
                 }
             }
         }

@@ -24,42 +24,44 @@ Describe 'Tests for DSC server' {
                 return ($stdout | ConvertFrom-Json -Depth 30)
             }
         }
+
+        function initialize-server {
+            $mcpRequest = @{
+                jsonrpc = "2.0"
+                id      = 1
+                method  = "initialize"
+                params  = @{
+                    protocolVersion = "2024-11-05"
+                    capabilities    = @{
+                        tools = @{}
+                    }
+                    clientInfo      = @{
+                        name    = "Test Client"
+                        version = "1.0.0"
+                    }
+                }
+            }
+
+            $response = Send-McpRequest -request $mcpRequest
+
+            $response.id | Should -Be 1
+            $response.result.capabilities.tools | Should -Not -Be $null
+            $response.result.instructions | Should -Not -BeNullOrEmpty
+
+            $notifyInitialized = @{
+                jsonrpc = "2.0"
+                method  = "notifications/initialized"
+            }
+
+            Send-McpRequest -request $notifyInitialized -notify
+        }
+
+        initialize-server
     }
 
     AfterAll {
         $mcp.StandardInput.Close()
         $mcp.WaitForExit()
-    }
-
-    It 'Initialization works' {
-        $mcpRequest = @{
-            jsonrpc = "2.0"
-            id      = 1
-            method  = "initialize"
-            params  = @{
-                protocolVersion = "2024-11-05"
-                capabilities    = @{
-                    tools = @{}
-                }
-                clientInfo      = @{
-                    name    = "Test Client"
-                    version = "1.0.0"
-                }
-            }
-        }
-
-        $response = Send-McpRequest -request $mcpRequest
-
-        $response.id | Should -Be 1
-        $response.result.capabilities.tools | Should -Not -Be $null
-        $response.result.instructions | Should -Not -BeNullOrEmpty
-
-        $notifyInitialized = @{
-            jsonrpc = "2.0"
-            method  = "notifications/initialized"
-        }
-
-        Send-McpRequest -request $notifyInitialized -notify
     }
 
     It 'Tools/List works' {
@@ -71,13 +73,16 @@ Describe 'Tests for DSC server' {
         }
 
         $tools = @{
+            'invoke_dsc_action'     = $false
             'invoke_dsc_config'     = $false
             'invoke_dsc_expression' = $false
             'invoke_dsc_function'   = $false
             'invoke_dsc_resource'   = $false
+            'list_dsc_actions'      = $false
             'list_dsc_functions'    = $false
             'list_dsc_resources'    = $false
             'query_dsc_config'      = $false
+            'show_dsc_action'       = $false
             'show_dsc_resource'     = $false
             'show_dsc_schema'       = $false
         }
@@ -387,7 +392,6 @@ Describe 'Tests for DSC server' {
                 arguments = @{
                     type            = 'Test/Operation'
                     operation       = $operation
-                    resource_type   = 'Test/Operation'
                     properties_json = (@{
                             hello  = "World"
                             action = $operation
@@ -414,7 +418,6 @@ Describe 'Tests for DSC server' {
                 arguments = @{
                     type            = 'Test/Operation'
                     operation       = 'delete'
-                    resource_type   = 'Test/Operation'
                     properties_json = (@{
                             hello  = "World"
                             action = 'delete'
@@ -1169,5 +1172,79 @@ resources:
         $response.error | Should -Be $null
         $response.result.isError | Should -Be $false
         $response.result.structuredContent.result | Should -Be $null
+    }
+
+    It 'Calling list_dsc_actions returns the list of available actions' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 25
+            method  = "tools/call"
+            params  = @{
+                name      = "list_dsc_actions"
+                arguments = @{}
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 25
+        $response.result.isError | Should -Be $false
+        $response.result.structuredContent.actions.type | Should -Contain 'Microsoft.System.Action/TerminateProcess'
+        $actions = @($response.result.structuredContent.actions | Where-Object -Property type -Like 'Test/*')
+        $actions.Count | Should -Be 2
+        $actions[0].type | Should -BeExactly 'Test/Action2'
+        $actions[0].inputSchema | Should -BeNullOrEmpty
+        $actions[0].outputSchema | Should -BeNullOrEmpty
+        $actions[0].requireSecurityContext | Should -BeNullOrEmpty
+        $actions[0].description | Should -BeExactly 'An action for testing.'
+        $actions[1].type | Should -BeExactly 'Test/Action'
+        $actions[1].inputSchema | Should -Not -BeNullOrEmpty
+        $actions[1].outputSchema | Should -Not -BeNullOrEmpty
+        $actions[1].description | Should -BeExactly 'An action for testing.'
+        $actions[1].requireSecurityContext | Should -BeExactly 'current'
+    }
+
+    It 'Calling invoke_dsc_action works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 26
+            method  = "tools/call"
+            params  = @{
+                name      = "invoke_dsc_action"
+                arguments = @{
+                    type   = "Test/Action"
+                    properties_json  = @{
+                        inputText = "Hello World!"
+                    } | ConvertTo-Json
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 26
+        $response.result.isError | Should -Be $false
+        $response.result.structuredContent.result.outputText | Should -BeExactly 'Hello World!'
+    }
+
+    It 'Calling show_dsc_action works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 27
+            method  = "tools/call"
+            params  = @{
+                name      = "show_dsc_action"
+                arguments = @{
+                    type = "Test/Action"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 27
+        $response.result.isError | Should -Be $false
+        $response.result.structuredContent.type | Should -BeExactly 'Test/Action'
+        $response.result.structuredContent.inputSchema | Should -Not -BeNullOrEmpty
+        $response.result.structuredContent.outputSchema | Should -Not -BeNullOrEmpty
+        $response.result.structuredContent.description | Should -BeExactly 'An action for testing.'
+        $response.result.structuredContent.requireSecurityContext | Should -BeExactly 'current'
     }
 }

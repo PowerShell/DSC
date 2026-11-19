@@ -56,10 +56,32 @@ configuration settings stored in the `sshd_config` file. The resource can:
 - The resource requires OpenSSH server to be installed on the system.
 - The resource must run in a process context that has permissions to read and write the `sshd_config`
   file.
+- Configuration operations invoke `sshd -T`, which requires usable SSH server host keys. An elevated
+  process can still fail if those keys are missing or inaccessible.
 - On Windows, the default configuration file path is `%ProgramData%\ssh\sshd_config`.
 - On Linux, the default configuration file path is `/etc/ssh/sshd_config`.
 - To manage a configuration file in a non-default location, specify the
   [sshd_config_filepath](#sshd_config_filepath) property for the instance.
+
+### Troubleshooting configuration validation
+
+When `sshd -T` fails, the resource returns the original OpenSSH diagnostic. To inspect the failure
+directly, run `sshd -T` in the same process context. For a custom configuration, run
+`sshd -T -f <configuration-path>`.
+
+The message `sshd: no hostkeys available -- exiting` means that OpenSSH couldn't load a usable host
+key. Check the preceding diagnostics to distinguish missing keys from keys that can't be read.
+Elevation alone doesn't create missing host keys.
+
+On Windows, starting the installed `sshd` service initializes missing default host keys. If you need
+to initialize the keys without starting the service, an administrator can run `ssh-keygen -A` to
+generate missing default host keys. These are explicit setup actions; the resource doesn't generate
+keys or start the service. If the configuration specifies custom `HostKey` paths, check those paths
+instead.
+
+For `Permission denied` errors, check the permissions on the configuration file or host key named in
+the diagnostic and the identity running DSC. Don't replace existing host keys or relax their
+permissions as a general workaround.
 
 ## Capabilities
 

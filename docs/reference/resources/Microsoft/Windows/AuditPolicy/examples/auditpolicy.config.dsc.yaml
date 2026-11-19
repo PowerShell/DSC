@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Audit successful and failed logons
+    type: Microsoft.Windows/AuditPolicy
+    properties:
+      subcategory: Logon
+      success: true
+      failure: true
+  - name: Audit failed credential validation
+    type: Microsoft.Windows/AuditPolicy
+    properties:
+      subcategory: Credential Validation
+      failure: true
+  - name: Disable auditing of other privilege use events
+    type: Microsoft.Windows/AuditPolicy
+    properties:
+      subcategory: Other Privilege Use Events
+      success: false
+      failure: false

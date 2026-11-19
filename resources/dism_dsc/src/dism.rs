@@ -384,7 +384,7 @@ impl DismSessionHandle {
 
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).
     pub fn enable_feature(&self, feature_name: &str) -> Result<bool, String> {
-        self.enable_feature_with_options(feature_name, &[], false, false)
+        self.enable_feature_with_options(feature_name, &[], false, true)
     }
 
     /// Returns `Ok(true)` if DISM reports a reboot is required (HRESULT 3010).

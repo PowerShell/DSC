@@ -184,43 +184,83 @@ pub fn perform_test(input_json: &str) -> Result<OsInfo, String> {
     // name is ignored for test since it's only generated for export and not a property of the actual OS state.
     let actual = OsInfo::new(false);
 
+    Ok(test_state(&desired, actual))
+}
+
+fn test_state(desired: &OsInfo, actual: OsInfo) -> OsInfo {
     let mut in_desired_state = true;
 
     if let Some(ref desired_family) = desired.family
-        && let Some(ref actual_family) = actual.family
-        && desired_family != actual_family {
+        && actual.family.as_ref() != Some(desired_family) {
             in_desired_state = false;
         }
 
     if let Some(ref desired_version) = desired.version
-        && let Some(ref actual_version) = actual.version
-        && !version_matches(desired_version, actual_version) {
+        && actual.version.as_ref().is_none_or(|actual_version| !version_matches(desired_version, actual_version)) {
             in_desired_state = false;
         }
 
     if let Some(ref desired_edition) = desired.edition
-        && let Some(ref actual_edition) = actual.edition
-        && actual_edition != desired_edition {
+        && actual.edition.as_ref() != Some(desired_edition) {
             in_desired_state = false;
         }
 
     if let Some(ref desired_codename) = desired.codename
-        && let Some(ref actual_codename) = actual.codename
-        && actual_codename != desired_codename {
+        && actual.codename.as_ref() != Some(desired_codename) {
             in_desired_state = false;
         }
 
     if let Some(desired_bitness) = desired.bitness
-        && let Some(actual_bitness) = actual.bitness
-        && actual_bitness != desired_bitness {
+        && actual.bitness != Some(desired_bitness) {
             in_desired_state = false;
         }
 
     if let Some(ref desired_architecture) = desired.architecture
-        && let Some(ref actual_architecture) = actual.architecture
-        && actual_architecture != desired_architecture {
+        && actual.architecture.as_ref() != Some(desired_architecture) {
             in_desired_state = false;
         }
 
-    Ok(OsInfo { in_desired_state: Some(in_desired_state), ..actual })
+    OsInfo { in_desired_state: Some(in_desired_state), ..actual }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn requested_properties_must_be_present() {
+        let state = json!({
+            "family": "Linux",
+            "version": "Rolling Release",
+            "edition": "Example Edition",
+            "codename": "example",
+            "bitness": 64,
+            "architecture": "x86_64"
+        });
+
+        for property in ["family", "version", "edition", "codename", "bitness", "architecture"] {
+            let desired: OsInfo = serde_json::from_value(json!({ property: state[property] })).unwrap();
+            let actual: OsInfo = serde_json::from_value(state.clone()).unwrap();
+            assert_eq!(test_state(&desired, actual).in_desired_state, Some(true), "{property}");
+
+            let mut missing = state.clone();
+            missing.as_object_mut().unwrap().remove(property);
+            let actual: OsInfo = serde_json::from_value(missing).unwrap();
+            assert_eq!(test_state(&desired, actual).in_desired_state, Some(false), "{property}");
+        }
+    }
+
+    #[test]
+    fn rolling_release_without_optional_properties_matches() {
+        let actual: OsInfo = serde_json::from_value(json!({
+            "family": "Linux",
+            "version": "Rolling Release",
+            "bitness": 64,
+            "architecture": "x86_64"
+        })).unwrap();
+        let desired: OsInfo = serde_json::from_value(json!({ "version": "Rolling Release" })).unwrap();
+        let result = test_state(&desired, actual.clone());
+        assert_eq!(result, OsInfo { in_desired_state: Some(true), ..actual });
+    }
 }

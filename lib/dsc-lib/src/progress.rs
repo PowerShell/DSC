@@ -34,6 +34,8 @@ pub struct Failure {
 #[derive(Default, Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Progress {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_progress: Option<ResourceProgress>,
     /// The unique identifier for the operation.
     pub id: String,
     /// The activity being performed.
@@ -73,7 +75,9 @@ impl Progress {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct ProgressBar {
+    shared: std::sync::Arc<std::sync::Mutex<Progress>>,
     progress_value:  Progress,
     console_bar: Span,
     format: ProgressFormat
@@ -106,8 +110,10 @@ impl ProgressBar {
             let _guard = bar.enter();
         }
 
+        let progress_value = Progress::new(total_items);
         Ok(ProgressBar {
-            progress_value: Progress::new(total_items),
+            shared: std::sync::Arc::new(std::sync::Mutex::new(progress_value.clone())),
+            progress_value,
             console_bar: bar,
             format
         })
@@ -120,6 +126,7 @@ impl ProgressBar {
     /// * `delta` - The amount to increment the progress bar by
     ///
     pub fn write_increment(&mut self, delta: u64) {
+        self.progress_value.resource_progress = None;
         if self.format == ProgressFormat::None {
             return;
         }
@@ -172,6 +179,8 @@ impl ProgressBar {
     /// * `status` - The status of the operation
     ///
     pub fn write_activity(&mut self, activity: &str) {
+        self.progress_value.activity = Some(activity.to_string());
+        *self.shared.lock().unwrap() = self.progress_value.clone();
         match self.format {
             ProgressFormat::Json => {
                 self.progress_value.activity = Some(activity.to_string());
@@ -203,10 +212,47 @@ impl ProgressBar {
     }
 
     fn write_json(&mut self) {
+        *self.shared.lock().unwrap() = self.progress_value.clone();
         if let Ok(json) = serde_json::to_string(&self.progress_value) {
             eprintln!("{json}");
         } else {
             trace!("{}", t!("progress.failedToSerialize", json = self.progress_value : {:?}));
         }
+
     }
+
+    pub(crate) fn write_resource_progress(&self, message: Option<&str>, numbers: Option<ResourceProgress>) {
+        let mut value = self.shared.lock().unwrap().clone();
+        if let Some(message) = message {
+            value.activity = Some(format!("{}: {message}", value.activity.as_deref().unwrap_or_default()));
+        }
+        value.resource_progress = numbers;
+        match self.format {
+            ProgressFormat::Json => match serde_json::to_string(&value) {
+                Ok(json) => eprintln!("{json}"),
+                Err(err) => tracing::error!("{err}"),
+            },
+            ProgressFormat::Default => {
+                let mut activity = value.activity.unwrap_or_default();
+                if let Some(numbers) = value.resource_progress
+                    && let Some(completed) = numbers.completed {
+                        activity.push_str(&format!(" ({completed}"));
+                        if let Some(total) = numbers.total {
+                            activity.push_str(&format!("/{total}"));
+                        }
+                        activity.push(')');
+                }
+                self.console_bar.pb_set_message(&activity);
+            },
+            ProgressFormat::None => {},
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, Serialize)]
+pub struct ResourceProgress {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completed: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total: Option<f64>,
 }

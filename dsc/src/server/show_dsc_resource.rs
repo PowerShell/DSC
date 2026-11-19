@@ -2,14 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::server::mcp_server::McpServer;
-use dsc_lib::{
-    DscManager,
-    discovery::discovery_trait::DiscoveryFilter,
-    dscresources::{
-        dscresource::{Capability, Invoke},
-        resource_manifest::Kind
-    }, types::{FullyQualifiedTypeName, ResourceVersion},
-};
+use dsc_lib::{DscManager, discovery::discovery_trait::DiscoveryFilter, dscresources::{dscresource::ResourceCapability, resource_manifest::Kind}, types::{FullyQualifiedTypeName, ResourceVersion}, configure::context::Context};
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
@@ -21,17 +14,30 @@ fn nullable_json_object_schema(_: &mut schemars::SchemaGenerator) -> schemars::S
     json_schema!({"oneOf": [{"type": "null"}, {"type": "object"}]})
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn jsonrpc_resource_without_schema_can_be_shown() {
+        let Json(resource) = McpServer::new().show_dsc_resource(Parameters(ShowResourceRequest {
+            r#type: "Test/JsonRpcValidate".parse().unwrap(),
+        })).await.unwrap();
+        assert!(resource.schema.is_none());
+        assert!(resource.capabilities.contains(&ResourceCapability::Get));
+    }
+}
+
 #[derive(Serialize, JsonSchema)]
 pub struct DscResource {
     /// The namespaced name of the resource.
-    #[serde(rename="type")]
-    pub type_name: FullyQualifiedTypeName,
+    pub r#type: FullyQualifiedTypeName,
     /// The kind of resource.
     pub kind: Kind,
     /// The version of the resource.
     pub version: ResourceVersion,
     /// The capabilities of the resource.
-    pub capabilities: Vec<Capability>,
+    pub capabilities: Vec<ResourceCapability>,
     /// The description of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -67,12 +73,22 @@ impl McpServer {
             let Some(resource) = dsc.find_resource(&DiscoveryFilter::new(&r#type, None, None)).unwrap_or(None) else {
                 return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
-            let schema = match resource.schema() {
+
+            let context = Context::new();
+            let schema = match context.complete_resource_operation(resource.schema(&context)) {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
+                Err(dsc_lib::dscerror::DscError::SchemaNotAvailable(_)) => None,
+                Err(err) if resource.as_dsc_resource().and_then(|resource| resource.manifest.as_ref()).is_some_and(|manifest| manifest.jsonrpc.is_some()) =>
+                    return Err(McpError::internal_error(err.to_string(), None)),
                 Err(_) => None,
             };
+
+            let Some(resource) = resource.as_dsc_resource() else {
+                return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotSupported", type_name = r#type), None));
+            };
+
             Ok(DscResource {
-                type_name: resource.type_name.clone(),
+                r#type: resource.type_name.clone(),
                 kind: resource.kind.clone(),
                 version: resource.version.clone(),
                 capabilities: resource.capabilities.clone(),

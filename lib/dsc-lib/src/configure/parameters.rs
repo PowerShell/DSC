@@ -53,25 +53,6 @@ impl Display for SecureObject {
     }
 }
 
-/// Check if a given JSON value is a secure value (either `SecureString` or `SecureObject`).
-///
-/// # Arguments
-///
-/// * `value` - The JSON value to check.
-///
-/// # Returns
-///
-/// `true` if the value is a secure value, `false` otherwise.
-#[must_use]
-pub(crate) fn is_secure_value(value: &Value) -> bool {
-    if let Some(obj) = value.as_object() && obj.len() == 1 
-        && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
-        return true;
-    }
-
-    false
-}
-
 pub fn import_parameters(parameters: &Value) -> Result<HashMap<String, Value>, DscError> {
     let parameters = match serde_json::from_value::<ComplexInput>(parameters.clone()) {
         Ok(complex_input) => {

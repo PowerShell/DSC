@@ -2,14 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::{
-    configure::config_doc::SecurityContextKind,
-    dscresources::{
-        dscresource::Capability, resource_manifest::{Kind, ResourceManifest}
-    }, 
-    types::ResourceVersion};
-use crate::{
-    schemas::dsc_repo::DscRepoSchema,
-    types::FullyQualifiedTypeName,
+    configure::config_doc::SecurityContextKind, dscresources::{dscresource::ResourceCapability, resource_manifest::{Kind, ResourceManifest}},  schemas::dsc_repo::DscRepoSchema, types::{FullyQualifiedTypeName, ResourceVersion},
 };
 use rust_i18n::t;
 use schemars::JsonSchema;
@@ -90,7 +83,7 @@ pub struct AdaptedDscResourceManifest {
     /// The version of the resource.
     pub version: ResourceVersion,
     /// The capabilities of the resource.
-    pub capabilities: Vec<Capability>,
+    pub capabilities: Vec<ResourceCapability>,
     /// Properties of the Get operation for the resource.
     pub get: Option<GetOperation>,
     /// Properties of the Set operation for the resource.

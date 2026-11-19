@@ -54,6 +54,10 @@ function Write-TraceQueue() {
     }
 }
 
+function Clear-EventSubscribers {
+    Get-EventSubscriber | Where-Object { $_.SourceIdentifier -like 'PSAdapter.*' } | ForEach-Object { Unregister-Event -SourceIdentifier $_.SourceIdentifier }
+}
+
 $ps = [PowerShell]::Create().AddScript({
     [CmdletBinding()]
     param(
@@ -421,15 +425,21 @@ try {
 
     if ($ps.InvocationStateInfo.State -eq 'Failed') {
         $record  = $ps.InvocationStateInfo.Reason.ErrorRecord
+        $recordException = if ($PSVersionTable.PSVersion.Major -ge 7) {
+            (Get-Error $record | Out-String)
+        } else {
+            $record.Exception.ToString()
+        }
         $message = if ($null -ne $record) {
             "Script failed with terminating error at line {0} for statement ``{1}`` - {2}" -f @(
                 $record.InvocationInfo.ScriptLineNumber,
                 $record.InvocationInfo.Line,
-                $record.Exception.ToString()
+                $recordException
             )
         } else {
             "Script failed with terminating error: $($ps.InvocationStateInfo.Reason)"
         }
+        Clear-EventSubscribers
         Write-TraceQueue
         Write-DscTrace -Now -Operation Error -Message $message
         exit 1
@@ -438,6 +448,7 @@ try {
     $outputCollection = $ps.EndInvoke($asyncResult)
 }
 catch {
+    Clear-EventSubscribers
     Write-TraceQueue
     Write-DscTrace -Now -Operation Error -Message $_
     exit 1
@@ -448,7 +459,7 @@ if ($hadErrors.Count -gt 0) {
 }
 
 Start-Sleep -Milliseconds 200  # wait a bit to ensure all events are processed before unregistering
-Get-EventSubscriber | Where-Object { $_.SourceIdentifier -like 'PSAdapter.*' } | ForEach-Object { Unregister-Event -SourceIdentifier $_.SourceIdentifier }  # unregister before dispose
+Clear-EventSubscribers
 Write-TraceQueue
 
 foreach ($obj in $outputCollection) {

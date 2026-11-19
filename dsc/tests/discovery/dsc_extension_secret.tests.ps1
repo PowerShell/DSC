@@ -229,7 +229,7 @@ Describe 'Tests for the secret() function and extensions' {
             $errorLog = Get-Content -Raw -Path $TestDrive/error.log
             $LASTEXITCODE | Should -Be 0 -Because $errorLog
             @($out).type | Should -Not -Contain 'Test/SecretInvalid'
-            $errorLog | Should -BeLike "*INFO Failed to load manifest: *$expectedError*" -Because $errorLog
+            $errorLog | Should -BeLike "*WARN Failed to load manifest: *$expectedError*" -Because $errorLog
         } finally {
             $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
         }

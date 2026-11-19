@@ -66,7 +66,7 @@ the exported instances. You can only define one JSON input argument for a comman
 
 ## Required properties
 
-The `export` definition must include these properties:
+Unless the manifest defines [jsonrpc](root.md#jsonrpc), the `export` definition must include:
 
 - [executable](#executable)
 
@@ -81,7 +81,7 @@ executable.
 
 ```yaml
 Type:     string
-Required: true
+Required: true unless jsonrpc is defined
 ```
 
 ### args
@@ -285,8 +285,10 @@ manifest [schema][12] property. The value must be an object that defines one of 
 properties:
 
 - `command` - When you specify the `command` property, DSC calls the defined command to get the
-  JSON schema for the export input. The `command` object must define the `executable` property and
-  may define the `args` property, which accepts the same argument kinds as the manifest
+  JSON schema for the export input. The `command` object must define `executable` unless
+  [jsonrpc](root.md#jsonrpc) is defined. A JSON-RPC-only command is `{}` and uses
+  `context.schemaKind: exportInput`. An executable command may define `args`, which accepts the
+  same argument kinds as the manifest
   [schema.command.args][13] property.
 - `embedded` - When you specify the `embedded` property, DSC uses the defined value as the JSON
   schema for the export input.

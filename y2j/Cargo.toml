@@ -3,6 +3,9 @@ name = "y2j"
 version = "1.0.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [dependencies]
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
