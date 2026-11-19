@@ -61,7 +61,7 @@ fn invoke(params: Value) -> Result<Value, RpcError> {
         let schema = if list { schema_for!(RegistryList) } else { schema_for!(Registry) };
         return serde_json::to_value(schema).map_err(|err| RpcError::new(-32603, err));
     }
-    if !matches!(params.operation.as_str(), "get" | "set" | "delete")
+    if !matches!(params.operation.as_str(), "get" | "set" | "test" | "delete")
         || (list && params.operation == "delete")
     {
         return Err(RpcError::invalid_params(t!("jsonrpc.unsupportedOperation", operation = params.operation)));
@@ -74,12 +74,15 @@ fn invoke(params: Value) -> Result<Value, RpcError> {
         let mut entries = Vec::new();
         for registry in registry_list.registry_entries {
             let result = invoke_registry(&params.operation, &params.execution_type, &registry)?;
-            if params.operation == "get" || params.execution_type == ExecutionType::WhatIf {
+            if matches!(params.operation.as_str(), "get" | "test") || params.execution_type == ExecutionType::WhatIf {
                 entries.push(result);
             }
         }
         return if params.operation == "set" && params.execution_type == ExecutionType::Actual {
             Ok(Value::Null)
+        } else if params.operation == "test" {
+            let in_desired_state = entries.iter().all(|entry| entry["_inDesiredState"] == true);
+            Ok(json!({"registryEntries": entries, "_inDesiredState": in_desired_state}))
         } else {
             Ok(json!({"registryEntries": entries}))
         };
@@ -95,12 +98,13 @@ fn invoke_registry(operation: &str, execution_type: &ExecutionType, registry: &R
     }
     let result = match operation {
         "get" => helper.get().map(Some),
+        "test" => helper.test().map(Some),
         "delete" => helper.remove(),
         // Match the CLI's _exist handling, including synthetic deletion during set.
         _ if registry.exist == Some(false) => helper.remove(),
         _ => helper.set(),
     }.map_err(|err| RpcError::new(-32000, err))?;
-    if operation != "get" && *execution_type == ExecutionType::Actual {
+    if matches!(operation, "set" | "delete") && *execution_type == ExecutionType::Actual {
         return Ok(Value::Null);
     }
     // An offline delete of a missing key has no preview; return its unchanged state.
@@ -237,6 +241,7 @@ mod tests {
             "resourceType": "Microsoft.Windows/RegistryList", "properties": {"registryEntries": []}});
         for (operation, execution, expected) in [
             ("get", "actual", json!({"registryEntries": []})),
+            ("test", "actual", json!({"registryEntries": [], "_inDesiredState": true})),
             ("set", "actual", Value::Null),
             ("set", "whatIf", json!({"registryEntries": []})),
         ] {

@@ -133,13 +133,13 @@ Describe 'Registry JSON-RPC operations' -Skip:(!$IsWindows) {
 
     It 'returns operation errors without corrupting subsequent responses' {
         $responses = @(Invoke-RegistryRpc -Operation @(
-            @{ operation = 'get'; properties = @{ keyPath = $keyPath; acl = 'invalid' } }
+            @{ operation = 'get'; properties = @{ keyPath = $keyPath; accessControlList = @{} } }
             @{
                 resourceType = 'Microsoft.Windows/RegistryList'
                 operation = 'get'
                 properties = @{ registryEntries = @(
                     @{ keyPath = $keyPath }
-                    @{ keyPath = $keyPath; acl = 'invalid' }
+                    @{ keyPath = $keyPath; accessControlList = @{} }
                 ) }
             }
             @{ operation = 'get'; properties = @{ keyPath = $keyPath } }
@@ -153,6 +153,59 @@ Describe 'Registry JSON-RPC operations' -Skip:(!$IsWindows) {
         }
         $responses[2].result._exist | Should -BeFalse
         $responses[3].result.properties.keyPath.type | Should -BeExactly 'string'
+    }
+
+    It 'tests matching, mismatching, and absent states without changing the registry' {
+        New-Item -Path $providerPath | Out-Null
+        New-ItemProperty -LiteralPath $providerPath -Name 'Value' -Value 'original' | Out-Null
+
+        $responses = @(Invoke-RegistryRpc -Operation @(
+            @{ operation = 'test'; properties = @{ keyPath = $keyPath; valueName = 'Value'; valueData = @{ String = 'original' } } }
+            @{ operation = 'test'; properties = @{ keyPath = $keyPath; valueName = 'Value'; valueData = @{ String = 'different' } } }
+            @{ operation = 'test'; properties = @{ keyPath = $keyPath; _exist = $false } }
+            @{ operation = 'test'; properties = @{ keyPath = "$keyPath\Missing"; _exist = $false } }
+        ))
+
+        $responses | Where-Object error | Should -BeNullOrEmpty
+        $responses[0].result._inDesiredState | Should -BeTrue
+        $responses[1].result._inDesiredState | Should -BeFalse
+        $responses[1].result.valueData.String | Should -BeExactly 'original'
+        $responses[2].result._inDesiredState | Should -BeFalse
+        $responses[3].result._inDesiredState | Should -BeTrue
+        Get-ItemPropertyValue -LiteralPath $providerPath -Name 'Value' | Should -BeExactly 'original'
+        Test-Path -LiteralPath "$providerPath\Missing" | Should -BeFalse
+    }
+
+    It 'aggregates RegistryList test results' {
+        New-Item -Path $providerPath | Out-Null
+
+        $responses = @(Invoke-RegistryRpc -Operation @(
+            @{
+                resourceType = 'Microsoft.Windows/RegistryList'
+                operation = 'test'
+                properties = @{ registryEntries = @(
+                    @{ keyPath = $keyPath }
+                    @{ keyPath = "$keyPath\Missing"; _exist = $false }
+                ) }
+            }
+            @{
+                resourceType = 'Microsoft.Windows/RegistryList'
+                operation = 'test'
+                properties = @{ registryEntries = @(
+                    @{ keyPath = $keyPath; _exist = $false }
+                    @{ keyPath = "$keyPath\Missing"; _exist = $false }
+                ) }
+            }
+        ))
+
+        $responses | Where-Object error | Should -BeNullOrEmpty
+        $responses[0].result._inDesiredState | Should -BeTrue
+        $responses[0].result.registryEntries | Should -HaveCount 2
+        $responses[1].result._inDesiredState | Should -BeFalse
+        $responses[1].result.registryEntries | Should -HaveCount 2
+        $responses[1].result.registryEntries[0]._inDesiredState | Should -BeFalse
+        $responses[1].result.registryEntries[1]._inDesiredState | Should -BeTrue
+        Test-Path -LiteralPath $providerPath | Should -BeTrue
     }
 
     It 'uses a separate offline hive for each invocation' {
