@@ -1,0 +1,26 @@
+_version = 1
+
+[error]
+invalidEntry = "Invalid access control entry: %{reason}"
+unresolvablePrincipal = "Failed to resolve principal '%{principal}' to a security identifier: %{reason}"
+invalidSid = "'%{value}' is not a valid security identifier (SID) string"
+win32 = "%{operation} failed with error code %{code}"
+privilegeNotHeld = "The '%{privilege}' privilege is required to read or write the system access control list (SACL) but is not held by the current process. Run with elevated (Administrator) rights and ensure the account has the 'Manage auditing and security log' user right assigned."
+unsupportedAceType = "Access control entry type %{ace_type} is not supported"
+unrepresentableAccessMask = "Access mask %{mask} includes one or more bits that are not recognized by this resource's permission set and would be silently discarded"
+nullAcl = "The %{section} access control list is NULL (absent), which Windows treats as unrestricted; this is not supported as equivalent to an empty access control list"
+
+[section]
+discretionary = "discretionary"
+system = "system"
+
+[validation]
+discretionaryType = "discretionary access control entries must have type 'allow' or 'deny'"
+discretionaryAuditFlags = "discretionary access control entries must not set auditFlags"
+systemType = "system access control entries must have type 'audit'"
+systemAuditFlags = "system access control entries must set at least one auditFlags value"
+
+[principal]
+nulCharacter = "principal names must not contain NUL characters"
+notFound = "the account or group name could not be found"
+windowsOnly = "principal names can only be resolved on Windows"

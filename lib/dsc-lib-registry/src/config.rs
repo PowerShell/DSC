@@ -1,8 +1,127 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use dsc_lib_acl::{AccessControlList, AccessMask};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum RegistryAccessRight {
+    /// `KEY_QUERY_VALUE`: Required to query the values of a registry key.
+    QueryValue,
+    /// `KEY_SET_VALUE`: Required to create, delete, or set a registry value.
+    SetValue,
+    /// `KEY_CREATE_SUB_KEY`: Required to create a subkey of a registry key.
+    CreateSubKey,
+    /// `KEY_ENUMERATE_SUB_KEYS`: Required to enumerate the subkeys of a registry key.
+    EnumerateSubKeys,
+    /// `KEY_NOTIFY`: Required to request change notifications for a registry key or for
+    /// subkeys of a registry key.
+    Notify,
+    /// `KEY_CREATE_LINK`: Reserved for system use.
+    CreateLink,
+    /// `DELETE`: Required to delete the registry key.
+    Delete,
+    /// `READ_CONTROL`: Required to read the information in the registry key's security
+    /// descriptor, not including the information in the system access control list (SACL).
+    ReadPermissions,
+    /// `WRITE_DAC`: Required to modify the discretionary access control list (DACL) in the
+    /// registry key's security descriptor.
+    ChangePermissions,
+    /// `WRITE_OWNER`: Required to change the owner in the registry key's security descriptor.
+    TakeOwnership,
+    /// `SYNCHRONIZE`: The right to use the registry key for synchronization.
+    Synchronize,
+    /// `KEY_READ`: A composite of [`QueryValue`](Self::QueryValue),
+    /// [`EnumerateSubKeys`](Self::EnumerateSubKeys), [`Notify`](Self::Notify), and
+    /// [`ReadPermissions`](Self::ReadPermissions).
+    Read,
+    /// `KEY_WRITE`: A composite of [`SetValue`](Self::SetValue),
+    /// [`CreateSubKey`](Self::CreateSubKey), and [`ReadPermissions`](Self::ReadPermissions).
+    Write,
+    /// `KEY_EXECUTE`: Equivalent to [`Read`](Self::Read).
+    Execute,
+    /// `KEY_ALL_ACCESS`: A composite of every standard and registry-specific right.
+    FullControl,
+    /// `GENERIC_READ`: the generic read right. Windows maps this to [`Read`](Self::Read) for
+    /// registry key objects, but the raw bit can still appear in an existing access control
+    /// entry's mask, so it must be representable rather than silently discarded when read back.
+    GenericRead,
+    /// `GENERIC_WRITE`: the generic write right, mapped by Windows to [`Write`](Self::Write)
+    /// for registry key objects.
+    GenericWrite,
+    /// `GENERIC_EXECUTE`: the generic execute right, mapped by Windows to
+    /// [`Execute`](Self::Execute) for registry key objects.
+    GenericExecute,
+    /// `GENERIC_ALL`: the generic all-access right, mapped by Windows to
+    /// [`FullControl`](Self::FullControl) for registry key objects.
+    GenericAll,
+}
+
+impl AccessMask for RegistryAccessRight {
+    fn bits(self) -> u32 {
+        match self {
+            Self::QueryValue => 0x0000_0001,
+            Self::SetValue => 0x0000_0002,
+            Self::CreateSubKey => 0x0000_0004,
+            Self::EnumerateSubKeys => 0x0000_0008,
+            Self::Notify => 0x0000_0010,
+            Self::CreateLink => 0x0000_0020,
+            Self::Delete => 0x0001_0000,
+            Self::ReadPermissions => 0x0002_0000,
+            Self::ChangePermissions => 0x0004_0000,
+            Self::TakeOwnership => 0x0008_0000,
+            Self::Synchronize => 0x0010_0000,
+            Self::Read | Self::Execute => 0x0002_0019,
+            Self::Write => 0x0002_0006,
+            Self::FullControl => 0x000F_003F,
+            Self::GenericExecute => 0x2000_0000,
+            Self::GenericWrite => 0x4000_0000,
+            Self::GenericRead => 0x8000_0000,
+            Self::GenericAll => 0x1000_0000,
+        }
+    }
+
+    fn all() -> &'static [Self] {
+        &[
+            Self::QueryValue,
+            Self::SetValue,
+            Self::CreateSubKey,
+            Self::EnumerateSubKeys,
+            Self::Notify,
+            Self::CreateLink,
+            Self::Delete,
+            Self::ReadPermissions,
+            Self::ChangePermissions,
+            Self::TakeOwnership,
+            Self::Synchronize,
+            Self::Read,
+            Self::Write,
+            Self::Execute,
+            Self::FullControl,
+            Self::GenericRead,
+            Self::GenericWrite,
+            Self::GenericExecute,
+            Self::GenericAll,
+        ]
+    }
+
+    fn map_generic_bits(bits: u32) -> u32 {
+        let mut mapped = bits;
+        for (generic, specific) in [
+            (0x1000_0000, Self::FullControl.bits()),
+            (0x2000_0000, Self::Execute.bits()),
+            (0x4000_0000, Self::Write.bits()),
+            (0x8000_0000, Self::Read.bits()),
+        ] {
+            if mapped & generic != 0 {
+                mapped = (mapped & !generic) | specific;
+            }
+        }
+        mapped
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum RegistryValueData {
@@ -30,20 +149,23 @@ pub struct Registry {
     /// The data of the registry value.
     #[serde(rename = "valueData", skip_serializing_if = "Option::is_none")]
     pub value_data: Option<RegistryValueData>,
-    /// The registry key access control list in Security Descriptor Definition Language (SDDL).
-    #[serde(rename = "acl", skip_serializing_if = "Option::is_none")]
-    pub acl: Option<String>,
+    /// The registry key's access control list (discretionary and/or system).
+    #[serde(rename = "accessControlList", skip_serializing_if = "Option::is_none")]
+    pub access_control_list: Option<AccessControlList<RegistryAccessRight>>,
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
     /// Optional path to an offline registry hive file. When specified, operations
     /// are performed against the offline hive instead of the live system registry.
     #[serde(rename = "registryFilePath", skip_serializing_if = "Option::is_none")]
     pub registry_file_path: Option<String>,
+    /// Whether the instance is in the desired state. Only returned by a `test` operation.
+    #[serde(rename = "_inDesiredState", skip_serializing_if = "Option::is_none")]
+    pub in_desired_state: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Metadata {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub what_if: Option<Vec<String>>
+    pub what_if: Option<Vec<String>>,
 }
