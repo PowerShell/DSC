@@ -1126,8 +1126,9 @@ resources:
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 25
         $response.result.isError | Should -Be $false
+        $response.result.structuredContent.actions.type | Should -Contain 'Microsoft.System.Action/TerminateProcess'
         $actions = @($response.result.structuredContent.actions | Where-Object -Property type -Like 'Test/*')
-        $actions.count | Should -Be 2
+        $actions.Count | Should -Be 2
         $actions[0].type | Should -BeExactly 'Test/Action2'
         $actions[0].inputSchema | Should -BeNullOrEmpty
         $actions[0].outputSchema | Should -BeNullOrEmpty

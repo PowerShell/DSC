@@ -14,7 +14,7 @@ Describe 'tests for policy folder security validation' {
     Context 'Windows policy folder with insecure ACL emits warning' -Skip:(!$IsWindows -or !$isElevated) {
         BeforeAll {
             $script:policyDirPath = Join-Path $env:ProgramData "dsc"
-            $script:policyFilePath = Join-Path $script:policyDirPath "dsc.settings.json"
+            $script:policyFilePath = Join-Path $script:policyDirPath "dsc.policy.json"
             $script:existedBefore = Test-Path $script:policyDirPath
 
             if ($script:existedBefore) {
@@ -42,7 +42,8 @@ Describe 'tests for policy folder security validation' {
 
         It 'Should emit a warning about insecure policy folder' {
             dsc -l warn resource list 2> $TestDrive/tracing.txt
-            "$TestDrive/tracing.txt" | Should -FileContentMatch "is not secure, settings file will not be used"
+            $contents = Get-Content -Raw "$TestDrive/tracing.txt"
+            "$TestDrive/tracing.txt" | Should -FileContentMatch "is not secure, settings file will not be used" -Because "Emitted to stderr:`n---`n$contents`n---"
         }
 
         It 'Should not exit with an error code' {
@@ -54,7 +55,7 @@ Describe 'tests for policy folder security validation' {
     Context 'Linux policy folder with insecure permissions emits warning' -Skip:(!$IsLinux -or !$isElevated) {
         BeforeAll {
             $script:policyDirPath = "/etc/dsc"
-            $script:policyFilePath = Join-Path $script:policyDirPath "dsc.settings.json"
+            $script:policyFilePath = Join-Path $script:policyDirPath "dsc.policy.json"
             $script:existedBefore = Test-Path $script:policyDirPath
 
             if ($script:existedBefore) {

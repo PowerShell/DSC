@@ -16,6 +16,7 @@ pub enum Schemas {
     ExportGetSchema,
     ExportSchema,
     Exporter,
+    ExpressionArg,
     Get,
     InDesiredState,
     Metadata,
@@ -60,10 +61,19 @@ pub enum RefreshEnvOperation {
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "jsonrpc", about = "Run the JSON-RPC test server or executable fallback")]
+    Jsonrpc {
+        #[clap(long)]
+        operation: Option<String>,
+        #[clap(long)]
+        input: Option<String>,
+    },
     #[clap(name = "action", about = "Invoke action")]
     Action {
         #[clap(name = "input", short, long, help = "The input to the action command as JSON")]
         input: String,
+        #[clap(name = "expression", long)]
+        expression: Option<String>,
     },
 
     #[clap(name = "adapter", about = "Resource adapter")]
@@ -120,6 +130,15 @@ pub enum SubCommand {
     Exporter {
         #[clap(name = "input", short, long, help = "The input to the exporter command as JSON")]
         input: String,
+    },
+
+    #[clap(name = "expression-arg", about = "Provide expression arguments")]
+    ExpressionArg {
+        arg1: String,
+        #[arg(required = true, long)]
+        arg2: String,
+        #[arg(long)]
+        arg3: Option<String>,
     },
 
     #[clap(name = "get", about = "Get a resource")]

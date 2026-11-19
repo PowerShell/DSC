@@ -99,7 +99,8 @@ It doesn't change the service configuration or restart dependent services. Missi
 disabled services, failures to stop or start, and status transition timeouts are reported as errors.
 The action supports only `set`; it doesn't restart services during `get`, `test`, or `export`.
 Use `dsc config set --what-if` to preview a restart without changing the service. The projected
-result includes `_metadata.whatIf` describing the restart.
+configuration result includes `results[0].metadata.whatIf` describing the restart. When invoking
+`windows_service restart --what-if` directly, the raw action output includes `_metadata.whatIf`.
 
 ### Service configuration examples
 

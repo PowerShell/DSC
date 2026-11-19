@@ -256,6 +256,9 @@ impl ExecutionInformation {
 )]
 #[dsc_repo_schema(base_name = "directive", folder_path = "config")]
 pub struct ConfigDirective {
+    /// Allow persistent resource processes for this document and nested runs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reuse_resources: Option<bool>,
     /// Indicates if resources are discovered pre-deployment or during deployment
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_discovery: Option<ResourceDiscoveryMode>,
@@ -275,6 +278,9 @@ pub struct ConfigDirective {
 )]
 #[dsc_repo_schema(base_name = "directive", folder_path = "resource")]
 pub struct ResourceDirective {
+    /// Allow persistent resource processes for this instance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reuse_resource: Option<bool>,
     /// Specify specific adapter type used for implicit operations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_adapter: Option<FullyQualifiedTypeName>,
@@ -670,8 +676,8 @@ mod test {
                     "requireVersion": "=1.0.0"
                 },
                 {
-                    "type": "Microsoft/Process",
-                    "name": "processResource",
+                    "type": "Test/Export",
+                    "name": "exportResource",
                     "requireVersion": "=0.1.0"
                 }
             ]
@@ -684,8 +690,8 @@ mod test {
         assert_eq!(config.resources[0].resource_type, "Microsoft.DSC.Debug/Echo");
         assert_eq!(config.resources[0].require_version.as_ref().map(|r| r.to_string()), Some("=1.0.0".to_string()));
 
-        assert_eq!(config.resources[1].name, "processResource");
-        assert_eq!(config.resources[1].resource_type, "Microsoft/Process");
+        assert_eq!(config.resources[1].name, "exportResource");
+        assert_eq!(config.resources[1].resource_type, "Test/Export");
         assert_eq!(config.resources[1].require_version.as_ref().map(|r| r.to_string()), Some("=0.1.0".to_string()));
     }
 

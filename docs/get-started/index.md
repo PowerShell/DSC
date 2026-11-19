@@ -54,7 +54,7 @@ Microsoft.Windows/Registry                  Resource  0.1.0    gs-w-d--         
 Microsoft.Windows/WMI                       Adapter   0.1.0    g-------                      Resource adapter to WMI resources.
 Microsoft.Windows/WindowsPowerShell         Adapter   0.1.0    gs--t---                      Resource adapter to classic DSC Powershell resources in Windows PowerShell.
 Microsoft/OSInfo                            Resource  0.1.0    g-----e-                      Returns information about the operating system.
-Microsoft/Process                           Resource  0.1.0    gs--t-e-                      Returns information about running processes.
+Microsoft.System/Process                    Resource  0.1.0    g-----e-                      Returns information about running processes.
 ```
 
 Together, the columns describe each resource:

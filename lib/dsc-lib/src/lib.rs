@@ -6,10 +6,8 @@ use crate::discovery::discovery_trait::DiscoveryKind;
 use crate::progress::ProgressFormat;
 use crate::types::TypeNameFilter;
 
-use configure::config_doc::ExecutionKind;
 use dscerror::DscError;
-use dscresources::dscresource::DscResource;
-use resources::{invoke_result::{GetResult, SetResult, TestResult}, resource_invoke::ResourceInvoke};
+use resources::resource_invoke::ResourceInvoke;
 use rust_i18n::i18n;
 
 pub mod actions;
@@ -74,51 +72,6 @@ impl DscManager {
 
     pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) -> Result<(), DscError> {
         self.discovery.find_resources(required_resource_types, progress_format)
-    }
-    /// Invoke the get operation on a resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `resource` - The resource to invoke the operation on.
-    /// * `input` - The input to the operation.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    ///
-    pub fn resource_get(&self, resource: &DscResource, input: &str) -> Result<GetResult, DscError> {
-        resource.get(input)
-    }
-
-    /// Invoke the set operation on a resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `resource` - The resource to invoke the operation on.
-    /// * `input` - The input to the operation.
-    /// * `skip_test` - Whether to skip the test operation.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    ///
-    pub fn resource_set(&self, resource: &DscResource, input: &str, skip_test: bool) -> Result<SetResult, DscError> {
-        resource.set(input, skip_test, &ExecutionKind::Actual)
-    }
-
-    /// Invoke the test operation on a resource.
-    ///
-    /// # Arguments
-    ///
-    /// * `resource` - The resource to invoke the operation on.
-    /// * `input` - The input to the operation.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying resource fails.
-    ///
-    pub fn resource_test(&self, resource: &DscResource, input: &str) -> Result<TestResult, DscError> {
-        resource.test(input)
     }
 }
 

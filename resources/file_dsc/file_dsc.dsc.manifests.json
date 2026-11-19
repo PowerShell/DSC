@@ -101,7 +101,7 @@
     },
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-      "type": "Microsoft.Filesystem/ACL",
+      "type": "Microsoft.Windows.Filesystem/AccessControlList",
       "description": "Manage the discretionary access control list of a local file or folder.",
       "tags": [
         "file",

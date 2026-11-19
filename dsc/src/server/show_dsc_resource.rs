@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::server::mcp_server::McpServer;
-use dsc_lib::{DscManager, discovery::discovery_trait::DiscoveryFilter, dscresources::{dscresource::ResourceCapability, resource_manifest::Kind}, types::{FullyQualifiedTypeName, ResourceVersion}};
+use dsc_lib::{DscManager, discovery::discovery_trait::DiscoveryFilter, dscresources::{dscresource::ResourceCapability, resource_manifest::Kind}, types::{FullyQualifiedTypeName, ResourceVersion}, configure::context::Context};
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
@@ -12,6 +12,20 @@ use tokio::task;
 
 fn nullable_json_object_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
     json_schema!({"oneOf": [{"type": "null"}, {"type": "object"}]})
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn jsonrpc_resource_without_schema_can_be_shown() {
+        let Json(resource) = McpServer::new().show_dsc_resource(Parameters(ShowResourceRequest {
+            r#type: "Test/JsonRpcValidate".parse().unwrap(),
+        })).await.unwrap();
+        assert!(resource.schema.is_none());
+        assert!(resource.capabilities.contains(&ResourceCapability::Get));
+    }
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -60,8 +74,12 @@ impl McpServer {
                 return Err(McpError::invalid_params(t!("server.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
 
-            let schema = match resource.schema() {
+            let context = Context::new();
+            let schema = match context.complete_resource_operation(resource.schema(&context)) {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
+                Err(dsc_lib::dscerror::DscError::SchemaNotAvailable(_)) => None,
+                Err(err) if resource.as_dsc_resource().and_then(|resource| resource.manifest.as_ref()).is_some_and(|manifest| manifest.jsonrpc.is_some()) =>
+                    return Err(McpError::internal_error(err.to_string(), None)),
                 Err(_) => None,
             };
 

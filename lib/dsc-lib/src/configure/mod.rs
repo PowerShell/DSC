@@ -3,7 +3,7 @@
 
 use crate::configure::config_doc::{ExecutionInformation, ResourceDirective};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::parameters::{SecureObject, SecureString, import_parameters, is_secure_value};
+use crate::configure::parameters::{SecureObject, SecureString, import_parameters};
 use crate::configure::{config_doc::{ExecutionKind, IntOrExpression, Metadata, Parameter, Resource, ResourceDiscoveryMode, RestartRequired, ValueOrCopy}};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
@@ -20,7 +20,7 @@ use crate::resources::{
     resource_invoke::ResourceInvoke,
 };
 use crate::types::{FullyQualifiedTypeName, SemanticVersion};
-use crate::util::resource_id;
+use crate::util::{resource_id, is_secure_value};
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
@@ -123,17 +123,20 @@ pub fn add_resource_export_results_to_configuration(
     resource: &dyn ResourceInvoke,
     conf: &mut Configuration,
     input: &str,
+    context: &Context
 ) -> Result<ExportResult, DscError> {
     let mut resource_input = input;
     let mut input_filters: Option<Vec<Map<String, Value>>> = None;
+    let mut context = context.clone();
     if !input.is_empty() && !resource_supports_export_filtering(resource) {
         input_filters = Some(parse_export_filter_input(input)?);
         resource_input = "";
+        context.properties = None;
         info!("{}", t!("configure.mod.engineExportFiltering", resource = resource.type_name()));
     }
 
     let start_datetime = chrono::Local::now();
-    let mut export_result = resource.export(resource_input)?;
+    let mut export_result = resource.export(resource_input, &context)?;
     let end_datetime = chrono::Local::now();
 
     if let Some(filters) = input_filters.as_deref() {
@@ -290,7 +293,7 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn add_metadata(dsc_resource: &dyn ResourceInvoke, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
+fn add_metadata(dsc_resource: &dyn ResourceInvoke, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata>, context: &Context) -> Result<String, DscError> {
     if dsc_resource.kind() == ResourceKind::Adapter && get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
         // add metadata to the properties so the adapter knows this is a config
         let mut metadata: Map<String, Value> = Map::new();
@@ -327,9 +330,13 @@ fn add_metadata(dsc_resource: &dyn ResourceInvoke, mut properties: Option<Map<St
         };
         props.insert("_metadata".to_string(), Value::Object(other_metadata));
         let modified_props = Value::from(props.clone());
-        if let Ok(()) = validate_properties(dsc_resource, &modified_props) {} else {
-            info!("{}", t!("configure.mod.schemaExcludesMetadata"));
-            props.remove("_metadata");
+        match validate_properties(dsc_resource, &modified_props, context) {
+            Ok(()) => {},
+            Err(DscError::Validation(_)) => {
+                info!("{}", t!("configure.mod.schemaExcludesMetadata"));
+                props.remove("_metadata");
+            },
+            Err(err) => return Err(err),
         }
         return Ok(serde_json::to_string(&props)?);
     }
@@ -462,6 +469,10 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, properties: &mut 
                                 std::env::set_var(&key, &value);
                             }
                         }
+                        // Persistent children retain their original environment, so retire them before reuse.
+                        if let Some(context) = context.as_ref() {
+                            context.complete_resource_operation(Ok(()))?;
+                        }
                     }
                 }
                 metadata.other.insert(key.clone(), value.clone());
@@ -552,7 +563,9 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
-    fn new_with_context(json: &str, progress_format: ProgressFormat, context: Context) -> Result<Configurator, DscError> {
+    fn new_with_context(json: &str, progress_format: ProgressFormat, mut context: Context) -> Result<Configurator, DscError> {
+        let document: Configuration = serde_json::from_str(json)?;
+        context.reuse_resources &= document.directives.as_ref().and_then(|directives| directives.reuse_resources).unwrap_or(true);
         let discovery = Discovery::new();
         let mut config = Configurator {
             json: json.to_owned(),
@@ -599,20 +612,22 @@ impl Configurator {
                         self.context.copy_current_loop_name.clone_from(loop_name);
                     }
                 }
-            }
+        }
 
-            let result = if dsc_resource.is_group() {
-                // if Group resource, we leave it to the resource to handle expressions
-                Ok(resource.properties.clone())
-            } else {
-                Ok(invoke_property_expressions(&mut self.statement_parser, &self.context, resource.properties.as_ref())?)
-            };
+        let result = if dsc_resource.is_group() {
+            // if Group resource, we leave it to the resource to handle expressions
+            resource.properties.clone()
+        } else {
+            invoke_property_expressions(&mut self.statement_parser, &self.context, resource.properties.as_ref())?
+        };
+
+        self.context.properties = result.clone();
 
         // Clear copy loop context after processing resource
         self.context.copy.clear();
         self.context.copy_current_loop_name.clear();
 
-        result
+        Ok(result)
     }
 
     /// Invoke the get operation on a resource.
@@ -625,6 +640,12 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
+        let result = self.invoke_get_inner();
+        self.context.resource_progress = None;
+        self.context.complete_resource_operation(result)
+    }
+
+    fn invoke_get_inner(&mut self) -> Result<ConfigurationGetResult, DscError> {
         let mut result = ConfigurationGetResult::new();
         self.context.operation = Some(Operation::Get);
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
@@ -635,6 +656,8 @@ impl Configurator {
 
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Get '{evaluated_name}'").as_str());
+            self.context.resource_progress = Some(progress.clone());
+            self.context.reuse_resource = resource.directives.as_ref().and_then(|directives| directives.reuse_resource).unwrap_or(true);
             if self.skip_resource(&resource)? {
                 progress.write_increment(1);
                 continue;
@@ -645,8 +668,8 @@ impl Configurator {
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(&resource, &*dsc_resource)?;
             let start_datetime = chrono::Local::now();
-            let filter = add_metadata(&*dsc_resource, properties, resource.metadata.clone())?;
-            let mut get_result = match dsc_resource.get(&filter) {
+            let filter = add_metadata(&*dsc_resource, properties, resource.metadata.clone(), &self.context)?;
+            let mut get_result = match dsc_resource.get(&filter, &self.context) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -717,6 +740,13 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
+        let result = self.invoke_set_inner(skip_test);
+        self.context.resource_progress = None;
+        self.context.complete_resource_operation(result)
+    }
+
+    #[allow(clippy::too_many_lines)]
+    fn invoke_set_inner(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
         let mut result = ConfigurationSetResult::new();
         self.context.operation = Some(Operation::Set);
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
@@ -727,6 +757,8 @@ impl Configurator {
 
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Set '{evaluated_name}'").as_str());
+            self.context.resource_progress = Some(progress.clone());
+            self.context.reuse_resource = resource.directives.as_ref().and_then(|directives| directives.reuse_resource).unwrap_or(true);
             if self.skip_resource(&resource)? {
                 progress.write_increment(1);
                 continue;
@@ -752,7 +784,7 @@ impl Configurator {
                 }
             };
 
-            let desired = add_metadata(&*dsc_resource, properties, resource.metadata.clone())?;
+            let desired = add_metadata(&*dsc_resource, properties, resource.metadata.clone(), &self.context)?;
             trace!("{}", t!("configure.mod.desired", state = desired));
 
             let end_datetime;
@@ -760,7 +792,7 @@ impl Configurator {
             let mut delete_what_if_metadata: Option<DeleteResult> = None;
             if exist || dsc_resource.has_resource_capability(&ResourceCapability::SetHandlesExist) || dsc_resource.kind() == ResourceKind::Action {
                 debug!("{}", t!("configure.mod.handlesExist"));
-                set_result = match dsc_resource.set(&desired, skip_test, &self.context.execution_type) {
+                set_result = match dsc_resource.set(&desired, skip_test, &self.context) {
                     Ok(result) => result,
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
@@ -772,7 +804,7 @@ impl Configurator {
             } else if dsc_resource.has_resource_capability(&ResourceCapability::Delete) {
                 debug!("{}", t!("configure.mod.implementsDelete"));
 
-                let before_result = match dsc_resource.get(&desired) {
+                let before_result = match dsc_resource.get(&desired, &self.context) {
                     Ok(result) => result,
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
@@ -781,7 +813,7 @@ impl Configurator {
                     },
                 };
 
-                let delete_result = match dsc_resource.delete(&desired, &self.context.execution_type) {
+                let delete_result = match dsc_resource.delete(&desired, &self.context) {
                     Ok(result) => result,
                     Err(e) => {
                         progress.set_failure(get_failure_from_error(&e));
@@ -800,7 +832,7 @@ impl Configurator {
                             delete_what_if_metadata = Some(delete_res);
                         }
 
-                        let after_result = match dsc_resource.get(&desired) {
+                        let after_result = match dsc_resource.get(&desired, &self.context) {
                             Ok(result) => result,
                             Err(e) => {
                                 progress.set_failure(get_failure_from_error(&e));
@@ -905,6 +937,12 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
+        let result = self.invoke_test_inner();
+        self.context.resource_progress = None;
+        self.context.complete_resource_operation(result)
+    }
+
+    fn invoke_test_inner(&mut self) -> Result<ConfigurationTestResult, DscError> {
         let mut result = ConfigurationTestResult::new();
         self.context.operation = Some(Operation::Test);
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &mut self.context)?;
@@ -915,6 +953,8 @@ impl Configurator {
 
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Test '{evaluated_name}'").as_str());
+            self.context.resource_progress = Some(progress.clone());
+            self.context.reuse_resource = resource.directives.as_ref().and_then(|directives| directives.reuse_resource).unwrap_or(true);
             if self.skip_resource(&resource)? {
                 progress.write_increment(1);
                 continue;
@@ -927,9 +967,9 @@ impl Configurator {
             debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
 
             let start_datetime = chrono::Local::now();
-            let expected = add_metadata(&*dsc_resource, properties, resource.metadata.clone())?;
+            let expected = add_metadata(&*dsc_resource, properties, resource.metadata.clone(), &self.context)?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
-            let mut test_result = match dsc_resource.test(&expected) {
+            let mut test_result = match dsc_resource.test(&expected, &self.context) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -994,6 +1034,12 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
+        let result = self.invoke_export_inner();
+        self.context.resource_progress = None;
+        self.context.complete_resource_operation(result)
+    }
+
+    fn invoke_export_inner(&mut self) -> Result<ConfigurationExportResult, DscError> {
         let mut result = ConfigurationExportResult::new();
         self.context.operation = Some(Operation::Export);
         let mut conf = config_doc::Configuration::new();
@@ -1007,6 +1053,8 @@ impl Configurator {
 
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Export '{evaluated_name}'").as_str());
+            self.context.resource_progress = Some(progress.clone());
+            self.context.reuse_resource = resource.directives.as_ref().and_then(|directives| directives.reuse_resource).unwrap_or(true);
             if self.skip_resource(resource)? {
                 progress.write_increment(1);
                 continue;
@@ -1017,11 +1065,12 @@ impl Configurator {
             find_resource_or_error!(dsc_resource, discovery, resource, adapter);
             let properties = self.get_properties(resource, &*dsc_resource)?;
             debug!("{}", t!("configure.mod.resourceType", resource_type = &resource.resource_type));
-            let input = add_metadata(&*dsc_resource, properties, resource.metadata.clone())?;
+            let input = add_metadata(&*dsc_resource, properties, resource.metadata.clone(), &self.context)?;
             let export_result = match add_resource_export_results_to_configuration(
                 &*dsc_resource,
                 &mut conf,
                 &input,
+                &self.context
             ) {
                 Ok(result) => result,
                 Err(e) => {
@@ -1554,6 +1603,10 @@ pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataT
 
 fn get_failure_from_error(err: &DscError) -> Option<Failure> {
     match err {
+        DscError::JsonRpc { code, message, .. } => Some(Failure {
+            message: message.clone(),
+            exit_code: *code,
+        }),
         DscError::CommandExit(_resource, exit_code, reason) => {
             Some(Failure {
                 message: reason.to_string(),
@@ -1575,6 +1628,35 @@ mod tests {
     use crate::dscresources::dscresource::DscResource;
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn jsonrpc_concurrent_configurators_own_independent_pools() {
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
+        let threads: Vec<_> = (0..2).map(|_| {
+            let barrier = barrier.clone();
+            std::thread::spawn(move || {
+                let document = json!({
+                    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
+                    "resources": [
+                        {"name": "first", "type": "Test/JsonRpc", "properties": {"delayMS": 100}},
+                        {"name": "second", "type": "Test/JsonRpc", "properties": {"delayMS": 100}}
+                    ]
+                });
+                barrier.wait();
+                let mut configurator = Configurator::new(&document.to_string(), ProgressFormat::None).unwrap();
+                let first = serde_json::to_value(configurator.invoke_get().unwrap()).unwrap();
+                let first_pid = first["results"][0]["result"]["actualState"]["processId"].as_u64().unwrap();
+                assert_eq!(first["results"][1]["result"]["actualState"]["processId"], first_pid);
+                let second = serde_json::to_value(configurator.invoke_get().unwrap()).unwrap();
+                let second_pid = second["results"][0]["result"]["actualState"]["processId"].as_u64().unwrap();
+                assert_ne!(first_pid, second_pid);
+                (first_pid, second_pid)
+            })
+        }).collect();
+        let processes: Vec<_> = threads.into_iter().map(|thread| thread.join().unwrap()).collect();
+        assert_ne!(processes[0].0, processes[1].0);
+        assert_ne!(processes[0].1, processes[1].1);
+    }
 
     fn resource_with_export(export: Value) -> DscResource {
         let mut resource = DscResource::new();
@@ -1601,7 +1683,7 @@ mod tests {
 
     #[test]
     fn export_with_schema_supports_filtering() {
-        let resource = resource_with_export(json!({ "executable": "test", "schema": { "command": "test" } }));
+        let resource = resource_with_export(json!({ "executable": "test", "schema": { "command": { "executable": "test" } } }));
         assert!(resource_supports_export_filtering(&resource));
     }
 

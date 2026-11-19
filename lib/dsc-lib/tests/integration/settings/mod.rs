@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 mod builders;
+mod jsonrpc;
 
 mod fields {
     mod ignore_settings_file;

@@ -69,6 +69,7 @@ pub mod or;
 pub mod parameters;
 pub mod parse_cidr;
 pub mod path;
+pub mod properties;
 pub mod range;
 pub mod reference;
 pub mod resource_id;
@@ -226,6 +227,7 @@ impl FunctionDispatcher {
             Box::new(parameters::Parameters{}),
             Box::new(parse_cidr::ParseCidr{}),
             Box::new(path::Path{}),
+            Box::new(properties::Properties{}),
             Box::new(range::Range{}),
             Box::new(reference::Reference{}),
             Box::new(resource_id::ResourceId{}),

@@ -3,9 +3,7 @@
 
 use clap::Parser;
 use dsc_lib::{
-    DscManager, configure::config_doc::ExecutionKind, discovery::{discovery_trait::DiscoveryFilter},
-    resources::invoke_result::{GetResult, SetResult},
-    types::{FullyQualifiedTypeName, ResourceVersionReq},
+    DscManager, configure::{config_doc::ExecutionKind, context::Context}, discovery::discovery_trait::DiscoveryFilter, resources::invoke_result::{GetResult, SetResult}, types::{FullyQualifiedTypeName, ResourceVersionReq},
 };
 use rust_i18n::{i18n, t};
 use std::{env, io, process};
@@ -71,8 +69,9 @@ impl BicepExtension for BicepExtensionService {
             ));
         };
 
+        let context = Context::new();
         let SetResult::Resource(result) = resource
-            .set(&properties, false, &ExecutionKind::Actual)
+            .set(&properties, false, &context)
             .map_err(|e| Status::aborted(e.to_string()))?
         else {
             return Err(Status::unimplemented(
@@ -133,8 +132,10 @@ impl BicepExtension for BicepExtensionService {
             ));
         };
 
+        let mut context = Context::new();
+        context.execution_type = ExecutionKind::WhatIf;
         let SetResult::Resource(result) = resource
-            .set(&properties, false, &ExecutionKind::WhatIf)
+            .set(&properties, false, &context)
             .map_err(|e| Status::aborted(e.to_string()))?
         else {
             return Err(Status::unimplemented(
@@ -195,8 +196,9 @@ impl BicepExtension for BicepExtensionService {
             ));
         };
 
+        let context = Context::new();
         let GetResult::Resource(result) = resource
-            .get(&identifiers)
+            .get(&identifiers, &context)
             .map_err(|e| Status::aborted(e.to_string()))?
         else {
             return Err(Status::unimplemented(
@@ -257,8 +259,9 @@ impl BicepExtension for BicepExtensionService {
             ));
         };
 
+        let context = Context::new();
         resource
-            .delete(&identifiers, &ExecutionKind::Actual)
+            .delete(&identifiers, &context)
             .map_err(|e| Status::aborted(e.to_string()))?;
 
         Ok(Response::new(LocalExtensibilityOperationResponse {

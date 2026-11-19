@@ -65,6 +65,8 @@ pub(in crate::settings) mod _implementation_guidance {
     )
 )]
 pub struct DscSettingsResolved {
+    pub resource_reuse: DscSettingsResolvedField<bool>,
+    pub resource_timeouts: ResourceTimeoutsResolvedSettings,
     /// Indicates whether to allow users to ignore settings files.
     ///
     /// This setting is only available in the [`Policy`] scope. The default
@@ -202,6 +204,8 @@ pub struct DscSettingsResolved {
 impl Default for DscSettingsResolved {
     fn default() -> Self {
         Self {
+            resource_reuse: DscSettingsResolvedField::for_code_default(true),
+            resource_timeouts: ResourceTimeoutsResolvedSettings::default(),
             forbid_ignore_settings_file: DscSettingsResolvedField::for_code_default(CODE_DEFAULT_FORBID_IGNORE_SETTINGS_FILE),
             ignore_settings_file: DscSettingsResolvedField::for_code_default(CODE_DEFAULT_IGNORE_SETTINGS_FILE),
             tracing: TracingResolvedSettings::default(),

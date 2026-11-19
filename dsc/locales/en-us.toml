@@ -89,6 +89,7 @@ testInputEmpty = "Expected input is required"
 jsonError = "JSON: %{err}"
 routingToDelete = "Routing to delete operation because _exist is false"
 syntheticWhatIf = "Resource does not natively support what-if, engine will generate synthetic what-if"
+invalidPropertiesJson = "Invalid properties JSON: %{err}"
 
 [server.mod]
 failedToInitialize = "Failed to initialize MCP server: %{error}"
@@ -118,6 +119,7 @@ functionInvocationFailed = "Function '%{function}' invocation failed: %{error}"
 resourceNotFound = "Resource type '%{resource}' does not exist"
 whatIfNotSupported = "what_if is only supported for the 'set' and 'delete' operations"
 actionNotSupported = "The type '%{resource}' is an action or adapter and cannot be invoked as a resource"
+invalidPropertiesJson = "Invalid properties JSON: %{error}"
 
 [server.list_dsc_functions]
 invalidNamePattern = "Invalid function name pattern '%{pattern}'"

@@ -1862,4 +1862,30 @@ Describe 'tests for function expressions' {
     $LASTEXITCODE | Should -Be 2 -Because $errorLog
     $errorLog | Should -BeLike "*Error* No state change information available for resourceId 'NonExistent/Resource:Test' as it has not executed yet or does not exist*"
   }
+
+  It 'properties function returns the properties of the current resource context' {
+    $config = @{
+      '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+      resources = @(
+        @{
+          name = 'Test'
+          type = 'Test/Set'
+          properties = @{
+            value = 'new'
+          }
+        }
+      )
+      outputs = @{
+        property = @{
+          type = 'string'
+          value = "[properties().value]"
+        }
+      }
+    }
+
+    $config = $config | ConvertTo-Json -Depth 10 -Compress
+    $out = dsc -l trace config set -i $config 2> $TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    $out.outputs.property | Should -BeExactly 'new' -Because ($out | ConvertTo-Json -Depth 10 | Out-String)
+  }
 }

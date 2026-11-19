@@ -108,6 +108,14 @@ pub struct InvokeMethod {
 #[schemars(inline)]
 pub enum ArgKind {
     String(String),
+    Expression {
+        /// The argument to pass.
+        arg: Option<String>,
+        /// The expression to evaluate.
+        expression: String,
+        /// Indicates if the argument is mandatory.
+        mandatory: Option<bool>,
+    },
     Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]

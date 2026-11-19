@@ -1,7 +1,8 @@
-# Example configuration mixing native app resources with classic PS resources
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Processes
-  type: Microsoft/Process
+  type: Microsoft.System/Process
   properties:
-    pid: 0
+    name: '*'

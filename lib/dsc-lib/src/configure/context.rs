@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use chrono::{DateTime, Local};
-use crate::{configure::config_doc::{ExecutionKind, Operation, UserFunctionDefinition}, extensions::dscextension::DscExtension};
+use crate::{configure::config_doc::{ExecutionKind, Operation, UserFunctionDefinition}, dscresources::dscresource::DscResource,extensions::dscextension::DscExtension};
 use crate::types::SemanticVersion;
 use dsc_lib_security_context::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
@@ -22,6 +22,10 @@ pub enum ProcessMode {
 
 #[derive(Clone, Debug)]
 pub struct Context {
+    pub(crate) resource_processes: std::sync::Arc<std::sync::Mutex<crate::dscresources::jsonrpc::ProcessPool>>,
+    pub(crate) reuse_resources: bool,
+    pub(crate) reuse_resource: bool,
+    pub(crate) resource_progress: Option<crate::progress::ProgressBar>,
     pub copy: HashMap<String, i64>,
     pub copy_current_loop_name: String,
     /// The semantic version of DSC that is processing the configuration.
@@ -41,6 +45,7 @@ pub struct Context {
     pub process_expressions: bool,
     pub process_mode: ProcessMode,
     pub processing_parameter_defaults: bool,
+    pub properties: Option<Map<String, Value>>,
     pub references: Map<String, Value>,
     pub restart_required: Option<Vec<RestartRequired>>,
     pub security_context: SecurityContextKind,
@@ -48,14 +53,38 @@ pub struct Context {
     pub state_changed: HashMap<String, bool>,
     pub stdout: Option<String>,
     pub system_root: PathBuf,
+    pub target_resource: Option<DscResource>,
     pub user_functions: HashMap<String, UserFunctionDefinition>,
     pub variables: Map<String, Value>,
 }
 
 impl Context {
+    /// Apply document and instance reuse restrictions without overriding an inherited prohibition.
+    pub fn restrict_resource_reuse(&mut self, document: Option<bool>, instance: Option<bool>) {
+        self.reuse_resources &= document.unwrap_or(true);
+        self.reuse_resource = instance.unwrap_or(true);
+    }
+
+    /// Finish an invocation scope, preserving its original failure if cleanup also fails.
+    pub fn complete_resource_operation<T>(&self, result: Result<T, crate::DscError>) -> Result<T, crate::DscError> {
+        let cleanup = self.resource_processes.lock().unwrap().finish();
+        match (result, cleanup) {
+            (Err(err), cleanup) => {
+                if let Err(cleanup) = cleanup { tracing::warn!("{cleanup}"); }
+                Err(err)
+            },
+            (Ok(_), Err(err)) => Err(err),
+            (Ok(value), Ok(())) => Ok(value),
+        }
+    }
     #[must_use]
     pub fn new() -> Self {
         Self {
+            resource_processes: Default::default(),
+            reuse_resources: std::env::var("DSC_RESOURCE_REUSE_FORBIDDEN").as_deref() != Ok("1")
+                && crate::settings::global::get_or_init().resolved().resource_reuse.value,
+            reuse_resource: true,
+            resource_progress: None,
             copy: HashMap::new(),
             copy_current_loop_name: String::new(),
             dsc_version: dsc_lib_version(),
@@ -70,6 +99,7 @@ impl Context {
             process_expressions: true,
             process_mode: ProcessMode::Normal,
             processing_parameter_defaults: false,
+            properties: None,
             references: Map::new(),
             restart_required: None,
             security_context: match get_security_context() {
@@ -80,6 +110,7 @@ impl Context {
             state_changed: HashMap::new(),
             stdout: None,
             system_root: get_default_os_system_root(),
+            target_resource: None,
             user_functions: HashMap::new(),
             variables: Map::new(),
         }

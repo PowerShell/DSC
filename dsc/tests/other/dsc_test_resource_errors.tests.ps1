@@ -101,11 +101,11 @@ Describe 'Rust resource executable error handling' {
         $LASTEXITCODE | Should -Be 1
     }
 
-    It 'Returns piped input from the Process test operation' {
-        $result = 'hello' | process test 2>$TestDrive/error.log
+    It 'Returns failure for the unsupported Process test operation' {
+        $null = 'hello' | process test 2>$TestDrive/error.log
 
-        $LASTEXITCODE | Should -Be 0
-        $result[0] | Should -BeExactly 'hello'
+        $LASTEXITCODE | Should -Be 1
+        (Get-Content -Raw $TestDrive/error.log) | Should -Match 'Unknown operation'
     }
 
     It 'Returns failure when OSInfo test input is invalid JSON' {

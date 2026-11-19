@@ -3,6 +3,9 @@ name = "dsc-resource-osinfo"
 version = "1.0.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [[bin]]
 name = "osinfo"
 path = "src/main.rs"

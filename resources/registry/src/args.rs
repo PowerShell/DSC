@@ -68,6 +68,8 @@ pub enum ConfigSubCommand {
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "jsonrpc", about = t!("args.jsonrpcAbout").to_string())]
+    JsonRpc,
     #[clap(name = "query", about = t!("args.queryAbout").to_string(), arg_required_else_help = true)]
     Query {
         #[clap(short, long, required = true, help = t!("args.queryArgsKeyPathHelp").to_string())]
