@@ -65,6 +65,25 @@ ERROR Error: Security context: Elevated security context required
 
 ## Properties
 
+### reuseResources
+
+The `reuseResources` directive controls whether DSC can reuse JSON-RPC resource processes for this
+configuration operation. The default is `true`. A process starts only when an operation first needs
+it and remains available until the configuration completes or fails. Each Configurator owns a
+separate process pool, including when configurations run concurrently.
+
+Set this directive to `false` to disable reuse for every instance and any nested configuration.
+DSC then uses an operation's executable fallback when available; otherwise, it starts and shuts
+down a separate JSON-RPC process for each underlying invocation. Setting this directive to `true`
+can't override a `resourceReuse: false` setting or a prohibition inherited from a parent engine.
+An instance's `reuseResource` directive can further restrict reuse, but can't re-enable it.
+
+```yaml
+Type:     boolean
+Required: false
+Default:  true
+```
+
 ### resourceDiscovery
 
 The `resourceDiscovery` directive controls when DSC raises an error for a resource that it can't

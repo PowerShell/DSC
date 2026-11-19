@@ -20,6 +20,7 @@ use types::RegistryList;
 mod adapter;
 mod args;
 mod error;
+mod jsonrpc;
 mod types;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
@@ -37,6 +38,12 @@ fn main() -> ExitCode {
 
     let args = Arguments::parse();
     match args.subcommand {
+        SubCommand::JsonRpc => {
+            if let Err(err) = jsonrpc::serve(std::io::stdin().lock(), &mut std::io::stdout().lock()) {
+                error!("{err}");
+                return ExitCode::from(EXIT_REGISTRY_ERROR);
+            }
+        },
         SubCommand::Adapter { subcommand } => {
             let result = match subcommand {
                 AdapterSubCommand::Get { input, adapted_resource } => {
@@ -262,14 +269,7 @@ fn import_input(input: &str, list: bool) -> Result<RegistryList, ExitCode> {
     if list {
         match serde_json::from_str::<RegistryList>(input) {
             Ok(mut reg_list) => {
-                // Propagate registryFilePath from list level to entries that don't have their own
-                if let Some(ref file_path) = reg_list.registry_file_path {
-                    for entry in &mut reg_list.registry_entries {
-                        if entry.registry_file_path.is_none() {
-                            entry.registry_file_path = Some(file_path.clone());
-                        }
-                    }
-                }
+                reg_list.inherit_registry_file_path();
                 Ok(reg_list)
             },
             Err(err) => {

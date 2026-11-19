@@ -50,6 +50,9 @@ The resource can:
 - Export a list of all optional features on the system, optionally filtered by name, state, display
   name, or description.
 
+When enabling a feature, the resource automatically enables its required parent features. You don't
+need to list these dependencies separately in the `features` array.
+
 > [!NOTE]
 > This resource is installed with DSC itself on Windows systems.
 >

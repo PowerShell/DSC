@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
+Describe 'Microsoft.Windows.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
     BeforeDiscovery {
         $isElevated = if ($IsWindows) {
             ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
@@ -12,7 +12,7 @@ Describe 'Microsoft.Filesystem/AccessControlList tests' -Skip:(!$IsWindows) {
     }
 
     BeforeAll {
-        $resourceType = 'Microsoft.Filesystem/AccessControlList'
+        $resourceType = 'Microsoft.Windows.Filesystem/AccessControlList'
         $currentSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
         # Anonymous Logon's well-known SID; also exercises resolving an account name to a SID.
         $anonymousSid = 'S-1-5-7'

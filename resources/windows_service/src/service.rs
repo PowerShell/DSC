@@ -705,24 +705,7 @@ pub fn set_service(input: &WindowsService, what_if: bool) -> Result<WindowsServi
 
         // 4. Handle service status transitions
         if let Some(ref desired_status) = input.status {
-            let mut current = query_status(service_handle.0)?;
-
-            // Wait for any pending state to resolve first
-            current = match current {
-                ServiceStatus::StopPending => {
-                    wait_for_status(service_handle.0, &ServiceStatus::Stopped)?;
-                    ServiceStatus::Stopped
-                }
-                ServiceStatus::StartPending | ServiceStatus::ContinuePending => {
-                    wait_for_status(service_handle.0, &ServiceStatus::Running)?;
-                    ServiceStatus::Running
-                }
-                ServiceStatus::PausePending => {
-                    wait_for_status(service_handle.0, &ServiceStatus::Paused)?;
-                    ServiceStatus::Paused
-                }
-                other => other,
-            };
+            let current = wait_for_stable_status(service_handle.0)?;
 
             if current != *desired_status {
                 match desired_status {
@@ -776,6 +759,69 @@ pub fn set_service(input: &WindowsService, what_if: bool) -> Result<WindowsServi
         // Return final state
         read_service_state(service_handle.0, name)
     }
+}
+
+/// Restart a service, or start it if it is already stopped.
+pub fn restart_service(input: &RestartService, what_if: bool) -> Result<RestartServiceResult, ServiceError> {
+    let name = &input.name;
+    if name.trim().is_empty() || name.contains('\0') {
+        return Err(t!("restart.invalidName").to_string().into());
+    }
+
+    unsafe {
+        let scm = OpenSCManagerW(None, None, SC_MANAGER_CONNECT)
+            .map_err(|e| t!("get.openScmFailed", error = e.to_string()).to_string())?;
+        let scm = ScHandle(scm);
+        let name_wide = to_wide(name);
+        let access = if what_if {
+            SERVICE_QUERY_STATUS
+        } else {
+            SERVICE_QUERY_STATUS | SERVICE_STOP | SERVICE_START
+        };
+        let service_handle = OpenServiceW(scm.0, PCWSTR(name_wide.as_ptr()), access)
+            .map_err(|e| t!("get.openServiceFailed", error = e.to_string()).to_string())?;
+        let service_handle = ScHandle(service_handle);
+
+        if what_if {
+            return Ok(RestartServiceResult {
+                name: name.clone(),
+                status: ServiceStatus::Running,
+                metadata: Some(Metadata {
+                    what_if: Some(vec![t!("restart.whatIfRestartService", name = name).to_string()]),
+                }),
+            });
+        }
+
+        if wait_for_stable_status(service_handle.0)? != ServiceStatus::Stopped {
+            let mut status = SERVICE_STATUS::default();
+            ControlService(service_handle.0, SERVICE_CONTROL_STOP, &mut status)
+                .map_err(|e| t!("set.stopFailed", error = e.to_string()).to_string())?;
+            wait_for_status(service_handle.0, &ServiceStatus::Stopped)?;
+        }
+
+        StartServiceW(service_handle.0, None)
+            .map_err(|e| t!("set.startFailed", error = e.to_string()).to_string())?;
+        wait_for_status(service_handle.0, &ServiceStatus::Running)?;
+
+        Ok(RestartServiceResult {
+            name: name.clone(),
+            status: ServiceStatus::Running,
+            metadata: None,
+        })
+    }
+}
+
+/// Wait for any pending status transition to complete.
+unsafe fn wait_for_stable_status(service_handle: SC_HANDLE) -> Result<ServiceStatus, ServiceError> {
+    let current = unsafe { query_status(service_handle) }?;
+    let stable = match current {
+        ServiceStatus::StopPending => ServiceStatus::Stopped,
+        ServiceStatus::StartPending | ServiceStatus::ContinuePending => ServiceStatus::Running,
+        ServiceStatus::PausePending => ServiceStatus::Paused,
+        other => return Ok(other),
+    };
+    unsafe { wait_for_status(service_handle, &stable) }?;
+    Ok(stable)
 }
 
 /// Wait for a service to reach the desired status, with a timeout.

@@ -22,14 +22,11 @@ resources:
     type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[parameters('myObject').secureObject.myProperty]"
-      showSecrets: "[parameters('showSecrets')]"
   - name: SecureArray
     type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[parameters('myObject').secureObject.myArray]"
-      showSecrets: "[parameters('showSecrets')]"
   - name: SecureArrayIndexed
     type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[parameters('myObject').secureObject.myArray[1]]"
-      showSecrets: "[parameters('showSecrets')]"

@@ -1,0 +1,612 @@
+_version: 2
+schemas:
+  settings:
+    scope:
+      title:
+        en-us: "Scope"
+      description:
+        en-us: "The source of a setting value"
+      markdownDescription:
+        en-us: |
+          The source of a setting value. This defines where the setting is coming from, such as the default settings, machine settings, user settings, workspace settings, environment variables, command line arguments, or policy file.
+      variants:
+        default:
+          title:
+            en-us: "Default"
+          description:
+            en-us: "The default settings statically defined in the DSC codebase"
+          markdownDescription:
+            en-us: |
+              The default settings statically defined in the DSC codebase.
+        machine:
+          title:
+            en-us: "Machine"
+          description:
+            en-us: "The settings defined for all users on the machine in a preference settings file"
+          markdownDescription:
+            en-us: |
+              The settings defined for all users on the machine in a preference settings file.
+        user:
+          title:
+            en-us: "User"
+          description:
+            en-us: "The settings defined for the current user in a preference settings file"
+          markdownDescription:
+            en-us: |
+              The settings defined for the current user in a preference settings file.
+        workspace:
+          title:
+            en-us: "Workspace"
+          description:
+            en-us: "The settings defined for the current workspace in a preference settings file"
+          markdownDescription:
+            en-us: |
+              The settings defined for the current workspace in a preference settings file.
+        environment:
+          title:
+            en-us: "Environment"
+          description:
+            en-us: "Settings defined as environment variables"
+          markdownDescription:
+            en-us: |
+              Settings defined as environment variables.
+        cli:
+          title:
+            en-us: "Command Line"
+          description:
+            en-us: "Settings defined as command line arguments"
+          markdownDescription:
+            en-us: |
+              Settings defined as command line arguments.
+        policy:
+          title:
+            en-us: "Policy"
+          description:
+            en-us: "The system policy file. Fields defined as policy cannot be overridden."
+          markdownDescription:
+            en-us: |
+              The system policy file. Fields defined as policy cannot be overridden.
+    
+    fields:
+      forbidIgnoreSettingsFile:
+        title:
+          en-us: "Forbid ignore settings file"
+        description:
+          en-us: "Forbid ignoring the settings file"
+        markdownDescription:
+          en-us: |
+            Forbid ignoring the settings file. If this is set to true, the settings file will not be ignored even if the `--ignore-settings-file` flag is passed.
+        markdownEnumDescriptions:
+          'true':
+            en-us: |
+              Forbid ignoring the settings file. If this is set to true, the settings file will not be ignored even if the `--ignore-settings-file` flag is passed.
+          'false':
+            en-us: |
+              Allow ignoring the settings file. If this is set to false, the settings file can be ignored if the `--ignore-settings-file` flag is passed.
+      ignoreSettingsFile:
+        title:
+          en-us: "Ignore settings file"
+        description:
+          en-us: "Ignore the settings file"
+        markdownDescription:
+          en-us: |
+            Ignore the settings file. If this is set to true, the settings file will be ignored even if the `--ignore-settings-file` flag is not passed.
+        markdownEnumDescriptions:
+          'true':
+            en-us: |
+              Ignore the settings file. If this is set to true, the settings file will be ignored even if the `--ignore-settings-file` flag is not passed.
+          'false':
+            en-us: |
+              Do not ignore the settings file. If this is set to false, the settings file will not be ignored even if the `--ignore-settings-file` flag is passed.
+      tracing:
+        title:
+          en-us: "Tracing"
+        description:
+          en-us: "Settings related to tracing"
+        markdownDescription:
+          en-us: |
+            Settings related to tracing.
+        fields:
+          level: &tracing_level_field
+            title:
+              en-us: "Level"
+            description:
+              en-us: "Tracing level"
+            markdownDescription:
+              en-us: |
+                Tracing level. This is the level of tracing that will be used. The possible values are `off`, `error`, `warn`, `info`, `debug`, and `trace`.
+          format: &tracing_format_field
+            title:
+              en-us: "Format"
+            description:
+              en-us: "Tracing format"
+            markdownDescription:
+              en-us: |
+                Tracing format. This is the format that will be used for tracing output. The possible values are `default`, `json`, and `plaintext`.
+
+        level: # Reuse the overview for the tracing level field
+          <<: *tracing_level_field
+          variants:
+            error:
+              title:
+                en-us: "Error"
+              description:
+                en-us: "Tracing level for errors"
+              markdownDescription:
+                en-us: |
+                  Tracing level for errors. This is the level of tracing that will be used for errors. The possible values are `off`, `error`, `warn`, `info`, `debug`, and `trace`.
+            warn:
+              title:
+                en-us: "Warn"
+              description:
+                en-us: "Tracing level for warnings"
+              markdownDescription:
+                en-us: |
+                  Tracing level for warnings. This is the level of tracing that will be used for warnings. The possible values are `off`, `error`, `warn`, `info`, `debug`, and `trace`.
+            info:
+              title:
+                en-us: "Info"
+              description:
+                en-us: "Tracing level for informational messages"
+              markdownDescription:
+                en-us: |
+                  Tracing level for informational messages. This is the level of tracing that will be used for informational messages. The possible values are `off`, `error`, `warn`, `info`, `debug`, and `trace`.
+            debug:
+              title:
+                en-us: "Debug"
+              description:
+                en-us: "Tracing level for debugging"
+              markdownDescription:
+                en-us: |
+                  Tracing level for debugging. This is the level of tracing that will be used for debugging. The possible values are `off`, `error`, `warn`, `info`, `debug`, and `trace`.
+            trace:
+              title:
+                en-us: "Trace"
+              description:
+                en-us: "Tracing level for trace messages"
+              markdownDescription:
+                en-us: |
+                  Tracing level for trace messages. This is the level of tracing that will be used for trace messages. The possible values are `off`, `error`, `warn`, `info`, `debug`, and `trace`.
+
+        format:
+          <<: *tracing_format_field
+          variants:
+            default:
+              title:
+                en-us: "Default"
+              description:
+                en-us: "Default tracing format"
+              markdownDescription:
+                en-us: |
+                  Default tracing format. This is the default format that will be used for tracing output. The possible values are `default` and `json`.
+            json:
+              title:
+                en-us: "JSON"
+              description:
+                en-us: "JSON tracing format"
+              markdownDescription:
+                en-us: |
+                  JSON tracing format. This is the format that will be used for tracing output in JSON. The possible values are `default` and `json`.
+            plaintext:
+              title:
+                en-us: "Plaintext"
+              description:
+                en-us: "Plaintext tracing format"
+              markdownDescription:
+                en-us: |
+                  Plaintext tracing format. This is the format that will be used for tracing output in plaintext. The possible values are `default` and `json`.
+      resourcePath:
+        title:
+          en-us: "Resource path"
+        description:
+          en-us: "Settings related to resource paths"
+        markdownDescription:
+          en-us: |
+            Settings related to resource paths.
+        fields:
+          directories:
+            title:
+              en-us: "Directories"
+            description:
+              en-us: "Directories to search for resources"
+            markdownDescription:
+              en-us: |
+                Directories to search for resources. This is a list of directories that will be searched for resources.
+          restricted:
+            title:
+              en-us: "Restricted"
+            description:
+              en-us: "Restricted resource paths"
+            markdownDescription:
+              en-us: |
+                Restricted resource paths. This is a list of resource paths that are restricted.
+          append_env_path:
+            title:
+              en-us: "Append environment path"
+            description:
+              en-us: "Append environment path to resource paths"
+            markdownDescription:
+              en-us: |
+                Append environment path to resource paths. If this is set to true, the environment path will be appended to the resource paths.
+    
+    sources:
+      default:
+        title:
+          en-us: "Default"
+        description:
+          en-us: "Default source for settings"
+        markdownDescription:
+          en-us: |
+            Default source for settings. This represents the default values for the settings.
+
+      cli:
+        title:
+          en-us: "CLI"
+        description:
+          en-us: "Settings provided via the command line interface"
+        markdownDescription:
+          en-us: |
+            Settings provided via the command line interface. This represents the values for the settings that are specified through the CLI.
+        trace_level:
+          title:
+            en-us: "Trace level"
+          description:
+            en-us: "Settings related to the trace level"
+          markdownDescription:
+            en-us: |
+              Settings related to the trace level. This represents the values for the settings that control the trace level.
+        trace_format:
+          title:
+            en-us: "Trace format"
+          description:
+            en-us: "Settings related to the trace format"
+          markdownDescription:
+            en-us: |
+              Settings related to the trace format. This represents the values for the settings that control the trace format.
+        ignore_settings_file:
+          title:
+            en-us: "Ignore settings file"
+          description:
+            en-us: "Settings related to ignoring the settings file"
+          markdownDescription:
+            en-us: |
+              Settings related to ignoring the settings file. This represents the values for the settings that control whether the settings file should be ignored.
+      environment:
+        title:
+          en-us: "Environment"
+        description:
+          en-us: "Settings provided via environment variables"
+        markdownDescription:
+          en-us: |
+            Settings provided via environment variables. This represents the values for the settings that are specified through environment variables.
+        dsc_trace_level:
+          title:
+            en-us: "Trace level"
+          description:
+            en-us: "Settings related to the trace level"
+          markdownDescription:
+            en-us: |
+              Settings related to the trace level. This represents the values for the settings that control the trace level.
+        dsc_trace_format:
+          title:
+            en-us: "Trace format"
+          description:
+            en-us: "Settings related to the trace format"
+          markdownDescription:
+            en-us: |
+              Settings related to the trace format. This represents the values for the settings that control the trace format.
+        dsc_resource_path:
+          title:
+            en-us: "Resource path"
+          description:
+            en-us: "Settings related to the resource path"
+          markdownDescription:
+            en-us: |
+              Settings related to the resource path. This represents the values for the settings that control the resource path.
+        dsc_restricted_path:
+          title:
+            en-us: "Restricted path"
+          description:
+            en-us: "Settings related to the restricted path"
+          markdownDescription:
+            en-us: |
+              Settings related to the restricted path. This represents the values for the settings that control the restricted path.
+        dsc_ignore_settings_file:
+          title:
+            en-us: "Ignore settings file"
+          description:
+            en-us: "Settings related to ignoring the settings file"
+          markdownDescription:
+            en-us: |
+              Settings related to ignoring the settings file. This represents the values for the settings that control whether the settings file should be ignored.
+      preferenceFile:
+        title:
+          en-us: "Preference settings file"
+        description:
+          en-us: "Settings provided via user preferences"
+        markdownDescription:
+          en-us: |
+            Settings provided via user preferences. This represents the values for the settings that are specified through user preferences.
+        tracing:
+          title:
+            en-us: "Tracing"
+          description:
+            en-us: "Settings related to tracing"
+          markdownDescription:
+            en-us: |
+              Settings related to tracing. This represents the values for the settings that control tracing behavior.
+        resource_path:
+          title:
+            en-us: "Resource path"
+          description:
+            en-us: "Settings related to the resource path"
+          markdownDescription:
+            en-us: |
+              Settings related to the resource path. This represents the values for the settings that control the resource path.
+      policyFile:
+        title:
+          en-us: "Policy settings file"
+        description:
+          en-us: "Settings enforced by policy"
+        markdownDescription:
+          en-us: |
+            Settings enforced by policy. This represents the values for the settings that are enforced by policy.
+        forbid_ignore_settings_file:
+          title:
+            en-us: "Forbid ignore settings file"
+          description:
+            en-us: "Settings related to forbidding the ignore settings file"
+          markdownDescription:
+            en-us: |
+              Settings related to forbidding the ignore settings file. This represents the values for the settings that control whether the ignore settings file is forbidden.
+        ignore_settings_file:
+          title:
+            en-us: "Ignore settings file"
+          description:
+            en-us: "Settings related to the ignore settings file"
+          markdownDescription:
+            en-us: |
+              Settings related to the ignore settings file. This represents the values for the settings that control whether the ignore settings file is used.
+        tracing:
+          title:
+            en-us: "Tracing"
+          description:
+            en-us: "Settings related to tracing"
+          markdownDescription:
+            en-us: |
+              Settings related to tracing. This represents the values for the settings that control tracing behavior.
+        resource_path:
+          title:
+            en-us: "Resource path"
+          description:
+            en-us: "Settings related to the resource path"
+          markdownDescription:
+            en-us: |
+              Settings related to the resource path. This represents the values for the settings that control the resource path.
+    
+    resolved:
+      field:
+        title:
+          en-us: Resolved settings field
+        description:
+          en-us: >-
+            Represents a leaf field in resolved settings, showing both the resolved value and the
+            scope that the value was resolved from.
+        markdownDescription:
+          en-us: |
+            Represents a leaf field in resolved settings, showing both the resolved value and the
+            scope that the value was resolved from.
+      settings:
+        title:
+          en-us: "Resolved"
+        description:
+          en-us: "Resolved settings"
+        markdownDescription:
+          en-us: |
+            Resolved settings. This represents the final values for the settings after considering all sources.
+        forbid_ignore_settings_file:
+          title:
+            en-us: "Forbid ignore settings file"
+          description:
+            en-us: "Settings related to forbidding the ignore settings file"
+          markdownDescription:
+            en-us: |
+              Settings related to forbidding the ignore settings file. This represents the values for the settings that control whether the ignore settings file is forbidden.
+        ignore_settings_file:
+          title:
+            en-us: "Ignore settings file"
+          description:
+            en-us: "Settings related to the ignore settings file"
+          markdownDescription:
+            en-us: |
+              Settings related to the ignore settings file. This represents the values for the settings that control whether the ignore settings file is used.
+        tracing:
+          title:
+            en-us: "Tracing"
+          description:
+            en-us: "Settings related to tracing"
+          markdownDescription:
+            en-us: |
+              Settings related to tracing. This represents the values for the settings that control tracing behavior.
+        resource_path:
+          title:
+            en-us: "Resource path"
+          description:
+            en-us: "Settings related to the resource path"
+          markdownDescription:
+            en-us: |
+              Settings related to the resource path. This represents the values for the settings that control the resource path.
+    all:
+      title:
+        en-us: "DSC settings"
+      description:
+        en-us: "Represents DSC settings from all sources and includes the resolved settings"
+      markdownDescription:
+        en-us: |
+          Represents the complete set of DSC settings, including all sources and the resolved effective
+          settings.
+
+          During initialization, DSC loads settings from various sources. The following list defines the
+          sources for settings in order of precedence, from lowest to highest where later sources override
+          earlier sources:
+
+          - The hardcoded defaults defined in the source code.
+          - The machine settings file, if it exists.
+          - The user settings file, if it exists.
+          - The workspace settings file, if it exists.
+          - The environment variables, if they are set.
+          - The command line arguments, if they are provided.
+          - The policy settings file, if it exists.
+
+      fields:
+        default:
+          title:
+            en-us: "Code default settings"
+          description:
+            en-us: The hardcoded default settings defined in the source code.
+          markdownDescription:
+            en-us: |
+              The hardcoded default settings defined in the source code.
+
+              These defaults have the lowest precedence and will be overridden by any other settings
+              source if a value is provided.
+
+              The following snippet shows the effective code defaults as YAML data:
+
+              ```yaml
+              forbid_ignore_settings_file: false
+              ignore_settings_file: false
+              tracing:
+                level:  warn
+                format: default
+              resource_path:
+                directories: []
+                append_env_path: true
+                restricted: false
+              ```
+        machine:
+          title:
+            en-us: "Machine settings"
+          description:
+            en-us: "The settings loaded from the machine settings file, if it exists."
+          markdownDescription:
+            en-us: |
+              The settings loaded from the machine settings file, if it exists.
+
+              This field is omitted if the machine settings file doesn't exist or if it couldn't
+              be loaded.
+
+              The machine settings file has the lowest precedence for settings after the code
+              defaults. Any settings defined in a different scope will override the values defined
+              in the machine settings file.
+
+              The location for the machine settings file depends on the operating system:
+
+              - On Windows: `{ProgramData}\dsc\dsc.settings.json`
+              - On macOS: `/Library/Application Support/dsc/dsc.settings.json`
+              - On Linux and other Unix-like systems: `/etc/dsc/dsc.settings.json`
+        user:
+          title:
+            en-us: "User settings"
+          description:
+            en-us: "The settings loaded from the user settings file, if it exists."
+          markdownDescription:
+            en-us: |
+              The settings loaded from the user settings file, if it exists.
+
+              This field is omitted if the user settings file doesn't exist or if it couldn't
+              be loaded.
+
+              The user settings file has higher precedence than the machine settings file but lower
+              precedence than the workspace, environment, command line, and policy settings.
+
+              The location for the user settings file depends on the operating system:
+
+              - On Windows: `{APPDATA}\dsc\dsc.settings.json`
+              - On macOS: `{HOME}/Library/Application Support/dsc/dsc.settings.json`
+              - On Linux and other Unix-like systems: `{HOME}/.config/dsc/dsc.settings.json`
+        workspace:
+          title:
+            en-us: "Workspace settings"
+          description:
+            en-us: "The settings loaded from the workspace settings file, if it exists."
+          markdownDescription:
+            en-us: |
+              The settings loaded from the workspace settings file, if it exists.
+
+              This field is omitted if the workspace settings file doesn't exist or if it couldn't
+              be loaded.
+
+              The workspace settings file has higher precedence than the machine and user settings
+              files but lower precedence than the environment, command line, and policy settings.
+
+              The location for the workspace settings file is the current working directory:
+
+              - `{CWD}/dsc.settings.json`
+        environment:
+          title:
+            en-us: "Environment settings"
+          description:
+            en-us: "The settings loaded from the environment variables, if they exist."
+          markdownDescription:
+            en-us: |
+              The settings loaded from the environment variables, if they exist.
+
+              This field is omitted if no relevant environment variables are set.
+
+              The environment settings have higher precedence than the machine, user, and workspace
+              settings but lower precedence than the command line and policy settings.
+
+              DSC uses the following environment variables for settings:
+
+              - `DSC_TRACE_LEVEL`: Defines the trace level to use.
+              - `DSC_TRACE_FORMAT`: Defines the trace format to use.
+              - `DSC_RESOURCE_PATH`: Defines the resource directories to use.
+              - `DSC_RESTRICTED_PATH`: Defines the resource directories to use and restricts all DSC
+                invocations to those directories exclusively.
+              - `DSC_IGNORE_SETTINGS_FILE`: Defines whether to ignore settings files.
+        command_line:
+          title:
+            en-us: "Command line settings"
+          description:
+            en-us: "The settings loaded from the command line arguments, if they were specified."
+          markdownDescription:
+            en-us: |
+              The settings loaded from the command line arguments, if they were specified.
+
+              This field is omitted if no relevant command line arguments are provided.
+
+              The command line settings have higher precedence than the machine, user, workspace, and environment
+              settings but lower precedence than the policy settings.
+
+              DSC uses the following command line arguments for settings:
+
+              - `--trace-level`: Defines the trace level to use.
+              - `--trace-format`: Defines the trace format to use.
+              - `--ignore-settings-file`: Defines whether to ignore settings files.
+        policy:
+          title:
+            en-us: "Policy settings"
+          description:
+            en-us: The settings loaded from the policy settings file, if it exists.
+          markdownDescription:
+            en-us: |
+              The settings loaded from the policy settings file, if it exists.
+
+              This field is omitted if the policy settings file does not exist or couldn't be
+              loaded.
+
+              The policy settings have the highest precedence among all sources. Settings defined
+              as policy cannot be overridden.
+        resolved:
+          title:
+            en-us: "Resolved settings"
+          description:
+            en-us: "The effective settings after considering all sources and their precedence."
+          markdownDescription:
+            en-us: |
+              The effective settings after considering all sources and their precedence. This represents the final
+              values that DSC will use during its operation.
+
+              Every leaf field in the resolved settings contains both the resolved value and the scope from
+              which the value was resolved.

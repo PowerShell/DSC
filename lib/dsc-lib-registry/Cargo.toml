@@ -12,7 +12,6 @@ load-path = "locales"
 doctest = false
 
 [dependencies]
-crossterm = { workspace = true }
 dsc-lib-acl = { workspace = true }
 registry = { workspace = true }
 rust-i18n = { workspace = true }
@@ -20,10 +19,5 @@ schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 utfx = { workspace = true }
 windows = { workspace = true }
-
-[build-dependencies]
-cc = { workspace = true }

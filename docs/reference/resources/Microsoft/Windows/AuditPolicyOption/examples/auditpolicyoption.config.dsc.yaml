@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Audit the use of Backup and Restore privileges
+    type: Microsoft.Windows/AuditPolicyOption
+    properties:
+      name: FullPrivilegeAuditing
+      enabled: true
+  - name: Keep running when audits cannot be logged
+    type: Microsoft.Windows/AuditPolicyOption
+    properties:
+      name: CrashOnAuditFail
+      enabled: false

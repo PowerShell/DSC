@@ -3,6 +3,9 @@ name = "dsc-resource-echo"
 version = "1.0.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [[bin]]
 name = "dscecho"
 path = "src/main.rs"

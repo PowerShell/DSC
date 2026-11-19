@@ -1404,16 +1404,16 @@ function Test-ShouldSkipProject {
     begin {}
 
     process {
-        if ($Architecture -eq 'current') {
-            if ($Project.SupportedPlatformOS -eq [DscSupportedPlatformOS]::Windows) {
-                return -not $IsWindows
-            } elseif ($Project.SupportedPlatformOS -eq [DscSupportedPlatformOS]::MacOS) {
-                return -not $IsMacOS
-            } elseif ($Project.SupportedPlatformOS -eq [DscSupportedPlatformOS]::Linux) {
-                return -not $IsLinux
-            }
+        $operatingSystem = if ($Architecture -like '*-windows-*' -or ($Architecture -eq 'current' -and $IsWindows)) {
+            [DscSupportedPlatformOS]::Windows
+        } elseif ($Architecture -like '*-apple-darwin' -or ($Architecture -eq 'current' -and $IsMacOS)) {
+            [DscSupportedPlatformOS]::MacOS
+        } elseif ($Architecture -like '*-linux-*' -or ($Architecture -eq 'current' -and $IsLinux)) {
+            [DscSupportedPlatformOS]::Linux
+        } else {
+            throw "Unsupported architecture '$Architecture'"
         }
-        return $false
+        return -not $Project.SupportedPlatformOS.HasFlag($operatingSystem)
     }
 }
 
@@ -1657,7 +1657,20 @@ function Build-RustProject {
             Test-Clippy @clippyParams
         }
 
-        $members = Get-DefaultWorkspaceMemberGroup
+        if ($Project) {
+            $rustProjects = @($Project | Where-Object {
+                $_.IsRust -and -not (Test-ShouldSkipProject -Project $_ -Architecture $Architecture)
+            })
+            if ($rustProjects.Count -eq 0) {
+                return
+            }
+            foreach ($rustProject in $rustProjects) {
+                $flags += $rustProject.ToPackageFlags()
+            }
+            $members = $rustProjects.Name -join ', '
+        } else {
+            $members = Get-DefaultWorkspaceMemberGroup
+        }
         Write-Verbose -Verbose "Building rust projects: [$members]"
         Write-Verbose "Invoking cargo:`n`tcargo build $flags"
         cargo build @flags
@@ -1736,8 +1749,14 @@ function Copy-BuildArtifact {
                 continue
             }
             Write-Verbose "Copying '$($p.Name)' project files..."
-            # Next, copy other files
-            foreach ($file in $p.CopyFiles.All) {
+            $files = @($p.CopyFiles.All)
+            foreach ($platform in @('Linux', 'macOS', 'Windows')) {
+                if (Test-ShouldSkipFileForArchitecture -Architecture $Architecture -OperatingSystem $platform) {
+                    continue
+                }
+                $files += $p.CopyFiles.$platform
+            }
+            foreach ($file in $files | Where-Object { $_ }) {
                 $source = Join-Path $PSScriptRoot $p.RelativePath $file
                 $source = Resolve-Path $source
                 $destination = $artifactDirectory.Bin
@@ -1750,32 +1769,16 @@ function Copy-BuildArtifact {
                     New-Item -Path $destination -ItemType Directory -Force
                 }
                 Write-Verbose "Copying '$($p.Name)' project file: '$file'`n`tSource: '$source'`n`tDestination: '$destination'"
-                $source | Copy-Item @copyParams -Destination $destination
-            }
-            foreach ($platform in @('Linux', 'macOS', 'Windows')) {
-                $files = $p.CopyFiles.$platform
-                if ($null -eq $files) {
-                    continue
-                }
-                if (Test-ShouldSkipFileForArchitecture -Architecture $Architecture -OperatingSystem $platform) {
-                    Write-Verbose "Skipping copying '$($p.Name)' project files for $platform"
-                    continue
-                }
-                Write-Verbose "Copying '$($p.Name)' project files for $platform"
-                foreach ($file in $p.CopyFiles.$platform) {
-                    $source = Join-Path $PSScriptRoot $p.RelativePath $file
-                    $source = Resolve-Path $source
-                    $destination = $artifactDirectory.Bin
-                    if ($file -match '/') {
-                        $segments = ($file -split '/' | Select-Object -SkipLast 1)
+                $source | Copy-Item @copyParams -Destination $destination -ErrorAction Stop
 
-                        $destination = Join-Path $destination $segments
+                # A manifest list can replace a same-named standalone resource manifest.
+                if ($file -like '*.dsc.manifests.json') {
+                    $oldName = [System.IO.Path]::GetFileName($file) -replace '\.dsc\.manifests\.json$', '.dsc.resource.json'
+                    $oldSource = Join-Path (Split-Path $source -Parent) $oldName
+                    $oldDestination = Join-Path $destination $oldName
+                    if (-not (Test-Path -LiteralPath $oldSource) -and (Test-Path -LiteralPath $oldDestination -PathType Leaf)) {
+                        Remove-Item -LiteralPath $oldDestination -ErrorAction Stop
                     }
-                    if (-not (Test-Path -Path $destination)) {
-                        New-Item -Path $destination -ItemType Directory -Force
-                    }
-                    Write-Verbose "Copying '$($p.Name)' project file: '$file'`n`tSource: '$source'`n`tDestination: '$destination'"
-                    $source | Copy-Item @copyParams -Destination $destination
                 }
             }
         }
@@ -2830,7 +2833,23 @@ function Test-RustProject {
     }
 
     process {
-        $members = Get-DefaultWorkspaceMemberGroup
+        if ($Project) {
+            $rustProjects = @($Project | Where-Object {
+                $_.IsRust -and
+                -not $_.SkipTestProject -and
+                -not (Test-ShouldSkipProject -Project $_ -Architecture $Architecture) -and
+                -not (Test-ShouldSkipProjectTesting -Project $_)
+            })
+            if ($rustProjects.Count -eq 0) {
+                return
+            }
+            foreach ($rustProject in $rustProjects) {
+                $flags += $rustProject.ToPackageFlags()
+            }
+            $members = $rustProjects.Name -join ', '
+        } else {
+            $members = Get-DefaultWorkspaceMemberGroup
+        }
         if ($Docs) {
             Write-Verbose -Verbose "Testing documentation for rust projects: [$members]"
         } else {
@@ -2856,8 +2875,8 @@ function Test-ProjectWithPester {
     [cmdletbinding()]
     param(
         [DscProjectDefinition[]]$Project,
-        [ValidateSet("dsc", "adapters", "extensions", "grammars", "resources")]
         [string[]]$Group,
+        [string[]]$ExcludePath,
         [switch]$UsingADO
     )
 
@@ -2929,6 +2948,9 @@ function Test-ProjectWithPester {
             Write-Verbose "Invoking pester for projects: [$($Project.Name -join ', ')]"
         } else {
             Write-Verbose "Invoking pester for all groups and projects"
+        }
+        if ($ExcludePath) {
+            $pesterParams.ExcludePath = $ExcludePath
         }
         Invoke-Pester @pesterParams
     }

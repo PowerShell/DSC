@@ -271,9 +271,8 @@ pub enum FullyQualifiedTypeNameError {
 
 /// This static lazily defines the validating regex for [`FullyQualifiedTypeName`]. It enables the
 /// [`Regex`] instance to be constructed once, the first time it's used, and then reused on all
-/// subsequent validation calls. It's kept private, since the API usage is to invoke the
-/// [`FullyQualifiedTypeName::validate()`] method for direct validation or to leverage this static
-/// from within the constructor for [`FullyQualifiedTypeName`].
+/// subsequent validation calls. It's kept private, since the API usage is to leverage this static
+/// from within [`FullyQualifiedTypeName::parse()`] to construct a new instance.
 static VALIDATING_SEGMENT_REGEX: OnceLock<Regex> = OnceLock::new();
 
 impl FullyQualifiedTypeName {
@@ -460,6 +459,8 @@ impl FullyQualifiedTypeName {
     /// The method returns the parsed segments (`owner`, `namespaces`, and `name`) as a tuple. Any
     /// validation errors encountered during parsing are added to the provided `errors` vector for
     /// the caller to handle.
+    ///
+    /// [`WildcardTypeName`]: crate::types::WildcardTypeName
     pub(crate) fn parse_segments(
         text: &str,
         validating_segment_regex: &Regex,

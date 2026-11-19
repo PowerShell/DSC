@@ -94,6 +94,23 @@ pub struct WindowsService {
     pub metadata: Option<Metadata>,
 }
 
+/// Input for the restart service action.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RestartService {
+    pub name: String,
+}
+
+/// Result of restarting a service.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestartServiceResult {
+    pub name: String,
+    pub status: ServiceStatus,
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
+}
+
 /// Metadata returned by what-if operations.
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

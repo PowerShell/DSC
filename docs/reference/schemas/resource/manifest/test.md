@@ -93,7 +93,7 @@ resource when the `test` method runs.
 
 ## Required properties
 
-The `test` definition must include these properties:
+Unless the manifest defines [jsonrpc](root.md#jsonrpc), the `test` definition must include:
 
 - [executable](#executable)
 
@@ -108,7 +108,7 @@ executable.
 
 ```yaml
 Type:     string
-Required: true
+Required: true unless jsonrpc is defined
 ```
 
 ### args

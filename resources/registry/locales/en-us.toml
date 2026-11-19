@@ -17,6 +17,7 @@ emptyReverseMap = "The reverse map is empty"
 mapJsonToRegistryNotFound = "No mapping found for key: %{key}"
 
 [args]
+jsonrpcAbout = "Serve resource operations over JSON-RPC."
 about = "Manage state of Windows registry"
 adapterAbout = "Use adapted registry resources."
 adapterArgsInputHelp = "The registry JSON input for the adapted resource."
@@ -57,3 +58,14 @@ tracingInitError = "Unable to set global default tracing subscriber. Tracing is 
 debugAttach = "attach debugger to pid %{pid} and press any key to continue"
 debugEventReadError = "Error: Failed to read event: %{err}"
 debugEventUnexpectedError = "Unexpected event: %{e}"
+
+[jsonrpc]
+invalidRequest = "Invalid JSON-RPC request."
+invalidParams = "Invalid JSON-RPC parameters."
+methodNotFound = "Unknown JSON-RPC method: %{method}"
+invalidLifecycle = "The JSON-RPC method is not valid in the current lifecycle state."
+unsupportedVersion = "No supported JSON-RPC resource protocol version was requested."
+unsupportedResource = "Unsupported JSON-RPC resource type: %{resource}"
+unsupportedOperation = "Unsupported JSON-RPC resource operation: %{operation}"
+unexpectedEnd = "JSON-RPC input ended before the exit notification."
+unexpectedExit = "JSON-RPC exit requires a successful shutdown."

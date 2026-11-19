@@ -1,0 +1,10 @@
+{
+    "Name": "csp",
+    "Kind": "Adapter",
+    "IsRust": true,
+    "SupportedPlatformOS": "Windows",
+    "Binaries": ["csp"],
+    "CopyFiles": {
+        "Windows": ["csp.dsc.resource.json"]
+    }
+}
