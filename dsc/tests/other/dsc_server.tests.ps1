@@ -1127,7 +1127,7 @@ resources:
         $response.id | Should -Be 25
         $response.result.isError | Should -Be $false
         $response.result.structuredContent.actions.type | Should -Contain 'Microsoft.System.Action/TerminateProcess'
-        $actions = @($response.result.structuredContent.actions | Where-Object type -Like 'Test/*')
+        $actions = @($response.result.structuredContent.actions | Where-Object -Property type -Like 'Test/*')
         $actions.Count | Should -Be 2
         $actions[0].type | Should -BeExactly 'Test/Action2'
         $actions[0].inputSchema | Should -BeNullOrEmpty

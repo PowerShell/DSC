@@ -124,7 +124,7 @@
       "windows_firewall.dsc.resource.json",
       "windows_firewall.exe",
       "windows_service.exe",
-      "windows_service.dsc.resource.json",
+      "windows_service.dsc.manifests.json",
       "windows_audit_policy.exe",
       "windows_audit_policy.dsc.manifests.json",
       "windows_security_policy.exe",
@@ -509,7 +509,7 @@
       ],
       "CopyFiles": {
         "Windows": [
-          "windows_service.dsc.resource.json"
+          "windows_service.dsc.manifests.json"
         ]
       }
     },
