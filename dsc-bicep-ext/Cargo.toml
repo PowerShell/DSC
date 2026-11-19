@@ -24,3 +24,4 @@ tracing-subscriber = { workspace = true }
 
 [build-dependencies]
 tonic-prost-build = { workspace = true }
+winresource = { workspace = true }

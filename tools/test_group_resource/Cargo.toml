@@ -3,6 +3,9 @@ name = "test_group_resource"
 version = "0.1.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [dependencies]
 # external dependencies
 clap = { workspace = true }

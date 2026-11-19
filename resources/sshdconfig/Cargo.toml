@@ -3,6 +3,9 @@ name = "dsc-resource-sshdconfig"
 version = "0.1.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [[bin]]
 name = "sshdconfig"
 path = "src/main.rs"

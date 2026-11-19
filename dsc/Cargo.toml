@@ -3,6 +3,9 @@ name = "dsc"
 version = "3.4.0-preview.4"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [dependencies]
 # external dependencies
 clap = { workspace = true }

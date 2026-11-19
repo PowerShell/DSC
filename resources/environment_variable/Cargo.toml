@@ -3,6 +3,9 @@ name = "environment_variable"
 version = "0.1.0"
 edition = "2024"
 
+[build-dependencies]
+winresource = { workspace = true }
+
 [package.metadata.i18n]
 available-locales = ["en-us"]
 default-locale = "en-us"

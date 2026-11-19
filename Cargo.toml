@@ -314,6 +314,8 @@ windows = { version = "0.62", features = [
     "Win32_System_Wmi",
     "Win32_Globalization"
 ] }
+# Windows executable version resources
+winresource = "0.1.14"
 # csp
 wmi = { version = "0.18.4", default-features = false }
 
