@@ -81,6 +81,7 @@ Describe 'Tests for DSC server' {
             'list_dsc_actions'      = $false
             'list_dsc_functions'    = $false
             'list_dsc_resources'    = $false
+            'query_dsc_config'      = $false
             'show_dsc_action'       = $false
             'show_dsc_resource'     = $false
             'show_dsc_schema'       = $false
@@ -925,7 +926,7 @@ resources:
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 17
         $response.error.code | Should -Be -32600
-        $response.error.message | Should -Match 'Invalid configuration'
+        $response.error.message | Should -Match 'Invalid configuration document'
     }
 
     It 'Calling invoke_dsc_config with invalid parameters returns error' {
@@ -1110,6 +1111,67 @@ resources:
         $response.id | Should -Be 24
         $response.error.code | Should -Be -32600
         $response.error.message | Should -BeExactly "Function 'add' invocation failed: Parser: Function 'add' does not accept string arguments, accepted types are: Number"
+    }
+
+    It 'query_dsc_config can return metadata' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 25
+            method  = "tools/call"
+            params  = @{
+                name      = "query_dsc_config"
+                arguments = @{
+                    query_kind = "metadata"
+                    configuration = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  name: test
+  version: 1.0.0
+  Microsoft.DSC:
+    operation: get
+resources:
+- name: test
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: test
+'@
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 25
+        $response.error | Should -Be $null
+        $response.result.isError | Should -Be $false
+        $response.result.structuredContent.result.name | Should -BeExactly 'test'
+        $response.result.structuredContent.result.version | Should -BeExactly '1.0.0'
+    }
+
+    It 'query_dsc_config for metadata can succeed if there is no metadata' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id      = 26
+            method  = "tools/call"
+            params  = @{
+                name      = "query_dsc_config"
+                arguments = @{
+                    query_kind = "metadata"
+                    configuration = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: test
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: test
+'@
+                }
+            }
+        }
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 26
+        $response.error | Should -Be $null
+        $response.result.isError | Should -Be $false
+        $response.result.structuredContent.result | Should -Be $null
     }
 
     It 'Calling list_dsc_actions returns the list of available actions' {
