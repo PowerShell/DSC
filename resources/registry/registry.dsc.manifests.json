@@ -3,6 +3,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/Registry",
+            "author": "Microsoft Corporation",
             "description": "Manage Windows Registry keys and values",
             "tags": [
                 "Windows"
@@ -87,6 +88,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/RegistryList",
+            "author": "Microsoft Corporation",
             "description": "Manage multiple Windows Registry keys and values",
             "tags": [
                 "Windows"
@@ -161,6 +163,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows.Adapter/Registry",
+            "author": "Microsoft Corporation",
             "kind": "adapter",
             "description": "Adapter for registry based resources",
             "tags": [

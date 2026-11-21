@@ -1,6 +1,7 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.DSC.Transitional/WindowsPowerShellScript",
+    "author": "Microsoft Corporation",
     "description": "Enable running Windows PowerShell 5.1 scripts inline",
     "version": "0.2.0",
     "get": {

@@ -3,6 +3,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/AuditPolicy",
+            "author": "Microsoft Corporation",
             "description": "Manage success and failure auditing for a Windows advanced audit policy subcategory.",
             "tags": [
                 "Windows",
@@ -118,6 +119,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/AuditPolicyList",
+            "author": "Microsoft Corporation",
             "description": "Manage success and failure auditing for several Windows advanced audit policy subcategories at once.",
             "tags": [
                 "Windows",
@@ -254,6 +256,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/AuditPolicyOption",
+            "author": "Microsoft Corporation",
             "description": "Manage Windows audit policy options stored under the LSA registry key.",
             "tags": [
                 "Windows",

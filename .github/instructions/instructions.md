@@ -253,7 +253,8 @@ The build script can create distribution packages for different platforms.
 
 ### Prerequisites for Packaging
 
-You must specify a specific architecture (not `current`) when packaging.
+For distribution packages (`-PackageType`), you must specify a specific architecture (not `current`).
+Individual resource packages (`-CreateResourcePackages`) also support `current`.
 
 ### Package Types
 
@@ -291,6 +292,58 @@ You must specify a specific architecture (not `current`) when packaging.
 # Get the current version from Cargo.toml
 ./build.ps1 -GetPackageVersion
 ```
+
+### Resource ZIP Packages
+
+After building the resources, create individual resource ZIPs from the existing artifacts:
+
+```powershell
+./build.ps1 -CreateResourcePackages
+./build.ps1 -CreateResourcePackages -Architecture x86_64-pc-windows-msvc -Release
+```
+
+Like `-PackageType`, `-CreateResourcePackages` skips compilation. Use the same architecture and
+release setting as the preceding build. Packages are written to `resource-packages/` under the
+selected build output directory (for example, `bin/debug/resource-packages/` for `current`).
+
+`ResourcePackageFiles` in `data.build.json` lists each package's files relative to the build output.
+Each package has `zipContents` and `manifests` arrays. Only `zipContents` files are included in ZIPs;
+files listed in `manifests` are not required to create the ZIP and are not included.
+The `All` section is combined with the target's `Linux`, `macOS`, or `Windows` section. Entries with
+the same package name are merged into one ZIP, and nested file paths are preserved. Extensionless
+executable names in `All` receive `.exe` for Windows targets. Package names use the resource type
+with `/` replaced by `.`, and become the ZIP filenames. Related resources can share a package:
+Registry and RegistryList use `Microsoft.Windows.Registry.zip`, and the three DISM resources use
+`Microsoft.Windows.DISM.zip`. Test resources must not be included. Missing files fail packaging.
+
+Separately packaged compiled executables are excluded from the platform's `PackageFiles` list.
+Resource manifests, scripts, and support files remain in the distribution lists.
+
+To publish a resource package to the OCI registry, install Azure CLI and ORAS, sign in with
+`az login`, then run:
+
+```powershell
+Import-Module .\packaging\oci\DSCOras.psm1
+Publish-Artifact -PackageName Microsoft.Windows.Registry
+Publish-Artifact -PackageName Microsoft.Windows.Registry -OS Windows -Platforms windows-amd64, windows-arm64 -Release
+```
+
+The default uses current host artifacts. Explicit platforms use their architecture-specific
+build directories. The module obtains an ACR token with `az acr login --expose-token` and passes it
+to `oras login --password-stdin`. Each resource is published with a separate JSON manifest, a shared implementation
+ZIP, and a `resourceName-version` OCI index. Bundled manifests are split into resource entries;
+YAML manifests require `ConvertFrom-Yaml`. Existing resource packages are not deleted.
+
+Use `Find-Artifact` to discover a resource by its full type, including resources in shared packages:
+
+```powershell
+Find-Artifact -ResourceType Microsoft.Windows/RegistryList
+Find-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 1.0.0 -Platform windows-arm64
+```
+
+Discovery authenticates with the same ACR token flow and returns metadata for each matching version
+and platform, including digest-pinned references. It does not download resource files. Omit `Version`
+or `Platform` to return all available matches. Registry failures terminate discovery.
 
 ## CI/CD Workflows
 
@@ -410,6 +463,7 @@ The build script automatically installs these. If issues persist:
 | `-Test` | Switch | Run tests after building |
 | `-GetPackageVersion` | Switch | Output current package version |
 | `-PackageType` | String | Create package (msix, msix-private, msixbundle, tgz, zip) |
+| `-CreateResourcePackages` | Switch | Create individual resource ZIPs from existing build artifacts for the target platform |
 | `-Project` | String[] | Build specific projects only |
 | `-ExcludeRustTests` | Switch | Skip Rust tests (use with -Test) |
 | `-ExcludePesterTests` | Switch | Skip Pester tests (use with -Test) |

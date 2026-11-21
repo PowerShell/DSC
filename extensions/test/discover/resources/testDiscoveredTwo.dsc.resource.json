@@ -1,6 +1,7 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Test/DiscoveredTwo",
+    "author": "Microsoft Corporation",
     "version": "0.1.0",
     "description": "Second discovered resource",
     "get": {

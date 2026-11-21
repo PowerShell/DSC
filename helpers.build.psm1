@@ -138,8 +138,16 @@ class DscProjectPackageFiles {
     [string[]] $Executable
 }
 
+class DscResourcePackageFiles {
+    [hashtable] $Linux
+    [hashtable] $MacOS
+    [hashtable] $Windows
+    [hashtable] $All
+}
+
 class DscProjectBuildData {
     [DscProjectPackageFiles]$PackageFiles
+    [DscResourcePackageFiles]$ResourcePackageFiles
     [DscProjectDefinition[]]$Projects
 
     [string] ToJson() {
@@ -153,6 +161,12 @@ class DscProjectBuildData {
                 Linux      = $this.PackageFiles.Linux
                 macOS      = $this.PackageFiles.MacOS
                 Windows    = $this.PackageFiles.Windows
+            }
+            ResourcePackageFiles = [ordered]@{
+                Linux   = $this.ResourcePackageFiles.Linux
+                macOS   = $this.ResourcePackageFiles.MacOS
+                Windows = $this.ResourcePackageFiles.Windows
+                All     = $this.ResourcePackageFiles.All
             }
             Projects = @()
         }
@@ -3401,6 +3415,108 @@ function Build-DscRpmPackage {
         Copy-Item $builtRpm.FullName $finalRpmPath -Force
 
         Write-Host -ForegroundColor Green "`nRPM package is created at $finalRpmPath"
+    }
+}
+
+function Build-DscResourcePackage {
+    <#
+        .SYNOPSIS
+        Creates resource ZIP packages for the target platform.
+
+        .DESCRIPTION
+        Packages only the zipContents files listed in ResourcePackageFiles, excluding manifests.
+        Files from All and the target platform are combined by package name, preserving relative paths inside each ZIP.
+        Extensionless executable names receive the .exe suffix for Windows targets.
+
+        .PARAMETER BuildData
+        Build data containing the resource package definitions. Defaults to data.build.json.
+
+        .PARAMETER ArtifactDirectory
+        Artifact paths to use. Packages are written to the resource-packages directory under Bin.
+
+        .PARAMETER Architecture
+        Target architecture, or current to use the host platform.
+
+        .PARAMETER Release
+        Uses release artifacts instead of debug artifacts.
+
+        .EXAMPLE
+        Build-DscResourcePackage -Architecture x86_64-pc-windows-msvc -Release
+
+        .OUTPUTS
+        None.
+
+        .NOTES
+        Build the resources before invoking this function. Missing files terminate packaging.
+    #>
+    [CmdletBinding()]
+    param(
+        [DscProjectBuildData]$BuildData,
+        [DscArtifactDirectoryPath]$ArtifactDirectory,
+        [ValidateSet(
+            'current',
+            'aarch64-pc-windows-msvc',
+            'x86_64-pc-windows-msvc',
+            'aarch64-apple-darwin',
+            'x86_64-apple-darwin',
+            'aarch64-unknown-linux-gnu',
+            'aarch64-unknown-linux-musl',
+            'x86_64-unknown-linux-gnu',
+            'x86_64-unknown-linux-musl'
+        )]
+        [string]$Architecture = 'current',
+        [switch]$Release
+    )
+
+    process {
+        if ($null -eq $BuildData) {
+            $BuildData = Import-DscBuildData
+        }
+        if ($null -eq $ArtifactDirectory) {
+            $ArtifactDirectory = Get-ArtifactDirectoryPath -Architecture $Architecture -Release:$Release
+        }
+        $platform = if ($Architecture -match 'windows' -or ($Architecture -eq 'current' -and $IsWindows)) {
+            'Windows'
+        } elseif ($Architecture -match 'linux' -or ($Architecture -eq 'current' -and $IsLinux)) {
+            'Linux'
+        } elseif ($Architecture -match 'apple' -or ($Architecture -eq 'current' -and $IsMacOS)) {
+            'macOS'
+        } else {
+            throw "Cannot determine resource package platform for '$Architecture'"
+        }
+
+        $packages = @{}
+        foreach ($section in @('All', $platform)) {
+            foreach ($package in $BuildData.ResourcePackageFiles.$section.GetEnumerator()) {
+                if (-not $packages.ContainsKey($package.Key)) {
+                    $packages[$package.Key] = @()
+                }
+                $packages[$package.Key] = @($packages[$package.Key]) + $package.Value.zipContents
+            }
+        }
+
+        $outputDirectory = Join-Path $ArtifactDirectory.Bin 'resource-packages'
+        $null = New-Item -Path $outputDirectory -ItemType Directory -Force -ErrorAction Stop
+        foreach ($packageName in ($packages.Keys | Sort-Object)) {
+            $stagingDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
+            $null = New-Item -Path $stagingDirectory -ItemType Directory -ErrorAction Stop
+            try {
+                foreach ($file in ($packages[$packageName] | Sort-Object -Unique)) {
+                    if ($platform -eq 'Windows' -and -not [System.IO.Path]::HasExtension($file)) {
+                        $file = "$file.exe"
+                    }
+                    $source = Join-Path $ArtifactDirectory.Bin $file
+                    $destination = Join-Path $stagingDirectory $file
+                    $null = New-Item -Path (Split-Path -Parent $destination) -ItemType Directory -Force -ErrorAction Stop
+                    Copy-Item -LiteralPath $source -Destination $destination -ErrorAction Stop
+                }
+                $zipFile = Join-Path $outputDirectory "$packageName.zip"
+                Compress-Archive -Path (Join-Path $stagingDirectory '*') -DestinationPath $zipFile -Force -ErrorAction Stop
+                Write-Host -ForegroundColor Green "Resource package is created at $zipFile"
+            } finally {
+                Remove-Item -LiteralPath $stagingDirectory -Recurse -Force -ErrorAction Stop
+            }
+        }
     }
 }
 

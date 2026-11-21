@@ -1,6 +1,7 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "DSC.PackageManagement/Brew",
+    "author": "Microsoft Corporation",
     "description": "DSC resource to manage Homebrew packages",
     "tags": [
         "macOS",

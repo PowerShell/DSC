@@ -1,6 +1,7 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.Adapter/GroupPolicyTemplate",
+    "author": "Microsoft Corporation",
     "version": "0.1.0",
     "kind": "adapter",
     "description": "Adapts Windows Group Policy ADMX templates into DSC resources.",

@@ -3,6 +3,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/Service",
+            "author": "Microsoft Corporation",
             "description": "Manage Windows services",
             "tags": [
                 "Windows"

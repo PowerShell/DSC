@@ -1,6 +1,7 @@
 {
   "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
   "type": "Microsoft.DSC/Assertion",
+  "author": "Microsoft Corporation",
   "version": "0.1.0",
   "description": "`test` will be invoked for all resources in the supplied configuration.",
   "kind": "group",

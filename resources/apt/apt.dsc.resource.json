@@ -1,6 +1,7 @@
 {
   "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
   "type": "DSC.PackageManagement/Apt",
+  "author": "Microsoft Corporation",
   "description": "Manage packages with the advanced package tool (APT)",
   "tags": ["Linux", "apt", "PackageManagement"],
   "version": "0.1.0",

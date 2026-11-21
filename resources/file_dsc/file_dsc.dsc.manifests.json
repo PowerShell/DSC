@@ -3,6 +3,7 @@
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Microsoft.Filesystem.File/Content",
+      "author": "Microsoft Corporation",
       "description": "Manage the UTF-8 content of a local file.",
       "tags": [
         "file",
@@ -102,6 +103,7 @@
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Microsoft.Windows.Filesystem/AccessControlList",
+      "author": "Microsoft Corporation",
       "description": "Manage the discretionary and/or system access control list of a local file or folder.",
       "tags": [
         "file",

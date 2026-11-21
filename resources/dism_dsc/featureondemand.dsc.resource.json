@@ -9,6 +9,7 @@
         "fod"
     ],
     "type": "Microsoft.Windows/FeatureOnDemandList",
+    "author": "Microsoft Corporation",
     "version": "0.1.1",
     "get": {
         "executable": "dism_dsc",

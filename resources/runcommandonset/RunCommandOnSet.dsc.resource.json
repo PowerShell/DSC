@@ -2,6 +2,7 @@
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "description": "Takes a single-command line to execute on DSC set operation",
     "type": "Microsoft.DSC.Transitional/RunCommandOnSet",
+    "author": "Microsoft Corporation",
     "version": "0.1.0",
     "get": {
         "executable": "runcommandonset",
