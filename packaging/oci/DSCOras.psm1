@@ -46,6 +46,48 @@ function Connect-DscRegistry {
     }
 }
 
+function Get-DscHostPlatform {
+    $hostOS = $IsWindows ? 'windows' : ($IsMacOS ? 'darwin' : 'linux')
+    $hostArchitecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+    $architecture = switch ($hostArchitecture) {
+        'X64' { 'amd64' }
+        'Arm64' { 'arm64' }
+        default { throw "Unsupported host architecture: $hostArchitecture" }
+    }
+    "$hostOS-$architecture"
+}
+
+function Get-DscResourceCachePath {
+    if ($IsWindows) {
+        if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+            throw 'LOCALAPPDATA is not set; cannot locate the DSC resource cache.'
+        }
+        $root = Join-Path $env:LOCALAPPDATA 'dsc'
+    } else {
+        $root = Join-Path $HOME '.dsc'
+    }
+    Join-Path $root 'resourceCache'
+}
+
+function Save-DscArtifactLayer {
+    param(
+        [string]$Repository,
+        [hashtable]$Layer,
+        [string]$Path
+    )
+
+    if ($Layer.digest -cnotmatch '^sha256:[0-9a-f]{64}$' -or $Layer.size -le 0) {
+        throw 'Invalid OCI layer digest or size.'
+    }
+    $null = Invoke-OrasCommand -Arguments @(
+        'blob', 'fetch', "$Repository@$($Layer.digest)", '--output', $Path
+    )
+    $digest = 'sha256:' + (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($digest -cne $Layer.digest -or (Get-Item -LiteralPath $Path).Length -ne $Layer.size) {
+        throw "Downloaded layer failed digest or size verification: '$Path'."
+    }
+}
+
 function Publish-Artifact {
     <#
     .SYNOPSIS
@@ -129,14 +171,7 @@ function Publish-Artifact {
     $platformOS = @{ linux = 'Linux'; darwin = 'macOS'; windows = 'Windows' }
     $useCurrent = -not $PSBoundParameters.ContainsKey('Platforms')
     if ($useCurrent) {
-        $hostOS = $IsWindows ? 'windows' : ($IsMacOS ? 'darwin' : 'linux')
-        $hostArchitecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
-        $architecture = switch ($hostArchitecture) {
-            'X64' { 'amd64' }
-            'Arm64' { 'arm64' }
-            default { throw "Unsupported host architecture: $hostArchitecture" }
-        }
-        $Platforms = @("$hostOS-$architecture")
+        $Platforms = @(Get-DscHostPlatform)
     }
     if ($Platforms.Count -eq 0) {
         throw 'At least one platform must be specified.'
@@ -306,7 +341,6 @@ function Find-Artifact {
     Searches resource-package repositories and matches resource IDs in OCI indexes,
     including resources that share a package. Returns one metadata object per available
     version and platform without downloading manifests or implementation ZIPs.
-    Uses Azure CLI authentication and ORAS; sign in with az login first.
 
     .PARAMETER ResourceType
     Full DSC resource type, such as Microsoft.Windows/RegistryList.
@@ -342,7 +376,6 @@ function Find-Artifact {
         [string]$Platform
     )
 
-    Connect-DscRegistry
     $catalog = Invoke-OrasCommand -Arguments @(
         'repo', 'ls', $script:RegistryServer, '--format', 'json'
     ) | ConvertFrom-Json -AsHashtable -Depth 100
@@ -408,4 +441,215 @@ function Find-Artifact {
     }
 }
 
-Export-ModuleMember -Function Publish-Artifact, Find-Artifact
+function Get-Artifact {
+    <#
+    .SYNOPSIS
+    Downloads and expands a DSC resource into the user's resource cache.
+
+    .DESCRIPTION
+    Resolves a resource with Find-Artifact and downloads its digest-pinned implementation
+    ZIP and resource manifest. Defaults to the latest stable semantic version for the host
+    platform. Extracts into resourceCache/<ZIP name without extension>/<version> under
+    LOCALAPPDATA/dsc on Windows or ~/.dsc elsewhere. Multiple versions coexist. Matching
+    cached packages are reused; a different ZIP or platform replaces only that version's
+    contents. Manifests for resources sharing the same package are preserved when the ZIP,
+    version, and platform match.
+
+    .PARAMETER ResourceType
+    Full DSC resource type, such as Microsoft.Windows/RegistryList.
+
+    .PARAMETER Version
+    Optional exact resource version, including prereleases. Defaults to the latest stable version.
+
+    .PARAMETER Platform
+    Optional OCI platform, such as windows-arm64. Defaults to the current host platform.
+
+    .EXAMPLE
+    Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+
+    .EXAMPLE
+    Get-Artifact -ResourceType Microsoft.Windows/Registry -Version 1.0.0 -Platform windows-arm64
+
+    .OUTPUTS
+    DSCOras.CachedArtifact with ResourceType, Version, Platform, Reference, Path, and ManifestPath.
+
+    .NOTES
+    Uses existing ORAS registry credentials. ZIPs and manifests are verified before installation.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    [OutputType('DSCOras.CachedArtifact')]
+    param(
+        [Parameter(Mandatory)]
+        [ValidatePattern('^[^/]+/[^/]+$')]
+        [string]$ResourceType,
+        [ValidateNotNullOrEmpty()]
+        [string]$Version,
+        [ValidateSet(
+            'linux-amd64', 'linux-arm64', 'darwin-amd64', 'darwin-arm64',
+            'windows-amd64', 'windows-arm64'
+        )]
+        [string]$Platform = (Get-DscHostPlatform)
+    )
+
+    $findParameters = @{ ResourceType = $ResourceType; Platform = $Platform }
+    if ($PSBoundParameters.ContainsKey('Version')) {
+        $findParameters.Version = $Version
+    }
+    $artifacts = @(Find-Artifact @findParameters)
+    if (-not $PSBoundParameters.ContainsKey('Version')) {
+        $stable = @(
+            foreach ($entry in $artifacts) {
+                $semanticVersion = [System.Management.Automation.SemanticVersion]::Parse($entry.Version)
+                if (-not $semanticVersion.PreReleaseLabel) {
+                    @{ Artifact = $entry; SemanticVersion = $semanticVersion }
+                }
+            }
+        )
+        if ($stable.Count -gt 0) {
+            $latest = $stable | Sort-Object -Property SemanticVersion -Descending | Select-Object -First 1
+            $artifacts = @($artifacts | Where-Object { $_.Version -ceq $latest.Artifact.Version })
+        } else {
+            $artifacts = @()
+        }
+    }
+    if ($artifacts.Count -eq 0) {
+        throw "No matching resource artifact for '$ResourceType', version '$Version', platform '$Platform'."
+    }
+    if ($artifacts.Count -ne 1) {
+        throw "Multiple matching resource artifacts for '$ResourceType', platform '$Platform'."
+    }
+    $artifact = $artifacts[0]
+    $null = [System.Management.Automation.SemanticVersion]::Parse($artifact.Version)
+    $manifest = Invoke-OrasCommand -Arguments @('manifest', 'fetch', $artifact.Reference) |
+        ConvertFrom-Json -AsHashtable -Depth 100
+    if ($manifest.mediaType -ne 'application/vnd.oci.image.manifest.v1+json' -or
+        $manifest.artifactType -ne $script:ArtifactType -or
+        $manifest.annotations.'com.microsoft.dsc.resource.id' -ne $ResourceType -or
+        $manifest.annotations.'com.microsoft.dsc.version' -cne $artifact.Version) {
+        throw "Invalid resource artifact manifest: '$($artifact.Reference)'."
+    }
+    $zipLayers = @($manifest.layers | Where-Object mediaType -EQ 'application/zip')
+    $resourceLayers = @($manifest.layers | Where-Object mediaType -EQ 'application/json')
+    if ($zipLayers.Count -ne 1 -or $resourceLayers.Count -ne 1) {
+        throw 'Resource artifact must contain exactly one ZIP and one resource manifest.'
+    }
+    $zipLayer = $zipLayers[0]
+    $resourceLayer = $resourceLayers[0]
+    $zipName = $zipLayer.annotations.'org.opencontainers.image.title'
+    $manifestName = $resourceLayer.annotations.'org.opencontainers.image.title'
+    if ($zipName -cnotmatch '^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.zip$' -or
+        $manifestName -cnotmatch '^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.dsc\.resource\.json$') {
+        throw 'Invalid ZIP or resource manifest filename in OCI layer annotations.'
+    }
+    $cacheRoot = Get-DscResourceCachePath
+    $packageDirectory = Join-Path $cacheRoot ([System.IO.Path]::GetFileNameWithoutExtension($zipName))
+    if ((Test-Path -LiteralPath $packageDirectory) -and
+        ((Get-Item -LiteralPath $packageDirectory -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+        throw "Cache package directory must not be a link: '$packageDirectory'."
+    }
+    $destination = Join-Path $packageDirectory $artifact.Version
+    $manifestPath = Join-Path $destination $manifestName
+    $result = [pscustomobject]@{
+        PSTypeName = 'DSCOras.CachedArtifact'
+        ResourceType = $ResourceType
+        Version = $artifact.Version
+        Platform = $artifact.Platform
+        Reference = $artifact.Reference
+        Path = $destination
+        ManifestPath = $manifestPath
+    }
+    $cacheMetadataPath = Join-Path $destination '.dsc-cache.json'
+    $cacheMetadata = $null
+    if (Test-Path -LiteralPath $destination) {
+        $existing = Get-Item -LiteralPath $destination -Force
+        if (-not $existing.PSIsContainer -or
+            ($existing.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+            throw "Cache destination must be a directory, not a link: '$destination'."
+        }
+        if (Test-Path -LiteralPath $cacheMetadataPath -PathType Leaf) {
+            $cacheMetadata = Get-Content -LiteralPath $cacheMetadataPath -Raw | ConvertFrom-Json -AsHashtable
+        }
+    }
+    $reuseZip = $cacheMetadata -and $cacheMetadata.ZipDigest -ceq $zipLayer.digest -and
+        $cacheMetadata.Version -ceq $artifact.Version -and $cacheMetadata.Platform -eq $artifact.Platform -and
+        $cacheMetadata.Files.Count -gt 0
+    if ($reuseZip) {
+        foreach ($file in $cacheMetadata.Files) {
+            if (-not (Test-Path -LiteralPath (Join-Path $destination $file) -PathType Leaf)) {
+                $reuseZip = $false
+                break
+            }
+        }
+    }
+    if ($reuseZip -and $cacheMetadata.ManifestDigests[$manifestName] -ceq $resourceLayer.digest -and
+        (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+        $cachedDigest = 'sha256:' + (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($cachedDigest -ceq $resourceLayer.digest) {
+            return $result
+        }
+    }
+    if (-not $PSCmdlet.ShouldProcess($destination, "Download and expand '$ResourceType' version '$($artifact.Version)'")) {
+        return
+    }
+    $null = New-Item -ItemType Directory -Path $cacheRoot -Force
+    $stagingDirectory = Join-Path $cacheRoot ('.' + [guid]::NewGuid().ToString())
+    $null = New-Item -ItemType Directory -Path $stagingDirectory
+    $backupDirectory = Join-Path $stagingDirectory 'previous'
+    $installed = $false
+    try {
+        $repository = $artifact.Reference.Split('@')[0]
+        $downloadedManifest = Join-Path $stagingDirectory $manifestName
+        Save-DscArtifactLayer -Repository $repository -Layer $resourceLayer -Path $downloadedManifest
+        $resource = Get-Content -LiteralPath $downloadedManifest -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+        if ($resource.type -ne $ResourceType -or $resource.version -cne $artifact.Version) {
+            throw 'Downloaded resource manifest does not match the requested resource type and version.'
+        }
+        if ($reuseZip) {
+            $preparedDirectory = $destination
+        } else {
+            $zipPath = Join-Path $stagingDirectory $zipName
+            Save-DscArtifactLayer -Repository $repository -Layer $zipLayer -Path $zipPath
+            $preparedDirectory = Join-Path $stagingDirectory 'expanded'
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $preparedDirectory)
+            $cacheMetadata = @{
+                ZipDigest = $zipLayer.digest
+                Version = $artifact.Version
+                Platform = $artifact.Platform
+                ManifestDigests = @{}
+                Files = @(
+                    Get-ChildItem -LiteralPath $preparedDirectory -File -Recurse -Force | ForEach-Object {
+                        [System.IO.Path]::GetRelativePath($preparedDirectory, $_.FullName)
+                    }
+                )
+            }
+        }
+        Copy-Item -LiteralPath $downloadedManifest -Destination (Join-Path $preparedDirectory $manifestName) -Force
+        $cacheMetadata.ManifestDigests[$manifestName] = $resourceLayer.digest
+        $cacheMetadata | ConvertTo-Json -Depth 10 |
+            Set-Content -LiteralPath (Join-Path $preparedDirectory '.dsc-cache.json') -Encoding utf8NoBOM
+        if (-not $reuseZip) {
+            $null = New-Item -ItemType Directory -Path $packageDirectory -Force
+            if (Test-Path -LiteralPath $destination) {
+                [System.IO.Directory]::Move($destination, $backupDirectory)
+            }
+            try {
+                [System.IO.Directory]::Move($preparedDirectory, $destination)
+            } catch {
+                if (Test-Path -LiteralPath $backupDirectory) {
+                    [System.IO.Directory]::Move($backupDirectory, $destination)
+                }
+                throw
+            }
+        }
+        $installed = $true
+        $result
+    } finally {
+        if (-not $installed -and (Test-Path -LiteralPath $backupDirectory)) {
+            Write-Warning "Previous cache preserved for recovery at '$backupDirectory'."
+        } else {
+            Remove-Item -LiteralPath $stagingDirectory -Recurse -Force
+        }
+    }
+}
+
+Export-ModuleMember -Function Publish-Artifact, Find-Artifact, Get-Artifact

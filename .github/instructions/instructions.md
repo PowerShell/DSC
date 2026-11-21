@@ -341,9 +341,26 @@ Find-Artifact -ResourceType Microsoft.Windows/RegistryList
 Find-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 1.0.0 -Platform windows-arm64
 ```
 
-Discovery authenticates with the same ACR token flow and returns metadata for each matching version
+Discovery uses existing ORAS registry credentials and returns metadata for each matching version
 and platform, including digest-pinned references. It does not download resource files. Omit `Version`
 or `Platform` to return all available matches. Registry failures terminate discovery.
+
+Use `Get-Artifact` to download and expand a resource package:
+
+```powershell
+Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 1.0.0 -Platform windows-arm64
+```
+
+By default, downloads the latest stable semantic version for the current host platform; an explicit
+version can select a prerelease. Returns metadata with the cache directory `Path` and `ManifestPath`.
+The cache root is `$env:LOCALAPPDATA\dsc\resourceCache` on Windows and `$HOME/.dsc/resourceCache`
+on non-Windows systems. ZIPs are expanded into `<package-name>/<package-version>`, with the package
+name taken from the ZIP without its extension, such as `Microsoft.Windows.Registry/1.0.0`.
+The individual resource manifest is placed in that same version folder, and multiple versions coexist.
+Downloads are digest-verified and staged before installation. Matching packages are reused, including
+shared ZIPs; switching platform or ZIP replaces only the selected version's contents. `-WhatIf` skips
+downloads and cache changes.
 
 ## CI/CD Workflows
 

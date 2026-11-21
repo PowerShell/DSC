@@ -351,7 +351,7 @@ Describe 'Find-Artifact' {
     }
 
     It 'Exports only the public publishing and discovery commands' {
-        @(Get-Command -Module DSCOras).Name | Should -Be @('Find-Artifact', 'Publish-Artifact')
+        @(Get-Command -Module DSCOras).Name | Should -Be @('Find-Artifact', 'Get-Artifact', 'Publish-Artifact')
         Should -Invoke Connect-DscRegistry -ModuleName DSCOras -Exactly 0
     }
 
@@ -368,7 +368,7 @@ Describe 'Find-Artifact' {
             $result.Size | Should -Be 123
             $result.PSObject.TypeNames[0] | Should -Be 'DSCOras.Artifact'
         }
-        Should -Invoke Connect-DscRegistry -ModuleName DSCOras -Exactly 1
+        Should -Invoke Connect-DscRegistry -ModuleName DSCOras -Exactly 0
         Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 0 -ParameterFilter {
             $Arguments[0] -in @('pull', 'push', 'blob')
         }
@@ -417,5 +417,318 @@ Describe 'Find-Artifact' {
 
         { Find-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 1.0.0 } |
             Should -Throw '*Invalid platform descriptor*'
+    }
+}
+
+Describe 'Get-Artifact' {
+    BeforeEach {
+        Import-Module (Join-Path $PSScriptRoot '..' 'packaging' 'oci' 'DSCOras.psm1') -Force
+        $fixtureRoot = Join-Path $TestDrive ([guid]::NewGuid().ToString())
+        $sourceDirectory = Join-Path $fixtureRoot 'source'
+        $null = New-Item -ItemType Directory -Path (Join-Path $sourceDirectory 'nested') -Force
+        Set-Content -LiteralPath (Join-Path $sourceDirectory 'registry.exe') -Value 'implementation'
+        Set-Content -LiteralPath (Join-Path $sourceDirectory 'nested' 'support.ps1') -Value 'support'
+        $zipPath = Join-Path $fixtureRoot 'Microsoft.Windows.Registry.zip'
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($sourceDirectory, $zipPath)
+        $zipDigest = 'sha256:' + (Get-FileHash -LiteralPath $zipPath).Hash.ToLowerInvariant()
+        $cacheRoot = Join-Path $fixtureRoot 'resourceCache'
+        $repository = 'orasdscartifacts.azurecr.io/dsc/resource/microsoft.windows.registry'
+        $documents = @{}
+        $blobs = @{ $zipDigest = $zipPath }
+        $artifacts = @(
+            foreach ($selection in @(
+                @('Microsoft.Windows/RegistryList', '2.9.0', 'windows-amd64'),
+                @('Microsoft.Windows/RegistryList', '2.10.0', 'windows-amd64'),
+                @('Microsoft.Windows/RegistryList', '3.0.0-beta.1', 'windows-amd64'),
+                @('Microsoft.Windows/RegistryList', '2.10.0', 'windows-arm64'),
+                @('Microsoft.Windows/RegistryList', '2.10.0', 'linux-arm64'),
+                @('Microsoft.Windows/Registry', '2.10.0', 'windows-amd64')
+            )) {
+                $type, $resourceVersion, $resourcePlatform = $selection
+                $slug = $type.Split('/')[1].ToLowerInvariant()
+                $reference = "$repository@sha256:$slug-$resourceVersion-$resourcePlatform"
+                $resourcePath = Join-Path $fixtureRoot "$slug-$resourceVersion-$resourcePlatform.json"
+                @{ type = $type; version = $resourceVersion } | ConvertTo-Json |
+                    Set-Content -LiteralPath $resourcePath -Encoding utf8NoBOM
+                $resourceDigest = 'sha256:' + (Get-FileHash -LiteralPath $resourcePath).Hash.ToLowerInvariant()
+                $blobs[$resourceDigest] = $resourcePath
+                $documents[$reference] = @{
+                    mediaType = 'application/vnd.oci.image.manifest.v1+json'
+                    artifactType = 'application/vnd.microsoft.dsc.resource.v1+zip'
+                    annotations = @{
+                        'com.microsoft.dsc.resource.id' = $type
+                        'com.microsoft.dsc.version' = $resourceVersion
+                    }
+                    layers = @(
+                        @{
+                            mediaType = 'application/zip'
+                            digest = $zipDigest
+                            size = (Get-Item -LiteralPath $zipPath).Length
+                            annotations = @{ 'org.opencontainers.image.title' = 'Microsoft.Windows.Registry.zip' }
+                        },
+                        @{
+                            mediaType = 'application/json'
+                            digest = $resourceDigest
+                            size = (Get-Item -LiteralPath $resourcePath).Length
+                            annotations = @{ 'org.opencontainers.image.title' = "$slug.dsc.resource.json" }
+                        }
+                    )
+                }
+                [pscustomobject]@{
+                    ResourceType = $type
+                    Version = $resourceVersion
+                    Platform = $resourcePlatform
+                    Reference = $reference
+                }
+            }
+        )
+        Mock Get-DscHostPlatform -ModuleName DSCOras { 'windows-amd64' }
+        Mock Get-DscResourceCachePath -ModuleName DSCOras { $cacheRoot }
+        Mock Find-Artifact -ModuleName DSCOras {
+            $artifacts | Where-Object {
+                $_.ResourceType -eq $ResourceType -and $_.Platform -eq $Platform -and
+                    (-not $Version -or $_.Version -ceq $Version)
+            }
+        }
+        Mock Invoke-OrasCommand -ModuleName DSCOras {
+            if ($Arguments[0] -eq 'manifest' -and $Arguments[1] -eq 'fetch') {
+                $documents[$Arguments[2]] | ConvertTo-Json -Depth 20
+            } elseif ($Arguments[0] -eq 'blob' -and $Arguments[1] -eq 'fetch' -and $Arguments[3] -eq '--output') {
+                $digest = $Arguments[2].Split('@')[1]
+                Copy-Item -LiteralPath $blobs[$digest] -Destination $Arguments[4]
+            } else {
+                throw "Unexpected ORAS invocation: $Arguments"
+            }
+        }
+    }
+
+    AfterEach {
+        Remove-Module DSCOras -Force
+    }
+
+    It 'Downloads the latest stable version for the host and places the manifest beside the expanded ZIP contents' {
+        $result = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+
+        $result.Version | Should -Be '2.10.0'
+        $result.Platform | Should -Be 'windows-amd64'
+        $result.Path | Should -Be (Join-Path $cacheRoot 'Microsoft.Windows.Registry' '2.10.0')
+        $result.ManifestPath | Should -Be (Join-Path $result.Path 'registrylist.dsc.resource.json')
+        $result.PSObject.TypeNames[0] | Should -Be 'DSCOras.CachedArtifact'
+        Join-Path $result.Path 'registry.exe' | Should -Exist
+        Join-Path $result.Path 'nested' 'support.ps1' | Should -Exist
+        $resource = Get-Content -LiteralPath $result.ManifestPath -Raw | ConvertFrom-Json
+        $resource.type | Should -Be 'Microsoft.Windows/RegistryList'
+        $resource.version | Should -Be '2.10.0'
+        @(Get-ChildItem -LiteralPath $cacheRoot -Force) | Should -HaveCount 1
+        Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 1 -ParameterFilter {
+            $Arguments[0] -eq 'manifest' -and $Arguments[2] -eq "$repository@sha256:registrylist-2.10.0-windows-amd64"
+        }
+    }
+
+    It 'Honors an explicit version and platform, including an explicitly selected prerelease' -ForEach @(
+        @{ RequestedVersion = '2.10.0'; RequestedPlatform = 'linux-arm64' },
+        @{ RequestedVersion = '3.0.0-beta.1'; RequestedPlatform = 'windows-amd64' }
+    ) {
+        $result = Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version $RequestedVersion -Platform $RequestedPlatform
+
+        $result.Version | Should -Be $RequestedVersion
+        $result.Platform | Should -Be $RequestedPlatform
+        $result.ManifestPath | Should -Exist
+    }
+
+    It 'Reuses a matching cache without downloading the ZIP or manifest again' {
+        $first = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        $second = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+
+        $second.Path | Should -Be $first.Path
+        Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 2 -ParameterFilter {
+            $Arguments[0] -eq 'blob'
+        }
+    }
+
+    It 'Preserves manifests for resources sharing the same package and downloads the shared ZIP only once' {
+        $registryList = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        $registry = Get-Artifact -ResourceType Microsoft.Windows/Registry
+
+        $registry.Path | Should -Be $registryList.Path
+        $registry.ManifestPath | Should -Exist
+        $registryList.ManifestPath | Should -Exist
+        Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 1 -ParameterFilter {
+            $Arguments[0] -eq 'blob' -and $Arguments[2] -eq "$repository@$zipDigest"
+        }
+    }
+
+    It 'Repairs a cache with missing implementation files by downloading and extracting the ZIP again' {
+        $cached = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        $supportPath = Join-Path $cached.Path 'nested' 'support.ps1'
+        Remove-Item -LiteralPath $supportPath
+
+        Get-Artifact -ResourceType Microsoft.Windows/RegistryList | Out-Null
+
+        $supportPath | Should -Exist
+        Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 2 -ParameterFilter {
+            $Arguments[0] -eq 'blob' -and $Arguments[2] -eq "$repository@$zipDigest"
+        }
+    }
+
+    It 'Downloads a corrupted cached manifest again without downloading the ZIP' {
+        $cached = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        Set-Content -LiteralPath $cached.ManifestPath -Value 'corrupt'
+
+        $result = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+
+        (Get-Content -LiteralPath $result.ManifestPath -Raw | ConvertFrom-Json).type |
+            Should -Be 'Microsoft.Windows/RegistryList'
+        Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 1 -ParameterFilter {
+            $Arguments[0] -eq 'blob' -and $Arguments[2] -eq "$repository@$zipDigest"
+        }
+    }
+
+    It 'Caches multiple versions independently and reuses either version without downloading again' {
+        $latest = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        $older = Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 2.9.0
+
+        $older.Path | Should -Be (Join-Path $cacheRoot 'Microsoft.Windows.Registry' '2.9.0')
+        $latest.ManifestPath | Should -Exist
+        $older.ManifestPath | Should -Exist
+        (Get-Content -LiteralPath $latest.ManifestPath -Raw | ConvertFrom-Json).version | Should -Be '2.10.0'
+        (Get-Content -LiteralPath $older.ManifestPath -Raw | ConvertFrom-Json).version | Should -Be '2.9.0'
+        @(Get-ChildItem -LiteralPath (Split-Path -Parent $older.Path) -Directory) | Should -HaveCount 2
+        (Get-Artifact -ResourceType Microsoft.Windows/RegistryList).Path | Should -Be $latest.Path
+        (Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 2.9.0).Path | Should -Be $older.Path
+        Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 4 -ParameterFilter {
+            $Arguments[0] -eq 'blob'
+        }
+    }
+
+    It 'Replaces only the selected version when its platform changes' {
+        $older = Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 2.9.0
+        $old = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        $old.Version | Should -Be '2.10.0'
+        $stalePath = Join-Path $old.Path 'stale.exe'
+        Set-Content -LiteralPath $stalePath -Value 'stale'
+
+        $new = Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 2.10.0 -Platform windows-arm64
+
+        $stalePath | Should -Not -Exist
+        $new.ManifestPath | Should -Exist
+        (Get-Content -LiteralPath $new.ManifestPath -Raw | ConvertFrom-Json).version | Should -Be '2.10.0'
+        $older.ManifestPath | Should -Exist
+        (Get-Content -LiteralPath $older.ManifestPath -Raw | ConvertFrom-Json).version | Should -Be '2.9.0'
+        @(Get-ChildItem -LiteralPath $cacheRoot -Force) | Should -HaveCount 1
+    }
+
+    It 'Leaves the existing cache intact and cleans up staging when a download fails' {
+        $old = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        Mock Invoke-OrasCommand -ModuleName DSCOras { throw 'Download failed' } -ParameterFilter {
+            $Arguments[0] -eq 'blob'
+        }
+
+        { Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 2.9.0 } | Should -Throw '*Download failed*'
+
+        (Get-Content -LiteralPath $old.ManifestPath -Raw | ConvertFrom-Json).version | Should -Be '2.10.0'
+        @(Get-ChildItem -LiteralPath $cacheRoot -Force) | Should -HaveCount 1
+    }
+
+    It 'Fails explicitly when no stable version or requested platform is available' {
+        { Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Platform darwin-amd64 } |
+            Should -Throw '*No matching resource artifact*'
+        $artifacts = @($artifacts | Where-Object Version -eq '3.0.0-beta.1')
+        { Get-Artifact -ResourceType Microsoft.Windows/RegistryList } |
+            Should -Throw '*No matching resource artifact*'
+        $cacheRoot | Should -Not -Exist
+    }
+
+    It 'Rejects ambiguous matches rather than downloading an arbitrary package' {
+        $artifacts += $artifacts | Where-Object { $_.Version -eq '2.10.0' -and $_.Platform -eq 'windows-amd64' }
+
+        { Get-Artifact -ResourceType Microsoft.Windows/RegistryList } | Should -Throw '*Multiple matching resource artifacts*'
+        $cacheRoot | Should -Not -Exist
+    }
+
+    It 'Rejects filenames that could escape the cache' {
+        $documents["$repository@sha256:registrylist-2.10.0-windows-amd64"].layers[0].annotations[
+            'org.opencontainers.image.title'
+        ] = '../escape.zip'
+
+        { Get-Artifact -ResourceType Microsoft.Windows/RegistryList } | Should -Throw '*Invalid ZIP or resource manifest filename*'
+        $cacheRoot | Should -Not -Exist
+    }
+
+    It 'Rejects a resource version that is unsafe as a cache directory name' {
+        $entry = $artifacts | Where-Object { $_.Version -eq '2.10.0' -and $_.Platform -eq 'windows-amd64' } |
+            Select-Object -First 1
+        $entry.Version = '../../outside'
+
+        { Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version '../../outside' } | Should -Throw
+        $cacheRoot | Should -Not -Exist
+    }
+
+    It 'Rejects corrupted downloads before creating a package directory' {
+        Mock Invoke-OrasCommand -ModuleName DSCOras {
+            Set-Content -LiteralPath $Arguments[4] -Value 'corrupt'
+        } -ParameterFilter { $Arguments[0] -eq 'blob' }
+
+        { Get-Artifact -ResourceType Microsoft.Windows/RegistryList } | Should -Throw '*verification*'
+        @(Get-ChildItem -LiteralPath $cacheRoot -Force) | Should -HaveCount 0
+    }
+
+    It 'Rejects ZIP entries that would escape the extraction directory' {
+        $archive = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Update)
+        try {
+            $null = $archive.CreateEntry('../escaped.exe')
+        } finally {
+            $archive.Dispose()
+        }
+        $newDigest = 'sha256:' + (Get-FileHash -LiteralPath $zipPath).Hash.ToLowerInvariant()
+        $blobs[$newDigest] = $zipPath
+        $layer = $documents["$repository@sha256:registrylist-2.10.0-windows-amd64"].layers[0]
+        $layer.digest = $newDigest
+        $layer.size = (Get-Item -LiteralPath $zipPath).Length
+
+        { Get-Artifact -ResourceType Microsoft.Windows/RegistryList } | Should -Throw '*outside*'
+        @(Get-ChildItem -LiteralPath $cacheRoot -Force) | Should -HaveCount 0
+    }
+
+    It 'Does not create or download cache files with WhatIf' {
+        Get-Artifact -ResourceType Microsoft.Windows/RegistryList -WhatIf
+
+        $cacheRoot | Should -Not -Exist
+        Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 0 -ParameterFilter {
+            $Arguments[0] -eq 'blob'
+        }
+    }
+}
+
+Describe 'DSC resource cache location' {
+    BeforeEach {
+        Import-Module (Join-Path $PSScriptRoot '..' 'packaging' 'oci' 'DSCOras.psm1') -Force
+        $savedLocalAppData = $env:LOCALAPPDATA
+        $env:LOCALAPPDATA = Join-Path $TestDrive 'AppData' 'Local'
+    }
+
+    AfterEach {
+        $env:LOCALAPPDATA = $savedLocalAppData
+        Remove-Module DSCOras -Force
+    }
+
+    It 'Uses AppData Local dsc resourceCache on Windows' {
+        $actual = & (Get-Module DSCOras) {
+            Set-Variable -Name IsWindows -Value $true -Scope Script
+            Get-DscResourceCachePath
+        }
+
+        $actual | Should -Be (Join-Path $env:LOCALAPPDATA 'dsc' 'resourceCache')
+    }
+
+    It 'Uses the home dot-dsc resourceCache folder on non-Windows systems' {
+        $actual = & (Get-Module DSCOras) {
+            param($HomeDirectory)
+            Set-Variable -Name IsWindows -Value $false -Scope Script
+            Set-Variable -Name HOME -Value $HomeDirectory -Scope Script
+            Get-DscResourceCachePath
+        } $TestDrive
+
+        $actual | Should -Be (Join-Path $TestDrive '.dsc' 'resourceCache')
     }
 }
