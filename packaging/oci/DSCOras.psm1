@@ -277,7 +277,7 @@ function Publish-Artifact {
                     Tag = $tag
                     Platform = $platform
                     Resource = $resource
-                    ManifestName = "$slug.dsc.resource.json"
+                    ManifestName = $resource.requireAdapter ? "$slug.dsc.adaptedResource.json" : "$slug.dsc.resource.json"
                     Annotations = $annotations
                     ArtifactDirectory = $artifactDirectory
                 }
@@ -564,8 +564,9 @@ function Get-Artifact {
     $resourceLayer = $resourceLayers[0]
     $zipName = $zipLayer.annotations.'org.opencontainers.image.title'
     $manifestName = $resourceLayer.annotations.'org.opencontainers.image.title'
+    $manifestNamePattern = '^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.dsc\.(resource|adaptedResource)\.json$'
     if ($zipName -cnotmatch '^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.zip$' -or
-        $manifestName -cnotmatch '^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.dsc\.resource\.json$') {
+        $manifestName -cnotmatch $manifestNamePattern) {
         throw 'Invalid ZIP or resource manifest filename in OCI layer annotations.'
     }
     $cacheRoot = Get-DscResourceCachePath
@@ -602,9 +603,9 @@ function Get-Artifact {
                 $cacheMetadata = Get-Content -LiteralPath $cacheMetadataPath -Raw | ConvertFrom-Json -AsHashtable
             }
         }
-        $reuseZip = $cacheMetadata -and $cacheMetadata.ZipDigest -ceq $zipLayer.digest -and
-            $cacheMetadata.Version -ceq $artifact.Version -and $cacheMetadata.Platform -eq $artifact.Platform -and
-            $cacheMetadata.Files.Count -gt 0
+        $matchingZip = $cacheMetadata -and $cacheMetadata.ZipDigest -ceq $zipLayer.digest -and
+            $cacheMetadata.Version -ceq $artifact.Version -and $cacheMetadata.Platform -eq $artifact.Platform
+        $reuseZip = $matchingZip -and $cacheMetadata.Files.Count -gt 0
         if ($reuseZip) {
             foreach ($file in $cacheMetadata.Files) {
                 if (-not (Test-Path -LiteralPath (Join-Path $destination $file) -PathType Leaf)) {
@@ -641,6 +642,7 @@ function Get-Artifact {
                 Save-DscArtifactLayer -Repository $repository -Layer $zipLayer -Path $zipPath
                 $preparedDirectory = Join-Path $stagingDirectory 'expanded'
                 [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $preparedDirectory)
+                $previousMetadata = $cacheMetadata
                 $cacheMetadata = @{
                     ZipDigest = $zipLayer.digest
                     Version = $artifact.Version
@@ -651,6 +653,26 @@ function Get-Artifact {
                             [System.IO.Path]::GetRelativePath($preparedDirectory, $_.FullName)
                         }
                     )
+                }
+                if ($matchingZip) {
+                    foreach ($siblingName in $previousMetadata.ManifestDigests.Keys) {
+                        if ($siblingName -ceq $manifestName) {
+                            continue
+                        }
+                        $siblingDigest = $previousMetadata.ManifestDigests[$siblingName]
+                        if ($siblingName -cnotmatch $manifestNamePattern -or
+                            $siblingDigest -cnotmatch '^sha256:[0-9a-f]{64}$') {
+                            throw "Invalid cached resource manifest metadata: '$siblingName'."
+                        }
+                        $siblingPath = Join-Path $destination $siblingName
+                        if (-not (Test-Path -LiteralPath $siblingPath -PathType Leaf) -or
+                            ('sha256:' + (Get-FileHash -LiteralPath $siblingPath -Algorithm SHA256).Hash.ToLowerInvariant()) -cne $siblingDigest) {
+                            Write-Warning "Discarding missing or corrupted cached resource manifest: '$siblingName'."
+                            continue
+                        }
+                        Copy-Item -LiteralPath $siblingPath -Destination (Join-Path $preparedDirectory $siblingName)
+                        $cacheMetadata.ManifestDigests[$siblingName] = $siblingDigest
+                    }
                 }
             }
             Copy-Item -LiteralPath $downloadedManifest -Destination (Join-Path $preparedDirectory $manifestName) -Force

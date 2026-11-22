@@ -336,6 +336,8 @@ ZIP, and a `resourceName-version` OCI index. Normal builds preserve distribution
 generate individual JSON files under `bin/<target>/<configuration>/resource-manifests` (or
 `bin/<configuration>/resource-manifests` for the current target). `ResourcePackageFiles.manifests`
 selects these individual files, keeping File Content separate from Windows-only ACL publication.
+Adapted resources retain the `.dsc.adaptedResource.json` suffix through generation, publication,
+and acquisition so DSC selects the adapted-resource loader instead of the command-resource loader.
 Publication rejects bundled inputs and invalid semantic versions before authenticating or uploading.
 YAML inputs must describe a single resource and require `ConvertFrom-Yaml`. Existing packages are not deleted.
 
@@ -368,6 +370,9 @@ shared ZIPs; switching platform or ZIP replaces only the selected version's cont
 downloads and cache changes. A per-package/version cross-process lock covers cache validation,
 installation, and rollback. Even reused packages are copied to staging before manifest and metadata
 updates, so a failed update preserves the previous live installation.
+Repairing missing implementation files for the same ZIP, version, and platform retains
+hash-validated sibling manifests and their digest entries; missing or corrupted siblings are
+reported and discarded. Platform or ZIP changes do not preserve the previous manifests.
 
 ## CI/CD Workflows
 

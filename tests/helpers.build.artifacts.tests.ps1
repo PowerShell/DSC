@@ -109,6 +109,15 @@ Describe 'Copy-BuildArtifact manifest migration' {
                     },
                     @{ type = 'Microsoft.Test.Adapter/Service'; version = '0.1.0' }
                 )
+                adaptedResources = @(
+                    @{
+                        '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json'
+                        type = 'Microsoft.Test/Adapted'
+                        version = '1.0.0'
+                        requireAdapter = 'Microsoft.Test.Adapter/Service'
+                        content = @{ value = 'adapted' }
+                    }
+                )
                 actions = @(@{ type = 'Microsoft.Test.Action/RestartService'; version = '1.0.0' })
             }
             $bundle | ConvertTo-Json -Depth 10 |
@@ -117,13 +126,19 @@ Describe 'Copy-BuildArtifact manifest migration' {
             Copy-BuildArtifact -Project $project
 
             $manifests = Join-Path $outputDirectory 'resource-manifests'
-            @(Get-ChildItem -LiteralPath $manifests -File) | Should -HaveCount 2
+            @(Get-ChildItem -LiteralPath $manifests -File) | Should -HaveCount 3
             $resource = Get-Content -LiteralPath (Join-Path $manifests 'Microsoft.Test.Service.dsc.resource.json') -Raw |
                 ConvertFrom-Json
             $resource.author | Should -Be 'Existing author'
             $resource.get.executable | Should -Be 'service'
             $resource.'$schema' | Should -Be 'https://aka.ms/dsc/schemas/v3/resource/manifest.json'
             Join-Path $manifests 'Microsoft.Test.Adapter.Service.dsc.resource.json' | Should -Exist
+            $adaptedPath = Join-Path $manifests 'Microsoft.Test.Adapted.dsc.adaptedResource.json'
+            $adaptedPath | Should -Exist
+            $adapted = Get-Content -LiteralPath $adaptedPath -Raw | ConvertFrom-Json
+            $adapted.requireAdapter | Should -Be 'Microsoft.Test.Adapter/Service'
+            $adapted.'$schema' | Should -Be 'https://aka.ms/dsc/schemas/v3/resource/adapted/manifest.json'
+            Join-Path $manifests 'Microsoft.Test.Adapted.dsc.resource.json' | Should -Not -Exist
             Join-Path $outputDirectory 'service.dsc.manifests.json' | Should -FileContentMatch 'RestartService'
         }
 

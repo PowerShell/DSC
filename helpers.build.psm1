@@ -3460,6 +3460,7 @@ function Export-DscResourceManifest {
         Preserves the source bundle and writes one JSON file per resource or adapted resource.
         Actions and extensions are not included. Filenames use the full resource type with
         the slash replaced by a period, avoiding collisions between resource namespaces.
+        Adapted resources use the .dsc.adaptedResource.json suffix required by their loader.
 
         .PARAMETER Path
         Source JSON manifest bundle.
@@ -3481,19 +3482,22 @@ function Export-DscResourceManifest {
 
     $document = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable -Depth 100
     $null = New-Item -ItemType Directory -Path $Destination -Force -ErrorAction Stop
-    foreach ($resource in @($document.resources) + @($document.adaptedResources)) {
-        if ($null -eq $resource) {
-            continue
+    foreach ($section in @('resources', 'adaptedResources')) {
+        foreach ($resource in @($document.$section)) {
+            if ($null -eq $resource) {
+                continue
+            }
+            if ($resource.type -cnotmatch '^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$') {
+                throw "Invalid resource type in manifest bundle '$Path'."
+            }
+            if ($resource.'$schema') {
+                $resource.'$schema' = $resource.'$schema' -replace '/bundled/', '/'
+            }
+            $suffix = $section -eq 'adaptedResources' ? '.dsc.adaptedResource.json' : '.dsc.resource.json'
+            $name = $resource.type.Replace('/', '.') + $suffix
+            $resource | ConvertTo-Json -Depth 100 |
+                Set-Content -LiteralPath (Join-Path $Destination $name) -Encoding utf8NoBOM -ErrorAction Stop
         }
-        if ($resource.type -cnotmatch '^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$') {
-            throw "Invalid resource type in manifest bundle '$Path'."
-        }
-        if ($resource.'$schema') {
-            $resource.'$schema' = $resource.'$schema' -replace '/bundled/', '/'
-        }
-        $name = $resource.type.Replace('/', '.') + '.dsc.resource.json'
-        $resource | ConvertTo-Json -Depth 100 |
-            Set-Content -LiteralPath (Join-Path $Destination $name) -Encoding utf8NoBOM -ErrorAction Stop
     }
 }
 

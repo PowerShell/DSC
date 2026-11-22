@@ -199,7 +199,9 @@ or executing additional files.
 
 Each file layer descriptor includes its SHA-256 digest, exact byte size, and
 `org.opencontainers.image.title` filename annotation. The resource manifest filename is
-`<slug>.dsc.resource.json`; the ZIP filename is `<package-name>.zip`.
+`<slug>.dsc.resource.json` for command resources and `<slug>.dsc.adaptedResource.json` for
+adapted resources, preserving the filename distinction used by DSC's manifest loaders.
+The ZIP filename is `<package-name>.zip`.
 
 Both the platform manifest and its resource index carry these annotations:
 
@@ -393,6 +395,11 @@ For a new or reconstructed implementation, the consumer prepares the complete ve
 and its metadata before installation. Replacement preserves the previous directory until the
 prepared directory is installed successfully, restoring it if installation fails. If recovery
 cannot complete, retained recovery data and its location MUST be reported.
+
+When missing implementation files require repair but the ZIP digest, version, and platform still
+match, consumers MUST retain sibling resource manifests whose files match their recorded digests.
+Missing or corrupted siblings are reported and excluded from the repaired cache. A changed ZIP,
+version, or platform does not authorize retaining manifests from the previous installation.
 
 For a matching shared implementation, only the required resource manifest and its metadata entry
 need updating, but these updates MUST preserve the live installation until both are ready.

@@ -291,6 +291,8 @@ Describe 'Publish-Artifact' {
         $pushes | Should -HaveCount 4
         $adapted = $pushes | Where-Object { $_.Resource.type -eq 'Microsoft.Test/Adapted' }
         $adapted.Resource.requireAdapter | Should -Be 'Microsoft.Test/Two'
+        $adapted.Annotations.Keys | Should -Contain 'adapted.dsc.adaptedResource.json'
+        $adapted.Annotations.Keys | Should -Not -Contain 'adapted.dsc.resource.json'
         Should -Invoke ConvertFrom-Yaml -ModuleName DSCOras -Exactly 1
     }
 
@@ -491,13 +493,25 @@ Describe 'Get-Artifact' {
                 @('Microsoft.Windows/RegistryList', '3.0.0-beta.1', 'windows-amd64'),
                 @('Microsoft.Windows/RegistryList', '2.10.0', 'windows-arm64'),
                 @('Microsoft.Windows/RegistryList', '2.10.0', 'linux-arm64'),
-                @('Microsoft.Windows/Registry', '2.10.0', 'windows-amd64')
+                @('Microsoft.Windows/Registry', '2.10.0', 'windows-amd64'),
+                @('Microsoft.Test/Adapted', '2.10.0', 'windows-amd64')
             )) {
                 $type, $resourceVersion, $resourcePlatform = $selection
                 $slug = $type.Split('/')[1].ToLowerInvariant()
                 $reference = "$repository@sha256:$slug-$resourceVersion-$resourcePlatform"
                 $resourcePath = Join-Path $fixtureRoot "$slug-$resourceVersion-$resourcePlatform.json"
-                @{ type = $type; version = $resourceVersion } | ConvertTo-Json |
+                $resourceDocument = @{ type = $type; version = $resourceVersion }
+                $manifestName = "$slug.dsc.resource.json"
+                if ($type -eq 'Microsoft.Test/Adapted') {
+                    $manifestName = "$slug.dsc.adaptedResource.json"
+                    $resourceDocument.'$schema' = 'https://aka.ms/dsc/schemas/v3/resource/adapted/manifest.json'
+                    $resourceDocument.kind = 'resource'
+                    $resourceDocument.capabilities = @('get')
+                    $resourceDocument.requireAdapter = 'Microsoft.Test/Adapter'
+                    $resourceDocument.content = @{ value = 'adapted' }
+                    $resourceDocument.schema = @{ embedded = @{ type = 'object' } }
+                }
+                $resourceDocument | ConvertTo-Json -Depth 10 |
                     Set-Content -LiteralPath $resourcePath -Encoding utf8NoBOM
                 $resourceDigest = 'sha256:' + (Get-FileHash -LiteralPath $resourcePath).Hash.ToLowerInvariant()
                 $blobs[$resourceDigest] = $resourcePath
@@ -519,7 +533,7 @@ Describe 'Get-Artifact' {
                             mediaType = 'application/json'
                             digest = $resourceDigest
                             size = (Get-Item -LiteralPath $resourcePath).Length
-                            annotations = @{ 'org.opencontainers.image.title' = "$slug.dsc.resource.json" }
+                            annotations = @{ 'org.opencontainers.image.title' = $manifestName }
                         }
                     )
                 }
@@ -583,6 +597,26 @@ Describe 'Get-Artifact' {
         $result.Version | Should -Be $RequestedVersion
         $result.Platform | Should -Be $RequestedPlatform
         $result.ManifestPath | Should -Exist
+    }
+
+    It 'Installs adapted JSON manifests with the filename required by the DSC adapted-resource loader' {
+        $result = Get-Artifact -ResourceType Microsoft.Test/Adapted
+
+        $result.ManifestPath | Should -Be (Join-Path $result.Path 'adapted.dsc.adaptedResource.json')
+        Join-Path $result.Path 'adapted.dsc.resource.json' | Should -Not -Exist
+        $dsc = Join-Path $PSScriptRoot '..' 'bin' 'debug' ($IsWindows ? 'dsc.exe' : 'dsc')
+        $dsc | Should -Exist -Because 'the DSC build is needed to exercise the actual manifest loader'
+        $oldRestrictedPath = $env:DSC_RESTRICTED_PATH
+        try {
+            $env:DSC_RESTRICTED_PATH = $result.Path
+            $resources = @(& $dsc resource list 'Microsoft.Test/Adapted' 2>(Join-Path $fixtureRoot 'discovery.log') |
+                ConvertFrom-Json -Depth 20)
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath (Join-Path $fixtureRoot 'discovery.log') -Raw)
+            $resources | Should -HaveCount 1
+            $resources[0].requireAdapter | Should -Be 'Microsoft.Test/Adapter'
+        } finally {
+            $env:DSC_RESTRICTED_PATH = $oldRestrictedPath
+        }
     }
 
     It 'Reuses a matching cache without downloading the ZIP or manifest again' {
@@ -716,14 +750,37 @@ Describe 'Get-Artifact' {
         }
     }
 
-    It 'Repairs a cache with missing implementation files by downloading and extracting the ZIP again' {
+    It 'Repairs missing implementation files while retaining only hash-validated sibling manifests (corrupt: <CorruptSibling>)' -ForEach @(
+        @{ CorruptSibling = $false }, @{ CorruptSibling = $true }
+    ) {
         $cached = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        $sibling = Get-Artifact -ResourceType Microsoft.Windows/Registry
+        $siblingDigest = 'sha256:' + (Get-FileHash -LiteralPath $sibling.ManifestPath).Hash.ToLowerInvariant()
+        if ($CorruptSibling) {
+            Set-Content -LiteralPath $sibling.ManifestPath -Value 'corrupt'
+        }
         $supportPath = Join-Path $cached.Path 'nested' 'support.ps1'
         Remove-Item -LiteralPath $supportPath
 
         Get-Artifact -ResourceType Microsoft.Windows/RegistryList | Out-Null
 
         $supportPath | Should -Exist
+        $cached.ManifestPath | Should -Exist
+        $metadata = Get-Content -LiteralPath (Join-Path $cached.Path '.dsc-cache.json') -Raw | ConvertFrom-Json -AsHashtable
+        if ($CorruptSibling) {
+            $sibling.ManifestPath | Should -Not -Exist
+            $metadata.ManifestDigests.Keys | Should -Not -Contain 'registry.dsc.resource.json'
+        } else {
+            $sibling.ManifestPath | Should -Exist
+            $metadata.ManifestDigests['registry.dsc.resource.json'] | Should -Be $siblingDigest
+            $reused = Get-Artifact -ResourceType Microsoft.Windows/Registry
+            $reused.ManifestPath | Should -Be $sibling.ManifestPath
+            Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 1 -ParameterFilter {
+                $Arguments[0] -eq 'blob' -and $Arguments[2] -like '*@sha256:*' -and
+                    $Arguments[2] -ne "$repository@$zipDigest" -and
+                    $Arguments[4] -like '*registry.dsc.resource.json'
+            }
+        }
         Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 2 -ParameterFilter {
             $Arguments[0] -eq 'blob' -and $Arguments[2] -eq "$repository@$zipDigest"
         }
@@ -762,6 +819,7 @@ Describe 'Get-Artifact' {
     It 'Replaces only the selected version when its platform changes' {
         $older = Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 2.9.0
         $old = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        $sibling = Get-Artifact -ResourceType Microsoft.Windows/Registry
         $old.Version | Should -Be '2.10.0'
         $stalePath = Join-Path $old.Path 'stale.exe'
         Set-Content -LiteralPath $stalePath -Value 'stale'
@@ -769,11 +827,34 @@ Describe 'Get-Artifact' {
         $new = Get-Artifact -ResourceType Microsoft.Windows/RegistryList -Version 2.10.0 -Platform windows-arm64
 
         $stalePath | Should -Not -Exist
+        $sibling.ManifestPath | Should -Not -Exist
         $new.ManifestPath | Should -Exist
         (Get-Content -LiteralPath $new.ManifestPath -Raw | ConvertFrom-Json).version | Should -Be '2.10.0'
         $older.ManifestPath | Should -Exist
         (Get-Content -LiteralPath $older.ManifestPath -Raw | ConvertFrom-Json).version | Should -Be '2.9.0'
         @(Get-ChildItem -LiteralPath $cacheRoot -Force) | Should -HaveCount 1
+    }
+
+    It 'Does not retain sibling manifests when the implementation ZIP changes' {
+        $cached = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        $sibling = Get-Artifact -ResourceType Microsoft.Windows/Registry
+        Set-Content -LiteralPath (Join-Path $sourceDirectory 'registry.exe') -Value 'updated implementation'
+        $newZipPath = Join-Path $fixtureRoot 'updated.zip'
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($sourceDirectory, $newZipPath)
+        $newZipDigest = 'sha256:' + (Get-FileHash -LiteralPath $newZipPath).Hash.ToLowerInvariant()
+        $blobs[$newZipDigest] = $newZipPath
+        $reference = "$repository@sha256:registrylist-2.10.0-windows-amd64"
+        $documents[$reference].layers[0].digest = $newZipDigest
+        $documents[$reference].layers[0].size = (Get-Item -LiteralPath $newZipPath).Length
+
+        Get-Artifact -ResourceType Microsoft.Windows/RegistryList | Out-Null
+
+        $cached.ManifestPath | Should -Exist
+        $sibling.ManifestPath | Should -Not -Exist
+        Get-Content -LiteralPath (Join-Path $cached.Path 'registry.exe') -Raw | Should -Match 'updated implementation'
+        $metadata = Get-Content -LiteralPath (Join-Path $cached.Path '.dsc-cache.json') -Raw | ConvertFrom-Json -AsHashtable
+        $metadata.ManifestDigests.Keys | Should -Not -Contain 'registry.dsc.resource.json'
+        $metadata.ZipDigest | Should -Be $newZipDigest
     }
 
     It 'Leaves the existing cache intact and cleans up staging when a download fails' {
