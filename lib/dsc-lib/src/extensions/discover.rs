@@ -13,6 +13,7 @@ use crate::{
         load_manifest_content
     },
     dscerror::DscError,
+    configure::context::Context,
     dscresources::{
         command_resource::invoke_command,
     },
@@ -22,6 +23,7 @@ use crate::{
             DscExtension,
         },
         extension_manifest::ExtensionManifest,
+        jsonrpc::ExtensionMethod,
     },
     schemas::dsc_repo::DscRepoSchema
 };
@@ -33,6 +35,7 @@ use std::path::PathBuf;
 use tracing::{info, trace, warn};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "manifest.discover", folder_path = "extension")]
 #[schemars(
     transform = DiscoverMethod::transform_export_schema_uris,
@@ -92,6 +95,10 @@ impl DscExtension {
     ///
     /// This function will return an error if the discovery fails.
     pub fn discover(&self) -> Result<Vec<ImportedManifest>, DscError> {
+        self.discover_with_context(&Context::new())
+    }
+
+    pub(crate) fn discover_with_context(&self, context: &Context) -> Result<Vec<ImportedManifest>, DscError> {
         let mut resources: Vec<ImportedManifest> = Vec::new();
 
         if self.capabilities.contains(&Capability::Discover) {
@@ -104,18 +111,30 @@ impl DscExtension {
             let Some(discover) = extension.discover else {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Discover.to_string()));
             };
-            let args = process_discover_args(discover.args.as_ref())?;
             if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
                 warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
             }
-            let (_exit_code, stdout, _stderr) = invoke_command(
-                &discover.executable,
-                args,
-                None,
-                Some(&self.directory),
-                None,
-                extension.exit_codes.as_ref(),
-            )?;
+            let stdout = match discover {
+                ExtensionMethod::Command(discover) => {
+                    let args = process_discover_args(discover.args.as_ref())?;
+                    let (_, stdout, _) = invoke_command(
+                        &discover.executable, args, None, Some(&self.directory), None, extension.exit_codes.as_ref()
+                    )?;
+                    stdout
+                },
+                ExtensionMethod::JsonRpc { jsonrpc } => {
+                    let params = serde_json::json!({
+                        "operation": "discover",
+                        "extensions": recognized_extensions(),
+                    });
+                    let value = crate::dscresources::jsonrpc::invoke_extension(
+                        self, &jsonrpc, "discover", params, context, None
+                    )?;
+                    let results: Vec<DiscoverResult> = serde_json::from_value(value)?;
+                    let lines: Result<Vec<_>, _> = results.iter().map(serde_json::to_string).collect();
+                    lines?.join("\n")
+                },
+            };
             if stdout.is_empty() {
                 info!("{}", t!("extensions.dscextension.discoverNoResults", extension = self.type_name));
             } else {
@@ -182,21 +201,25 @@ fn process_discover_args(args: Option<&Vec<DiscoverArgKind>>) -> Result<Option<V
             }
             DiscoverArgKind::FileExtensions { extensions_arg, include_quotes } => {
                 processed_args.push(extensions_arg.clone());
-                let mut extensions = Vec::<String>::new();
-                extensions.extend(DSC_ACTION_EXTENSIONS.iter().map(|s| s.to_string()));
-                extensions.extend(DSC_ADAPTED_RESOURCE_EXTENSIONS.iter().map(|s| s.to_string()));
-                extensions.extend(DSC_EXTENSION_EXTENSIONS.iter().map(|s| s.to_string()));
-                extensions.extend(DSC_MANIFEST_LIST_EXTENSIONS.iter().map(|s| s.to_string()));
-                extensions.extend(DSC_RESOURCE_EXTENSIONS.iter().map(|s| s.to_string()));
-                let extensions_arg_value = extensions.join(",");
+                let extensions_arg_value = recognized_extensions().join(",");
                 if *include_quotes {
                     processed_args.push(format!("\"{}\"", extensions_arg_value));
                 } else {
                     processed_args.push(extensions_arg_value);
                 }
+
             }
         }
     }
 
     Ok(Some(processed_args))
+}
+
+fn recognized_extensions() -> Vec<String> {
+    DSC_ACTION_EXTENSIONS.iter()
+        .chain(DSC_ADAPTED_RESOURCE_EXTENSIONS.iter())
+        .chain(DSC_EXTENSION_EXTENSIONS.iter())
+        .chain(DSC_MANIFEST_LIST_EXTENSIONS.iter())
+        .chain(DSC_RESOURCE_EXTENSIONS.iter())
+        .map(|extension| (*extension).to_string()).collect()
 }

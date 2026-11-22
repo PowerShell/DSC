@@ -1,0 +1,14 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json",
+  "type": "Test/JsonRpcDiscover",
+  "version": "0.1.0",
+  "discover": {
+    "jsonrpc": {
+      "executable": "pwsh",
+      "args": ["-NoLogo", "-NoProfile", "-NonInteractive", "-File", "./discover.ps1"],
+      "initializeTimeoutMS": 5000,
+      "requestTimeoutMS": 15000,
+      "shutdownTimeoutMS": 5000
+    }
+  }
+}

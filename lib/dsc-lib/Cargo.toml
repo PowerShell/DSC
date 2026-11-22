@@ -34,6 +34,7 @@ tokio = { workspace = true, features = [
     "macros",
     "process",
     "rt-multi-thread",
+    "time",
 ] }
 tracing = { workspace = true }
 tracing-indicatif = { workspace = true }

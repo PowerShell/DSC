@@ -50,7 +50,6 @@
               "definitions": {
                 "extensionType.json": {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/extensionType.json",
                   "title": "DSC extension fully qualified type name",
                   "description": "The namespaced name of the DSC extension, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n  - Microsoft/Example\n  - Microsoft.DSC/Docs\n  - Microsoft.Windows.Appx/Discover\n",
                   "type": "string",
@@ -60,7 +59,6 @@
                 },
                 "semver.json": {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/semver.json",
                   "type": "string",
                   "title": "Semantic Version",
                   "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
@@ -70,7 +68,6 @@
                 },
                 "extensionCapabilities.json": {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/extensionCapabilities.json",
                   "title": "Resource capabilities",
                   "description": "Define the operations DSC can invoke for an extension and how the extension behaves when invoked.",
                   "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDSC extensions always have at least one capability. Extension capabilities define the operations\nDSC can invoke for an extension and how the extension behaves when invoked.\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/extensionCapabilities?view=dsc-3.0&preserve-view=true",
@@ -87,14 +84,12 @@
                 },
                 "commandExecutable.json": {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json",
                   "title": "Executable Command Name",
                   "description": "The name of the command to run.",
                   "type": "string"
                 },
                 "commandArgs.json": {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json",
                   "title": "Executable Command Arguments",
                   "description": "The list of arguments to pass to the command. The arguments can be any number of strings. If you want to pass the JSON object representing the property bag for the resource to an argument, you can define a single item in the array as a JSON object, indicating the name of the argument with the `jsonInputArg` string property and whether the argument is mandatory for the command with the `mandatory` boolean property.",
                   "type": "array",
@@ -153,7 +148,6 @@
               "extension": {
                 "manifest.json": {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.json",
                   "title": "DSC extension manifest",
                   "description": "Defines the information DSC requires to process and surface a DSC extension.",
                   "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the information DSC requires to process and surface a DSC extension. For DSC to use a\nmanifest on a system, the manifest file must:\n\n1. Be discoverable in the `PATH` environment variable.\n1. Follow the naming convention `<name>.dsc.extension.json`.\n1. Be valid for this schema.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/root?view=dsc-3.0&preserve-view=true\n",
@@ -239,7 +233,28 @@
                       }
                     },
                     "discover": {
-                      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json"
+                      "anyOf": [
+                        {
+                          "allOf": [
+                            {
+                              "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json"
+                            },
+                            {
+                              "not": {
+                                "required": [
+                                  "jsonrpc"
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/extension/manifest.json/$defs/jsonrpcOperation"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "exitCodes": {
                       "title": "Exit codes",
@@ -279,12 +294,94 @@
                           }
                         }
                       ]
+                    },
+                    "secret": {
+                      "anyOf": [
+                        {
+                          "allOf": [
+                            {
+                              "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/extension/manifest.secret.json"
+                            },
+                            {
+                              "not": {
+                                "required": [
+                                  "jsonrpc"
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/extension/manifest.json/$defs/jsonrpcOperation"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "$defs": {
+                    "jsonrpcOperation": {
+                      "title": "JSON-RPC extension operation",
+                      "description": "Invokes an extension operation over a private JSON-RPC connection.",
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "jsonrpc"
+                      ],
+                      "properties": {
+                        "jsonrpc": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "executable"
+                          ],
+                          "properties": {
+                            "executable": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "args": {
+                              "type": [
+                                "array",
+                                "null"
+                              ],
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "initializeTimeoutMS": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "format": "uint64",
+                              "minimum": 1
+                            },
+                            "requestTimeoutMS": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "format": "uint64",
+                              "minimum": 0
+                            },
+                            "shutdownTimeoutMS": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "format": "uint64",
+                              "minimum": 1
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 },
                 "manifest.discover.json": {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json",
                   "title": "Discover operation command",
                   "description": "Defines how DSC must call the DSC extension to discover the paths to resource manifests.",
                   "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines how DSC must call the DSC extension to discover the paths to resource manifests. An\nextension that defines this field in its manifest has the `discover` capability.\n\nBy default, DSC only discovers resource manifests in the `PATH` environment variable. If the\n`DSC_RESOURCE_PATH` environment variable is defined, DSC searches those paths for resource\nmanifests instead.\n\nIf initial discovery finds any extension manifests that have the `discover` capability, DSC uses\nthose extensions to discover resources that aren't available in `PATH` or `DSC_RESOURCE_PATH`.\n\nFor more information about the output DSC expects the extension to emit for this command, see\n[Discover extension operation stdout][01].\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/discover?view=dsc-3.0&preserve-view=true\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/stdout/discover?view=dsc-3.0&preserve-view=true\n",
@@ -298,8 +395,35 @@
                       "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/discover?view=dsc-3.0&preserve-view=true#executable\n"
                     },
                     "args": {
-                      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json",
-                      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myextension\",\n  \"args\":       [\"discover\", \"--all\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyextension discover --all\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/discover?view=dsc-3.0&preserve-view=true#args\n"
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "extensionsArg"
+                            ],
+                            "properties": {
+                              "extensionsArg": {
+                                "description": "The argument that accepts the extensions list as a comma-separated string.",
+                                "type": "string"
+                              },
+                              "includeQuotes": {
+                                "description": "Whether DSC surrounds the extensions list with quotes.",
+                                "type": "boolean",
+                                "default": false
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings and extensions argument objects to pass to the command. DSC\npasses the arguments in the order they're specified. An object with `extensionsArg` names\nthe argument that receives the comma-separated list of resource manifest extensions.\nSet `includeQuotes` to `true` when that list must be surrounded by quotes.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myextension\",\n  \"args\":       [\"discover\", \"--all\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyextension discover --all\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/discover?view=dsc-3.0&preserve-view=true#args\n"
                     }
                   },
                   "defaultSnippets": [
@@ -317,6 +441,160 @@
                         "executable": "${2:executable_name}",
                         "args": [
                           "${3:--first-argument}"
+                        ]
+                      }
+                    }
+                  ]
+                },
+                "manifest.secret.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "title": "Secret operation command",
+                  "description": "Defines how DSC must call the DSC extension to retrieve a secret value.",
+                  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines how DSC must call the DSC extension to retrieve a secret value. An extension that defines\nthis field in its manifest has the `secret` capability.\n\nDSC expects extensions implementing the `secret` capability to adhere to the following contract:\n\n1. If the extension retrieves the secret, the extension must emit the secret to stdout as a\n   single line of plaintext and exit with code `0`. DSC consumes the emitted output and makes the\n   secret available in the configuration document.\n\n   If the extension emits more than one line to stdout, DSC raises an error.\n\n1. If the extension cannot retrieve the secret because the secret doesn't exist, the extension\n   must not emit any text to stdout and must exit with code `0`. DSC interprets this result as\n   the secret not existing in the vault.\n\n1. If the extension cannot retrieve the secret for any other reason, such as invalid credentials\n   or an API error, the extension should emit a descriptive error message as a JSON Line to\n   stderr and exit with a nonzero exit code. DSC interprets the nonzero exit code as an\n   operational failure and surfaces that information and any emitted error messages to the user.\n\nWhen the exit code for the operation is `0`, DSC interprets the operation as completing without\nerrors. For extensions, failure to retrieve a secret because it doesn't exist is _not_ an error.\nFailure to retrieve a secret for any other reason _is_ an error and the extension should exit\nwith a nonzero code. For an improved user experience, the extension should define the `exitCodes`\nfield in the extension manifest to indicate what the nonzero exit code means.\n\nFor more information about how DSC validates the data for stdout, see\n[Secret extension operation stdout][01]. For more information about defining exit codes for the\nextension, see [`exitCodes`][02] in the extension manifest schema reference.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret?view=dsc-3.0&preserve-view=true\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/stdout/secret?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/root?view=dsc-3.0&preserve-view=true#exitcodes\n",
+                  "type": "object",
+                  "required": [
+                    "executable",
+                    "args"
+                  ],
+                  "properties": {
+                    "executable": {
+                      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json",
+                      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret?view=dsc-3.0&preserve-view=true#executable\n"
+                    },
+                    "args": {
+                      "title": "Arguments",
+                      "description": "Defines an ordered list of arguments to pass to the command.",
+                      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines an ordered list of arguments to pass to the command. DSC passes each defined item to\nthe executable in the order you define them. Items can be string arguments, the secret name\ninput argument, or the vault input argument.\n\nIn order for DSC to retrieve a secret with the extension, the manifest must define the secret\nname input argument. For DSC to retreieve a secret from a specific vault with the extension,\nthe manifest must define the vault input argument.\n\nFor example, given the following manifest snippet:\n\n```jsonc\n{\n  // ellided extension manifest fields\n  \"secret\": {\n    \"executable\": \"my_secret_extension\",\n    \"args\": [\n      \"get\",\n      { \"nameArg\": \"--secretName\" }\n    ]\n  }\n}\n```\n\nWhen DSC invokes the extension to retrieve a secret named `apiToken`, it constructs\nthe following effective command:\n\n```bash\nmy_secret_extension get --secretName apiToken\n```\n\nIf the user needs to retrieve a secret from a specific vault, DSC is unable to pass the vault\nname to the previously defined snippet. The following snippet supports passing the vault name\nto the extension as well as the secret name:\n\n```jsonc\n{\n  // ellided extension manifest fields\n  \"secret\": {\n    \"executable\": \"my_secret_extension\",\n    \"args\": [\n      \"get\",\n      { \"nameArg\": \"--secretName\" },\n      { \"vaultArg\": \"--vaultName\" }\n    ]\n  }\n}\n```\n\nWhen DSC invokes the extension to retrieve a secret named `apiToken` from the `services`\nvault, it constructs the following effective command:\n\n```bash\nmy_secret_extension get --secretName apiToken --vaultName services\n```\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret?view=dsc-3.0&preserve-view=true#args\n",
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "title": "String argument",
+                            "description": "Any item in the argument array can be a string representing a static argument to pass to the command, like `get` or `--quiet`.",
+                            "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nAny item in the argument array can be a string representing a static argument to pass\nto the command, like `get` or `--quiet`.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret?view=dsc-3.0&preserve-view=true#string-arguments",
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "object",
+                            "title": "Secret name input argument",
+                            "description": "Defines the argument for the command that accepts the name of a secret.",
+                            "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines the argument for the command that accepts the name of a secret. DSC passes the\nname of the secret as a string after the defined argument. You must define this\nargument as an object with the `nameArg` property set to the appropriate argument for\nthe extension command, like `--secret` or `--secret-name`.\n\nAn extension implementing the `secret` capability _must_ define a secret name input\nargument exactly once.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret?view=dsc-3.0&preserve-view=true#secret-name-input-argument",
+                            "unevaluatedProperties": false,
+                            "required": [
+                              "nameArg"
+                            ],
+                            "properties": {
+                              "nameArg": {
+                                "title": "Secret name input argument definition",
+                                "description": "Defines the literal string for the argument that accepts the name of the secret to retrieve, like `--name` or `--secret-name`.",
+                                "markdownDescription": "Defines the literal string for the argument that accepts the name of the secret to\nretrieve, like `--name` or `--secret-name`.",
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "title": "Vault input argument",
+                            "description": "Defines the argument for the command that accepts the name of a specific vault to retrieve a secret from.",
+                            "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines the argument for the command that accepts the name of a specific vault to\nretrieve a secret from. Define this argument as an object with the `vaultArg` property\nset to the appropriate argument for the extension command, like `--vault` or\n`--vault-name`.\n\nTo support retrieving secrets from a specific vault, an extension implementing the\n`secret` capability _must_ define a vault input argument exactly once.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret?view=dsc-3.0&preserve-view=true#vault-input-argument",
+                            "unevaluatedProperties": false,
+                            "required": [
+                              "vaultArg"
+                            ],
+                            "properties": {
+                              "vaultArg": {
+                                "title": "Vault input argument definition",
+                                "description": "Defines the literal string for the argument that accepts the name of the vault to retrieve a secret from, like `--vault` or `--vault-name`.",
+                                "markdownDescription": "Defines the literal string for the argument that accepts the name of the vault to\nretrieve a secret from, like `--vault` or `--vault-name`.",
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "title": "Missing secret name input argument",
+                      "$comment": "This validation subschema ensures that `secret.args` contains a secret name input argument. Without this argument, DSC can't pass the name of the secret to retrieve when invoking the extension's secret command.\nWe define this separately from the maximum contains validation subschema to improve the error messaging in VS Code.",
+                      "properties": {
+                        "args": {
+                          "errorMessage": "The `secret` command doesn't define the secret name input argument. If you don't define the secret name input argument, DSC can't pass the secret name to the extension for retrieval. You can only define one secret name input argument for the command.\n\nYou must define one argument in `secret.args` as a JSON object with the `nameArg` property. For more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret?view=dsc-3.0&preserve-view=true",
+                          "contains": {
+                            "type": "object",
+                            "required": [
+                              "nameArg"
+                            ]
+                          },
+                          "minContains": 1
+                        }
+                      }
+                    },
+                    {
+                      "title": "Multiple secret name input arguments",
+                      "$comment": "This validation subschema ensures that `secret.args` doesn't contain more than one secret name input argument. Defining more than one secret name input argument is invalid.\nWe define this separately from the minimum contains validation subschema to improve the error messaging in VS Code.",
+                      "properties": {
+                        "args": {
+                          "errorMessage": "The `secret` command defines the secret name input argument more than once. You can only define one secret name input argument for the command.\n\nYou must define one argument in `secret.args` as a JSON object with the `nameArg` property and remove the additional secret name input arguments. For more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret?view=dsc-3.0&preserve-view=true",
+                          "contains": {
+                            "type": "object",
+                            "required": [
+                              "nameArg"
+                            ]
+                          },
+                          "maxContains": 1
+                        }
+                      }
+                    },
+                    {
+                      "title": "Multiple vault input arguments",
+                      "$comment": "This validation subschema ensures that `secret.args` contains zero or one vault input arguments. Defining a vault input argument is optional. Extensions that don't define the vault input argument don't support retrieving secrets from a specific vault. Defining more than one vault input argument is invalid.",
+                      "properties": {
+                        "args": {
+                          "errorMessage": "The `secret` command defines the vault input argument more than once. If you don't define the vault input argument, DSC can't pass the vault to the extension for retrieving a secret from a specific vault. You can only define one vault input argument for the command.\n\nYou can define one argument in `secret.args` as a JSON object with the `vaultArg` property. For more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret?view=dsc-3.0&preserve-view=true",
+                          "contains": {
+                            "type": "object",
+                            "required": [
+                              "vaultArg"
+                            ]
+                          },
+                          "minContains": 0,
+                          "maxContains": 1
+                        }
+                      }
+                    }
+                  ],
+                  "defaultSnippets": [
+                    {
+                      "label": " Define with arguments (static string and secret name input arguments)",
+                      "markdownDescription": "Define the `secret` command where the secret name is passed to the command. Use this\nsnippet if the extension doesn't support retrieving a secret from a specific vault.",
+                      "body": {
+                        "executable": "${1:executable_name}",
+                        "args": [
+                          "${2:get}",
+                          {
+                            "nameArg": "${3:--secret-name}"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "label": " Define with arguments (static string, secret name, and vault input arguments)",
+                      "markdownDescription": "Define the `secret` command where both the secret name and the vault name are passed to the\ncommand. Use this snippet if the extension supports retrieving a secret from a specific vault.",
+                      "body": {
+                        "executable": "${1:executable_name}",
+                        "args": [
+                          "${2:get}",
+                          {
+                            "nameArg": "${3:--secret-name}"
+                          },
+                          {
+                            "vaultArg": "${4:--vault-name}"
+                          }
                         ]
                       }
                     }

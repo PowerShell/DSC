@@ -37,6 +37,92 @@ that doesn't define any of these properties has no capabilities.
 
 The rest of this document describes the manifest's schema.
 
+## JSON-RPC extension operations
+
+The `discover` and `secret` properties can independently opt into JSON-RPC instead of a command.
+Other extension operations keep their command interfaces. Existing command definitions don't
+change. Validate JSON-RPC definitions against the full extension manifest schema; the standalone
+`manifest.discover.json` and `manifest.secret.json` schemas describe the command forms.
+
+```json
+{
+  "discover": {
+    "jsonrpc": {
+      "executable": "example-discover",
+      "args": ["rpc"],
+      "initializeTimeoutMS": 5000,
+      "requestTimeoutMS": 15000,
+      "shutdownTimeoutMS": 5000
+    }
+  }
+}
+```
+
+The `jsonrpc` object requires a nonempty `executable` and accepts an optional array of static
+string `args`. Don't mix `jsonrpc` with command fields such as `executable`, `args`, or `input`
+at the operation level. Initialize and shutdown timeouts must be positive and default to 250
+milliseconds. The request timeout defaults to zero, meaning no timeout. Explicit DSC
+`resourceTimeouts` settings override these manifest defaults.
+
+DSC starts a private process for each extension operation with the extension manifest's directory
+as its working directory. The connection uses UTF-8 JSON-RPC 2.0 over stdin and stdout, one complete
+JSON object per line, flushed after each write. Stdout must contain protocol messages only.
+The lifecycle is `initialize`, `dsc_invoke`, `shutdown`, and the `exit` notification.
+Select `protocolVersion: 1` in the initialize result. Return `null` for shutdown and exit cleanly.
+Malformed messages, initialization failures, or timeouts terminate the process without retrying.
+Extension processes aren't pooled.
+
+The initialize params include `dscVersion`, `protocolVersions: [1]`, `traceLevel`, `traceFormat`,
+`securityContext`, optional `configRoot`, and `hostServices`. Discover extensions and JSON-RPC
+resources receive `hostServices: ["secret.get"]`. Secret extensions receive an empty array to
+prevent recursive secret resolution.
+
+### Reverse secret requests
+
+A Discover extension can read its own settings after `dsc_invoke`, then optionally request one or
+more secrets. No secret names or vaults need to be declared in the manifest. Check `hostServices`
+before using the callback:
+
+```json
+{"jsonrpc":"2.0","id":"secret-1","method":"secret.get","params":{"name":"api-token","vault":"production"}}
+```
+
+While its invocation is pending, DSC resolves the request against already-loaded Secret
+extensions. Both command and JSON-RPC providers are supported. DSC doesn't recursively run
+discovery to find a provider. Multiple providers returning equal values are accepted; different
+values are a conflict. A provider failure doesn't prevent another provider from returning a
+secret. JSON-RPC providers inherit the caller's DSC version, security context, and configuration
+resource reuse restrictions.
+
+The callback result is exactly one secure wrapper:
+
+```json
+{"jsonrpc":"2.0","id":"secret-1","result":{"secureString":"example-token"}}
+```
+
+For an object secret, return `{"secureObject": {...}}` instead. The `name` param must be a nonempty
+string, `vault` is optional, and additional params aren't accepted. Callback IDs can be strings or
+integers, but not null. Each direction has an independent ID namespace. The extension must keep
+reading callback responses while its original invocation is pending. It can send multiple requests,
+but DSC resolves them sequentially; match each response by its ID.
+
+| Error code | Meaning |
+| :--------- | :------ |
+| `-32601` | Unknown method, or callbacks aren't available for this operation or lifecycle phase. |
+| `-32602` | Invalid `secret.get` params. |
+| `-32001` | No usable secret, including absent providers, missing secrets, or conflicting values. |
+
+Callbacks don't extend the original invocation deadline. Provider initialization, retrieval,
+and cleanup are bounded by the remaining deadline, including command-based providers. A timeout
+terminates the operation's process rather than retrying or resetting its deadline.
+
+DSC doesn't log callback values and uses generic callback/provider diagnostics instead of
+forwarding provider-controlled error text, trace messages, or progress messages from Secret
+providers. Progress counts are preserved. Secrets cross private process pipes in plaintext, so
+extensions remain responsible for not logging or embedding them in discovered manifests, trace
+notifications, progress messages, or other output. This callback isn't an authorization boundary
+between trusted extensions.
+
 ## Required properties
 
 The manifest must include these properties:
@@ -269,8 +355,10 @@ available in the `PATH` or `DSC_RESOURCE_PATH` environment variables. When this 
 defined, the extension has the `discover` capability and DSC invokes the `discover` operation for
 the extension during the resource discovery phase of any `dsc config` or `dsc resource` command.
 
-The value of this property must be an object. The object's `executable` property, defining the name
-of the command to call, is mandatory. The `args` property is optional. For more information, see
+The value of this property must be an object. For the command form, the `executable` property,
+defining the name of the command to call, is mandatory and `args` is optional. Alternatively,
+define `jsonrpc` as described in [JSON-RPC extension operations](#json-rpc-extension-operations).
+For more information, see
 [DSC extension manifest discover property schema reference][03].
 
 ```yaml
@@ -316,11 +404,13 @@ The `secret` property defines how to call the extension to retrieve a secret fro
 runtime. When this property is defined, the extension has the `secret` capability and DSC can
 invoke the extension for the [secret()][05] configuration function.
 
-The value of this property must be an object. The object's `executable` property, defining the name
-of the command to call, and `args` property, defining the arguments to pass to the command, are
-both mandatory. The `args` property must define the secret name input argument exactly once and may
-define the vault input argument at most once. DSC doesn't load an extension manifest that defines
-the `secret` property without a secret name input argument. For more information, see
+The value of this property must be an object. For the command form, the `executable` property,
+defining the name of the command to call, and `args`, defining the command's arguments, are both
+mandatory. The `args` property must define the secret name input argument exactly once and may
+define the vault input argument at most once. DSC doesn't load a command-form `secret` operation
+without a secret name input argument. Alternatively, define `jsonrpc` as described in
+[JSON-RPC extension operations](#json-rpc-extension-operations); names and vaults are then passed
+as request params instead of command arguments. For more information, see
 [DSC extension manifest secret property schema reference][06].
 
 ```yaml

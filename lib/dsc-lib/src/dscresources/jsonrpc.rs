@@ -4,6 +4,7 @@
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Write},
+    path::Path,
     process::{Child, Command, Stdio},
     sync::mpsc::{self, Receiver},
     thread::{self, JoinHandle},
@@ -19,6 +20,8 @@ use crate::{
     progress::ResourceProgress,
     util::canonicalize_which,
     settings::DscSettingsScope,
+    types::{ExitCodesMap, FullyQualifiedTypeName},
+    extensions::{dscextension::DscExtension, secret::resolve_secret},
 };
 use super::{
     command_resource::{log_stderr_line, verify_executable_is_invokable},
@@ -144,19 +147,46 @@ struct RpcProcess {
     terminated: bool,
     request_timeout: u64,
     shutdown_timeout: u64,
-    resource: DscResource,
+    type_name: FullyQualifiedTypeName,
+    exit_codes: ExitCodesMap,
+    deadline: Option<Instant>,
+    reverse_requests: bool,
+    redact_diagnostics: bool,
 }
 
 type WriteRequest = (Value, mpsc::SyncSender<std::io::Result<()>>);
 
 impl RpcProcess {
     fn start(resource: &DscResource, rpc: &JsonRpc, context: &Context) -> Result<Self, DscError> {
-        let executable = canonicalize_which(&rpc.executable, resource.directory.as_deref())?;
+        let exit_codes = resource.manifest.as_ref().ok_or_else(protocol_error)?.exit_codes.clone();
+        let mut process = Self::spawn(&resource.type_name, resource.directory.as_deref(), rpc, context, exit_codes, false)?;
+        process.reverse_requests = true;
+        let result = process.initialize(rpc, context)?;
+        if let Some(operations) = result.get("operations") {
+            let Some(operations) = operations.as_array() else { return Err(protocol_error()); };
+            if operations.iter().any(|operation| !operation.is_string()) { return Err(protocol_error()); }
+            let manifest = serde_json::to_value(resource.manifest.as_ref())?;
+            let declared: Vec<&str> = ["get", "set", "whatIf", "test", "delete", "export", "validate", "resolve"]
+                .into_iter().filter(|name| manifest.get(*name).is_some_and(|value| !value.is_null())).collect();
+            if declared.iter().any(|name| !operations.contains(&json!(name)))
+                || operations.iter().any(|name| !declared.iter().any(|declared| name.as_str() == Some(declared))
+                    && !(name == "schema" && manifest.pointer("/schema/command").is_some()))
+            {
+                tracing::warn!("{}", t!("dscresources.jsonrpc.operationsMismatch", resource = resource.type_name));
+            }
+        }
+        Ok(process)
+    }
+
+    fn spawn(type_name: &FullyQualifiedTypeName, directory: Option<&Path>, rpc: &JsonRpc,
+        context: &Context, exit_codes: ExitCodesMap, redact_diagnostics: bool) -> Result<Self, DscError>
+    {
+        let executable = canonicalize_which(&rpc.executable, directory)?;
         verify_executable_is_invokable(std::path::Path::new(&executable))?;
         let mut command = Command::new(&executable);
         command.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
         if let Some(args) = &rpc.args { command.args(args); }
-        if let Some(directory) = &resource.directory { command.current_dir(directory); }
+        if let Some(directory) = directory { command.current_dir(directory); }
         if !context.reuse_resources { command.env("DSC_RESOURCE_REUSE_FORBIDDEN", "1"); }
         command.env_remove("DEBUG_DSC");
         let mut child = command.spawn().map_err(|err| DscError::CommandOperation(err.to_string(), executable))?;
@@ -196,6 +226,10 @@ impl RpcProcess {
             for line in BufReader::new(stderr).lines() {
                 match line {
                     Ok(line) => {
+                        if redact_diagnostics {
+                            tracing::warn!(pid, "{}", t!("extensions.jsonrpc.secretFailed"));
+                            continue;
+                        }
                         let diagnostic = log_stderr_line(&pid, &line);
                         if !diagnostic.is_empty() { tracing::warn!(pid, "{diagnostic}"); }
                     },
@@ -204,7 +238,7 @@ impl RpcProcess {
             }
         }));
         let settings = crate::settings::global::get_or_init().resolved().resource_timeouts.clone();
-        let mut process = Self {
+        Ok(Self {
             child, writer: Some(writer), stdout: receiver, readers: vec![stdin_writer, stdout_reader, stderr_reader],
             next_id: 1, initialized: false, terminated: false,
             request_timeout: if settings.request_timeout_ms.scope == DscSettingsScope::Default {
@@ -213,8 +247,12 @@ impl RpcProcess {
             shutdown_timeout: if settings.shutdown_timeout_ms.scope == DscSettingsScope::Default {
                 rpc.shutdown_timeout_ms.unwrap_or(250)
             } else { settings.shutdown_timeout_ms.value.get() },
-            resource: resource.clone(),
-        };
+            type_name: type_name.clone(), exit_codes, deadline: None, reverse_requests: false, redact_diagnostics,
+        })
+    }
+
+    fn initialize(&mut self, rpc: &JsonRpc, context: &Context) -> Result<Value, DscError> {
+        let settings = crate::settings::global::get_or_init().resolved().resource_timeouts.clone();
         let tracing = crate::settings::global::get_or_init().resolved().tracing.clone();
         let mut params = json!({
             "dscVersion": context.dsc_version,
@@ -222,38 +260,26 @@ impl RpcProcess {
             "traceLevel": tracing.level.value,
             "traceFormat": tracing.format.value,
             "securityContext": context.security_context,
+            "hostServices": if self.reverse_requests { vec!["secret.get"] } else { vec![] },
         });
         if let Ok(root) = std::env::var("DSC_CONFIG_ROOT") { params["configRoot"] = json!(root); }
         let initialize_timeout = if settings.initialize_timeout_ms.scope == DscSettingsScope::Default {
             rpc.initialize_timeout_ms.unwrap_or(250)
         } else { settings.initialize_timeout_ms.value.get() };
-        let result = process.request("initialize", Some(params), initialize_timeout, Some(context))?;
+        let result = self.request("initialize", Some(params), initialize_timeout, Some(context))?;
         if result.get("protocolVersion").and_then(Value::as_u64) != Some(1) {
-            process.terminate();
+            self.terminate();
             return Err(protocol_error());
         }
-        if let Some(operations) = result.get("operations") {
-            let Some(operations) = operations.as_array() else { return Err(protocol_error()); };
-            if operations.iter().any(|operation| !operation.is_string()) { return Err(protocol_error()); }
-            let manifest = serde_json::to_value(resource.manifest.as_ref())?;
-            let declared: Vec<&str> = ["get", "set", "whatIf", "test", "delete", "export", "validate", "resolve"]
-                .into_iter().filter(|name| manifest.get(*name).is_some_and(|value| !value.is_null())).collect();
-            if declared.iter().any(|name| !operations.contains(&json!(name)))
-                || operations.iter().any(|name| !declared.iter().any(|declared| name.as_str() == Some(declared))
-                    && !(name == "schema" && manifest.pointer("/schema/command").is_some()))
-            {
-                tracing::warn!("{}", t!("dscresources.jsonrpc.operationsMismatch", resource = resource.type_name));
-            }
-        }
-        process.initialized = true;
-        Ok(process)
+        self.initialized = true;
+        Ok(result)
     }
 
     fn check_alive(&mut self) -> Result<(), DscError> {
         if let Some(status) = self.child.try_wait()? {
             self.terminated = true;
             return Err(DscError::Operation(t!("dscresources.jsonrpc.unexpectedExit",
-                resource = self.resource.type_name, status = status).to_string()));
+                resource = self.type_name, status = status).to_string()));
         }
         Ok(())
     }
@@ -264,7 +290,7 @@ impl RpcProcess {
         let write = if let Some(deadline) = deadline {
             result.recv_timeout(deadline.saturating_duration_since(Instant::now())).map_err(|err| match err {
                 mpsc::RecvTimeoutError::Timeout => DscError::Operation(t!("dscresources.jsonrpc.timeout",
-                    resource = self.resource.type_name, method = method, timeout = timeout_ms).to_string()),
+                    resource = self.type_name, method = method, timeout = timeout_ms).to_string()),
                 mpsc::RecvTimeoutError::Disconnected => protocol_error(),
             })?
         } else {
@@ -297,10 +323,10 @@ impl RpcProcess {
         let mut request = json!({"jsonrpc": "2.0", "id": id, "method": method});
         if let Some(params) = params { request["params"] = params; }
         let start = Instant::now();
-        let deadline = if timeout_ms == 0 { None } else {
+        let deadline = if timeout_ms == 0 { self.deadline } else {
             Some(start.checked_add(Duration::from_millis(timeout_ms)).ok_or_else(|| DscError::Operation(
                 t!("dscresources.jsonrpc.timeoutOutOfRange", timeout = timeout_ms).to_string()
-            ))?)
+            ))?).map(|deadline| self.deadline.map_or(deadline, |outer| outer.min(deadline)))
         };
         self.send(&request, deadline, method, timeout_ms)?;
         let mut previous_completed = None;
@@ -308,17 +334,17 @@ impl RpcProcess {
         loop {
             if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
                 return Err(DscError::Operation(t!("dscresources.jsonrpc.timeout",
-                    resource = self.resource.type_name, method = method, timeout = timeout_ms).to_string()));
+                    resource = self.type_name, method = method, timeout = timeout_ms).to_string()));
             }
-            let event = if timeout_ms == 0 {
-                self.stdout.recv().map_err(|_| protocol_error())?
-            } else {
-                let remaining = Duration::from_millis(timeout_ms).saturating_sub(start.elapsed());
+            let event = if let Some(deadline) = deadline {
+                let remaining = deadline.saturating_duration_since(Instant::now());
                 self.stdout.recv_timeout(remaining).map_err(|err| match err {
                     mpsc::RecvTimeoutError::Timeout => DscError::Operation(t!("dscresources.jsonrpc.timeout",
-                        resource = self.resource.type_name, method = method, timeout = timeout_ms).to_string()),
+                        resource = self.type_name, method = method, timeout = timeout_ms).to_string()),
                     mpsc::RecvTimeoutError::Disconnected => protocol_error(),
                 })?
+            } else {
+                self.stdout.recv().map_err(|_| protocol_error())?
             };
             let Some(line) = event.map_err(|_| protocol_error())? else {
                 self.check_alive()?;
@@ -327,6 +353,10 @@ impl RpcProcess {
             let value: Value = serde_json::from_str(&line).map_err(|_| protocol_error())?;
             if !value.is_object() || value["jsonrpc"] != "2.0" { return Err(protocol_error()); }
             if value.get("method").is_some() {
+                if value.get("id").is_some() {
+                    self.reverse_request(&value, method, context, deadline, timeout_ms)?;
+                    continue;
+                }
                 if method != "dsc_invoke" || value.get("id").is_some()
                     || value.get("result").is_some() || value.get("error").is_some()
                     || !value["params"].is_object() || value["params"]["requestId"].as_u64() != Some(id)
@@ -335,6 +365,8 @@ impl RpcProcess {
                 }
                 let params = &value["params"];
                 let message = params["message"].as_str().ok_or_else(protocol_error)?;
+                let redacted_message = t!("extensions.jsonrpc.secretFailed");
+                let message = if self.redact_diagnostics { redacted_message.as_ref() } else { message };
                 match value["method"].as_str() {
                     Some("dsc_trace") => {
                         let pid = self.child.id();
@@ -381,18 +413,66 @@ impl RpcProcess {
                 let code = error["code"].as_i64().and_then(|code| i32::try_from(code).ok()).ok_or_else(protocol_error)?;
                 if value["id"].is_null() && !matches!(code, -32700 | -32600) { return Err(protocol_error()); }
                 let message = error["message"].as_str().ok_or_else(protocol_error)?;
-                let mut message = message.to_string();
-                if code != 0 && !(-32768..=-32000).contains(&code)
-                    && let Some(description) = self.resource.manifest.as_ref().and_then(|manifest| manifest.exit_codes.get_code(code)) {
+                let mut message = if self.redact_diagnostics {
+                    t!("extensions.jsonrpc.secretFailed").to_string()
+                } else { message.to_string() };
+                if !self.redact_diagnostics && code != 0 && !(-32768..=-32000).contains(&code)
+                    && let Some(description) = self.exit_codes.get_code(code) {
                         message.push_str(": ");
                         message.push_str(description);
                 }
-                return Err(DscError::JsonRpc { resource: self.resource.type_name.to_string(), code,
-                    message, data: error.get("data").map(|data| Box::new(redact(data))) });
+                return Err(DscError::JsonRpc { resource: self.type_name.to_string(), code,
+                    message, data: if self.redact_diagnostics { None } else {
+                        error.get("data").map(|data| Box::new(redact(data)))
+                    } });
             }
             if value["id"].as_u64() != Some(id) { return Err(protocol_error()); }
             return Ok(value["result"].clone());
         }
+    }
+
+    fn reverse_request(&mut self, value: &Value, method: &str, context: Option<&Context>,
+        deadline: Option<Instant>, timeout_ms: u64) -> Result<(), DscError>
+    {
+        let id = &value["id"];
+        if !(id.is_string() || id.is_i64() || id.is_u64())
+            || !value["method"].is_string() || value.get("result").is_some() || value.get("error").is_some()
+        {
+            return Err(protocol_error());
+        }
+        let error = |code, message: String| json!({
+            "jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}
+        });
+        let response = if !self.reverse_requests || method != "dsc_invoke" || value["method"] != "secret.get" {
+            error(-32601, t!("extensions.jsonrpc.methodNotFound").to_string())
+        } else {
+            #[derive(serde::Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct SecretRequest {
+                name: String,
+                vault: Option<String>,
+            }
+            match serde_json::from_value::<SecretRequest>(value["params"].clone()) {
+                Ok(params) if !params.name.is_empty() => {
+                    let context = context.ok_or_else(protocol_error)?;
+                    let extensions = if context.extensions.is_empty() {
+                        crate::discovery::command_discovery::loaded_extensions()
+                    } else {
+                        context.extensions.clone()
+                    };
+                    match resolve_secret(&extensions, &params.name, params.vault.as_deref(), context, deadline, true) {
+                        Ok(secret) => json!({"jsonrpc": "2.0", "id": id, "result": secret}),
+                        Err(_) => {
+                            // Provider diagnostics can contain plaintext; don't forward them to the wire.
+                            tracing::warn!("{}", t!("extensions.jsonrpc.secretFailed"));
+                            error(-32001, t!("extensions.jsonrpc.secretFailed").to_string())
+                        },
+                    }
+                },
+                _ => error(-32602, t!("extensions.jsonrpc.invalidParams").to_string()),
+            }
+        };
+        self.send(&response, deadline, method, timeout_ms)
     }
 
     fn shutdown(&mut self) -> Result<(), DscError> {
@@ -404,6 +484,7 @@ impl RpcProcess {
         let deadline = Instant::now().checked_add(Duration::from_millis(self.shutdown_timeout)).ok_or_else(|| DscError::Operation(
             t!("dscresources.jsonrpc.timeoutOutOfRange", timeout = self.shutdown_timeout).to_string()
         ))?;
+        let deadline = self.deadline.map_or(deadline, |outer| outer.min(deadline));
         self.send(&json!({"jsonrpc": "2.0", "method": "exit"}), Some(deadline), "exit", self.shutdown_timeout)?;
         loop {
             if let Some(status) = self.child.try_wait()? {
@@ -413,16 +494,46 @@ impl RpcProcess {
                 return match self.stdout.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
                     Ok(Ok(None)) => Ok(()),
                     Err(mpsc::RecvTimeoutError::Timeout) => Err(DscError::Operation(t!("dscresources.jsonrpc.timeout",
-                        resource = self.resource.type_name, method = "exit", timeout = self.shutdown_timeout).to_string())),
+                        resource = self.type_name, method = "exit", timeout = self.shutdown_timeout).to_string())),
                     _ => Err(protocol_error()),
                 };
             }
             if Instant::now() >= deadline {
                 self.terminate();
                 return Err(DscError::Operation(t!("dscresources.jsonrpc.timeout",
-                    resource = self.resource.type_name, method = "exit", timeout = self.shutdown_timeout).to_string()));
+                    resource = self.type_name, method = "exit", timeout = self.shutdown_timeout).to_string()));
             }
             thread::sleep(Duration::from_millis(1));
+        }
+    }
+
+    /// Invoke an extension on a private stdio connection. Secret providers can't call back into
+    /// secret resolution, preventing cycles and re-entrant discovery.
+    fn invoke_extension(extension: &DscExtension, rpc: &JsonRpc, operation: &str, params: Value,
+        context: &Context, deadline: Option<Instant>) -> Result<Value, DscError>
+    {
+        let manifest = serde_json::from_value::<crate::extensions::extension_manifest::ExtensionManifest>(
+            extension.manifest.clone()
+        )?;
+        let mut process = RpcProcess::spawn(&extension.type_name, Some(&extension.directory), rpc, context, manifest.exit_codes, operation == "secret")?;
+        process.deadline = deadline;
+        process.reverse_requests = operation == "discover";
+        process.initialize(rpc, context)?;
+        let result = process.request("dsc_invoke", Some(params), process.request_timeout, Some(context));
+        let cleanup = process.shutdown();
+        match (result, cleanup) {
+            (Err(err), cleanup) => {
+                if let Err(cleanup) = cleanup {
+                    if operation == "secret" {
+                        tracing::warn!("{}", t!("extensions.jsonrpc.secretFailed"));
+                    } else {
+                        tracing::warn!("{cleanup}");
+                    }
+                }
+                Err(err)
+            },
+            (Ok(_), Err(err)) => Err(err),
+            (Ok(value), Ok(())) => Ok(value),
         }
     }
 
@@ -450,6 +561,12 @@ impl Drop for RpcProcess {
             }
         }
     }
+}
+
+pub(crate) fn invoke_extension(extension: &DscExtension, rpc: &JsonRpc, operation: &str, params: Value,
+    context: &Context, deadline: Option<Instant>) -> Result<Value, DscError>
+{
+    RpcProcess::invoke_extension(extension, rpc, operation, params, context, deadline)
 }
 
 /// Normalize the wire value into the command runner's semantic input format.

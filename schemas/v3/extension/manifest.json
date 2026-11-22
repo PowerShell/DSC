@@ -60,7 +60,29 @@
       }
     },
     "discover": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json"
+      "anyOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json"
+            },
+            {
+              "not": {
+                "required": [
+                  "jsonrpc"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "$ref": "#/$defs/jsonrpcOperation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Details how to call the Discover method of the extension."
     },
     "exitCodes": {
       "title": "Exit codes",
@@ -87,6 +109,90 @@
           "3": "JSON serialization failed"
         }
       ]
+    },
+    "secret": {
+      "anyOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "/PowerShell/DSC/main/schemas/v3/extension/manifest.secret.json"
+            },
+            {
+              "not": {
+                "required": [
+                  "jsonrpc"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "$ref": "#/$defs/jsonrpcOperation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Details how to call the Secret method of the extension."
+    }
+  },
+  "$defs": {
+    "jsonrpcOperation": {
+      "title": "JSON-RPC extension operation",
+      "description": "Invokes an extension operation over a private JSON-RPC connection.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "jsonrpc"
+      ],
+      "properties": {
+        "jsonrpc": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "executable"
+          ],
+          "properties": {
+            "executable": {
+              "type": "string",
+              "minLength": 1
+            },
+            "args": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "initializeTimeoutMS": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 1
+            },
+            "requestTimeoutMS": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "shutdownTimeoutMS": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 1
+            }
+          }
+        }
+      }
     }
   }
 }

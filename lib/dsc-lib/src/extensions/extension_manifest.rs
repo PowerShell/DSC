@@ -9,6 +9,7 @@ use serde_json::{Map, Value};
 
 use crate::dscerror::DscError;
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
+use crate::extensions::jsonrpc::ExtensionMethod;
 use crate::schemas::dsc_repo::DscRepoSchema;
 use crate::types::{ExitCodesMap, FullyQualifiedTypeName, SemanticVersion, TagList};
 
@@ -50,13 +51,13 @@ pub struct ExtensionManifest {
     #[serde(default, skip_serializing_if = "TagList::is_empty")]
     pub tags: TagList,
     /// Details how to call the Discover method of the extension.
-    pub discover: Option<DiscoverMethod>,
+    pub discover: Option<ExtensionMethod<DiscoverMethod>>,
     /// Details how to call the Import method of the extension.
     pub import: Option<ImportMethod>,
     /// Details how to call the ImportParameters method of the extension.
     pub import_parameters: Option<ImportMethod>,
     /// Details how to call the Secret method of the extension.
-    pub secret: Option<SecretMethod>,
+    pub secret: Option<ExtensionMethod<SecretMethod>>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(skip_serializing_if = "ExitCodesMap::is_empty_or_default", default)]
     pub exit_codes: ExitCodesMap,

@@ -143,6 +143,28 @@ begin {
         }
     }
 
+    function Set-EmbeddedJsonSchemaReference {
+        [CmdletBinding()]
+        param(
+            [object]$Schema,
+            [string]$ReferencePrefix
+        )
+
+        if ($Schema -is [System.Collections.IDictionary]) {
+            $reference = $Schema['$ref']
+            if ($reference -is [string] -and ($reference -eq '#' -or $reference.StartsWith('#/'))) {
+                $Schema['$ref'] = $ReferencePrefix + $reference.Substring(1)
+            }
+            foreach ($value in $Schema.Values) {
+                Set-EmbeddedJsonSchemaReference -Schema $value -ReferencePrefix $ReferencePrefix
+            }
+        } elseif ($Schema -is [object[]]) {
+            foreach ($value in $Schema) {
+                Set-EmbeddedJsonSchemaReference -Schema $value -ReferencePrefix $ReferencePrefix
+            }
+        }
+    }
+
     function Get-LocalJsonSchemaRegistry {
         [CmdletBinding()]
         [OutputType([LocalJsonSchemaRegistry])]
@@ -403,8 +425,13 @@ begin {
                             continue
                         }
 
-                        # Add the referenced schema
-                        $Working.Add($Segment, $ReferenceSchema)
+                        # Authoring references use root-local pointers, not the embedded schema's URI.
+                        $EmbeddedSchema = Remove-JsonSchemaKey -Schema $ReferenceSchema -KeyName '$id'
+                        $ReferencePointer = '#/$defs/' + (($ReferenceSegments | ForEach-Object {
+                            $_.Replace('~', '~0').Replace('/', '~1')
+                        }) -join '/')
+                        Set-EmbeddedJsonSchemaReference -Schema $EmbeddedSchema -ReferencePrefix $ReferencePointer
+                        $Working.Add($Segment, $EmbeddedSchema)
                     }
 
                 }

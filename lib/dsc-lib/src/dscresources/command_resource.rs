@@ -864,13 +864,14 @@ pub fn invoke_resolve(resource: &DscResource, input: &str, context: &Context) ->
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
 ///
-async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: &ExitCodesMap) -> Result<(i32, String, String), DscError> {
+async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: &ExitCodesMap, redact_diagnostics: bool) -> Result<(i32, String, String), DscError> {
 
     // use somewhat large initial buffer to avoid early string reallocations;
     // the value is based on list result of largest of built-in adapters - WMI adapter ~500KB
     const INITIAL_BUFFER_CAPACITY: usize = 1024*1024;
 
     let mut command = Command::new(executable);
+    command.kill_on_drop(true);
     if input.is_some() {
         command.stdin(Stdio::piped());
     } else {
@@ -909,7 +910,9 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     let mut stderr_reader = BufReader::new(stderr).lines();
 
     if let Some(input) = input {
-        trace!("{}", t!("dscresources.commandResource.writingStdin", input = input));
+        if !redact_diagnostics {
+            trace!("{}", t!("dscresources.commandResource.writingStdin", input = input));
+        }
         let Some(mut stdin) = child.stdin.take() else {
             return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildStdin").to_string(), executable.to_string()));
         };
@@ -923,22 +926,22 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildId").to_string(), executable.to_string()));
     };
 
-    let child_task = tokio::spawn(async move {
-        child.wait().await
-    });
-
-    let stdout_task = tokio::spawn(async move {
+    let stdout_task = async move {
         let mut stdout_result = String::with_capacity(INITIAL_BUFFER_CAPACITY);
         while let Ok(Some(line)) = stdout_reader.next_line().await {
             stdout_result.push_str(&line);
             stdout_result.push('\n');
         }
         stdout_result
-    });
+    };
 
-    let stderr_task = tokio::spawn(async move {
+    let stderr_task = async move {
         let mut filtered_stderr = String::with_capacity(INITIAL_BUFFER_CAPACITY);
         while let Ok(Some(stderr_line)) = stderr_reader.next_line().await {
+            if redact_diagnostics {
+                warn!("{}", t!("extensions.jsonrpc.secretFailed"));
+                continue;
+            }
             let filtered_stderr_line = log_stderr_line(&child_id, &stderr_line);
             if !filtered_stderr_line.is_empty() {
                 filtered_stderr.push_str(filtered_stderr_line);
@@ -946,11 +949,10 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
             }
         }
         filtered_stderr
-    });
+    };
 
-    let exit_code = child_task.await.unwrap()?.code();
-    let stdout_result = stdout_task.await.unwrap();
-    let stderr_result = stderr_task.await.unwrap();
+    let (status, stdout_result, stderr_result) = tokio::join!(child.wait(), stdout_task, stderr_task);
+    let exit_code = status?.code();
 
     if let Some(code) = exit_code {
         debug!("{}", t!("dscresources.commandResource.processChildExit", executable = executable, id = child_id, code = code));
@@ -1027,21 +1029,48 @@ pub fn verify_executable_is_invokable(executable: &Path) -> Result<(), DscError>
 ///
 #[allow(clippy::implicit_hasher)]
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: &ExitCodesMap) -> Result<(i32, String, String), DscError> {
+    invoke_command_with_options(executable, args, input, cwd, env, exit_codes, CommandInvocationOptions::default())
+}
+
+#[derive(Default)]
+pub(crate) struct CommandInvocationOptions {
+    pub deadline: Option<std::time::Instant>,
+    pub redact_diagnostics: bool,
+}
+
+/// Bound and redact secret provider invocations without changing ordinary command diagnostics.
+pub(crate) fn invoke_command_with_options(executable: &str, args: Option<Vec<String>>, input: Option<&str>,
+    cwd: Option<&Path>, env: Option<HashMap<String, String>>, exit_codes: &ExitCodesMap,
+    options: CommandInvocationOptions) -> Result<(i32, String, String), DscError>
+{
     let executable = canonicalize_which(executable, cwd)?;
     verify_executable_is_invokable(&PathBuf::from(&executable))?;
 
     let run_async = async {
-        trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
+        if !options.redact_diagnostics {
+            trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
+        }
         if let Some(cwd) = cwd {
             trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd.display()));
         }
 
-        match run_process_async(&executable, args, input, cwd, env, exit_codes).await {
+        let operation = run_process_async(&executable, args, input, cwd, env, exit_codes, options.redact_diagnostics);
+        let result = if let Some(deadline) = options.deadline {
+            tokio::time::timeout_at(tokio::time::Instant::from_std(deadline), operation).await
+                .map_err(|_| DscError::Operation(t!("extensions.jsonrpc.providerTimeout").to_string()))?
+        } else {
+            operation.await
+        };
+        match result {
             Ok((code, stdout, stderr)) => {
                 Ok((code, stdout, stderr))
             },
             Err(err) => {
-                error!("{}", t!("dscresources.commandResource.runProcessError", executable = executable, error = err));
+                if options.redact_diagnostics {
+                    error!("{}", t!("extensions.jsonrpc.secretFailed"));
+                } else {
+                    error!("{}", t!("dscresources.commandResource.runProcessError", executable = executable, error = err));
+                }
                 Err(err)
             }
         }

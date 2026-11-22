@@ -60,7 +60,29 @@
       }
     },
     "discover": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json"
+      "anyOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json"
+            },
+            {
+              "not": {
+                "required": [
+                  "jsonrpc"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "$ref": "#/$defs/jsonrpcOperation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Details how to call the Discover method of the extension."
     },
     "exitCodes": {
       "title": "Exit codes",
@@ -87,6 +109,31 @@
           "3": "JSON serialization failed"
         }
       ]
+    },
+    "secret": {
+      "anyOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "/PowerShell/DSC/main/schemas/v3/extension/manifest.secret.json"
+            },
+            {
+              "not": {
+                "required": [
+                  "jsonrpc"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "$ref": "#/$defs/jsonrpcOperation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Details how to call the Secret method of the extension."
     }
   },
   "$defs": {
@@ -106,24 +153,6 @@
       "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json",
-      "title": "Discover operation command",
-      "description": "Defines how DSC must call the DSC extension to discover the paths to resource manifests.",
-      "type": "object",
-      "required": [
-        "executable"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-        }
-      }
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -168,6 +197,194 @@
             }
           }
         ]
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "extensionsArg"
+                ],
+                "properties": {
+                  "extensionsArg": {
+                    "description": "The argument that accepts the extensions list as a comma-separated string.",
+                    "type": "string"
+                  },
+                  "includeQuotes": {
+                    "description": "Whether DSC surrounds the extensions list with quotes.",
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "executable": {
+          "description": "The command to run to get the state of the resource.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "executable"
+      ],
+      "type": "object"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.secret.json": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.secret.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Defines how to call the extension to retrieve a secret from a vault.",
+      "properties": {
+        "args": {
+          "allOf": [
+            {
+              "contains": {
+                "required": [
+                  "nameArg"
+                ],
+                "type": "object"
+              },
+              "description": "The arguments must define exactly one object with the `nameArg` property.",
+              "maxContains": 1,
+              "minContains": 1,
+              "title": "Secret name input argument"
+            },
+            {
+              "contains": {
+                "required": [
+                  "vaultArg"
+                ],
+                "type": "object"
+              },
+              "description": "The arguments may define at most one object with the `vaultArg` property.",
+              "maxContains": 1,
+              "minContains": 0,
+              "title": "Vault input argument"
+            }
+          ],
+          "description": "The arguments to pass to the command to retrieve a secret. The arguments must define the secret name input argument exactly once and may define the vault input argument at most once.",
+          "items": {
+            "anyOf": [
+              {
+                "description": "A static string argument to pass to the command, like `get` or `--quiet`.",
+                "type": "string"
+              },
+              {
+                "additionalProperties": false,
+                "description": "The argument that accepts the secret name. DSC passes the name of the secret to retrieve\nafter this argument. The arguments must define this argument exactly once.",
+                "properties": {
+                  "nameArg": {
+                    "description": "The argument that accepts the secret name, like `--name` or `--secret-name`.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "nameArg"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "description": "The argument that accepts the vault name. DSC passes the name of the vault after this\nargument when the `secret()` function specifies a vault. The arguments may define this\nargument at most once.",
+                "properties": {
+                  "vaultArg": {
+                    "description": "The argument that accepts the vault name, like `--vault` or `--vault-name`.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "vaultArg"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "title": "Arguments",
+          "type": "array"
+        },
+        "executable": {
+          "description": "The name of the command to run to retrieve a secret.",
+          "title": "Executable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "executable",
+        "args"
+      ],
+      "title": "Secret command",
+      "type": "object"
+    },
+    "jsonrpcOperation": {
+      "title": "JSON-RPC extension operation",
+      "description": "Invokes an extension operation over a private JSON-RPC connection.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "jsonrpc"
+      ],
+      "properties": {
+        "jsonrpc": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "executable"
+          ],
+          "properties": {
+            "executable": {
+              "type": "string",
+              "minLength": 1
+            },
+            "args": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "initializeTimeoutMS": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 1
+            },
+            "requestTimeoutMS": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "shutdownTimeoutMS": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 1
+            }
+          }
+        }
       }
     }
   }

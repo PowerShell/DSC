@@ -12,6 +12,14 @@ unexpectedExit = "JSON-RPC resource '%{resource}' exited unexpectedly: %{status}
 operationsMismatch = "JSON-RPC operations do not match the manifest for '%{resource}'"
 readerFailed = "JSON-RPC resource stream reader failed"
 
+[extensions.jsonrpc]
+invalidTransport = "JSON-RPC extension executable must be nonempty and initialize/shutdown timeouts must be positive"
+methodNotFound = "JSON-RPC host method is not available"
+invalidParams = "secret.get requires a nonempty name and an optional string vault"
+secretFailed = "Unable to resolve the requested secret"
+invalidSecret = "JSON-RPC secret result must be null, a secureString, or a secureObject"
+providerTimeout = "Secret provider exceeded the JSON-RPC request deadline"
+
 [actions.action_manifest]
 actionManifestSchemaTitle = "Action manifest schema URI"
 actionManifestSchemaDescription = "Defines the JSON Schema the action manifest adheres to."

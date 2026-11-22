@@ -44,14 +44,32 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/extension/manifest/discover?<DOCS_VERSION_PIN>#executable
   args:
-    $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+    type: [array, 'null']
+    items:
+      anyOf:
+        - type: string
+        - type: object
+          required:
+            - extensionsArg
+          properties:
+            extensionsArg:
+              description: >-
+                The argument that accepts the extensions list as a comma-separated string.
+              type: string
+            includeQuotes:
+              description: >-
+                Whether DSC surrounds the extensions list with quotes.
+              type: boolean
+              default: false
     markdownDescription: |
       ***
       [_Online Documentation_][01]
       ***
 
-      Defines an array of strings to pass as arguments to the command. DSC passes the arguments to
-      the command in the order they're specified.
+      Defines an array of strings and extensions argument objects to pass to the command. DSC
+      passes the arguments in the order they're specified. An object with `extensionsArg` names
+      the argument that receives the comma-separated list of resource manifest extensions.
+      Set `includeQuotes` to `true` when that list must be surrounded by quotes.
 
       For example, the given the following definition:
 
