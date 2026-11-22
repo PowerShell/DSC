@@ -8,7 +8,7 @@ use crate::{
         schema_cache::get_resource_schema
     },
     discovery::{discovery_trait::DiscoveryFilter, ResourceKind},
-    dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind}},
+    dscresources::{adapted_resource_manifest::AdaptedDscResourceManifest, resource_manifest::{AdapterInputKind, Kind, SchemaKind}},
     resources::{invoke_result::{GetResult, SetResult, TestResult, DeleteResultKind, ValidateResult, ExportResult, ResolveResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse},
         ManifestKind, resource_invoke::{Capabilities, ResourceInvoke},
     },
@@ -61,6 +61,9 @@ pub struct DscResource {
     pub implemented_as: Option<ImplementedAs>,
     /// The author of the resource.
     pub author: Option<String>,
+    /// The registry friendly name, or `local` for a resource on the filesystem.
+    #[serde(default = "local_registry")]
+    pub registry: Option<String>,
     /// The properties of the resource.
     pub properties: Option<Vec<String>>,
     /// The required resource adapter for the resource.
@@ -114,6 +117,10 @@ pub enum ImplementedAs {
     Custom(String),
 }
 
+fn local_registry() -> Option<String> {
+    Some("local".to_string())
+}
+
 impl DscResource {
     #[must_use]
     pub fn new() -> Self {
@@ -128,6 +135,7 @@ impl DscResource {
             directory: None,
             implemented_as: Some(ImplementedAs::Command),
             author: None,
+            registry: local_registry(),
             properties: None,
             require_adapter: None,
             schema: None,
@@ -135,6 +143,18 @@ impl DscResource {
             adapted_manifest: None,
             adapted_content: None,
         }
+    }
+
+    fn ensure_available(&self) -> Result<(), DscError> {
+        if let Some(registry) = self.registry.as_deref()
+            && registry != "local" && self.path.is_none() {
+            return Err(DscError::Operation(t!(
+                "dscresources.dscresource.registryResourceNotInstalled",
+                resource = self.type_name,
+                registry = registry
+            ).to_string()));
+        }
+        Ok(())
     }
 
     fn create_config_for_adapter(self, adapter: &FullyQualifiedTypeName, input: &str, context: &Context) -> Result<Configurator, DscError> {
@@ -324,6 +344,7 @@ impl Default for DscResource {
 
 impl ResourceInvoke for DscResource {
     fn get(&self, filter: &str, context: &Context) -> Result<GetResult, DscError> {
+        self.ensure_available()?;
         debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
@@ -346,6 +367,7 @@ impl ResourceInvoke for DscResource {
     }
 
     fn set(&self, desired: &str, skip_test: bool, context: &Context) -> Result<SetResult, DscError> {
+        self.ensure_available()?;
         debug!("{}", t!("dscresources.dscresource.invokeSet", resource = self.type_name));
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
@@ -368,6 +390,7 @@ impl ResourceInvoke for DscResource {
     }
 
     fn test(&self, expected: &str, context: &Context) -> Result<TestResult, DscError> {
+        self.ensure_available()?;
         debug!("{}", t!("dscresources.dscresource.invokeTest", resource = self.type_name));
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
@@ -432,6 +455,7 @@ impl ResourceInvoke for DscResource {
     }
 
     fn delete(&self, filter: &str, context: &Context) -> Result<DeleteResultKind, DscError> {
+        self.ensure_available()?;
         debug!("{}", t!("dscresources.dscresource.invokeDelete", resource = self.type_name));
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
@@ -454,6 +478,7 @@ impl ResourceInvoke for DscResource {
     }
 
     fn validate(&self, config: &str, context: &Context) -> Result<ValidateResult, DscError> {
+        self.ensure_available()?;
         debug!("{}", t!("dscresources.dscresource.invokeValidate", resource = self.type_name));
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
@@ -473,6 +498,12 @@ impl ResourceInvoke for DscResource {
     }
 
     fn schema(&self, context: &Context) -> Result<String, DscError> {
+        if let Err(error) = self.ensure_available() {
+            if let Some(SchemaKind::Embedded(schema)) = self.manifest.as_ref().and_then(|manifest| manifest.schema.as_ref()) {
+                return Ok(serde_json::to_string(schema)?);
+            }
+            return Err(error);
+        }
         let target_resource = context.target_resource.as_ref().unwrap_or(self);
         if let Some(schema) = get_resource_schema(&target_resource.type_name, &target_resource.version) {
             debug!("{}", t!("dscresources.dscresource.retrievedSchemaFromCache", resource = target_resource.type_name, version = target_resource.version));
@@ -503,6 +534,7 @@ impl ResourceInvoke for DscResource {
     }
 
     fn export(&self, input: &str, context: &Context) -> Result<ExportResult, DscError> {
+        self.ensure_available()?;
         debug!("{}", t!("dscresources.dscresource.invokeExport", resource = self.type_name));
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));
@@ -518,6 +550,7 @@ impl ResourceInvoke for DscResource {
     }
 
     fn resolve(&self, input: &str, context: &Context) -> Result<ResolveResult, DscError> {
+        self.ensure_available()?;
         debug!("{}", t!("dscresources.dscresource.invokeResolve", resource = self.type_name));
         if let Some(deprecation_message) = self.deprecation_message.as_ref() {
             warn!("{}", t!("dscresources.dscresource.deprecationMessage", resource = self.type_name, message = deprecation_message));

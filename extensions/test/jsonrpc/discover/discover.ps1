@@ -94,6 +94,9 @@ Add-RpcEvent -Role discover -Event start
                         }
                     }
                 )
+                if ($settings.registry) {
+                    $result[0].registry = $settings.registry
+                }
             }
         }
         shutdown {

@@ -2,17 +2,37 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/stdout/discover.json",
   "title": "Discover extension operation stdout",
-  "description": "Represents the full path a DSC resource manifest.",
+  "description": "Represents a DSC manifest path or manifest content, with optional registry provenance.",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "manifestPath"
-  ],
   "properties": {
     "manifestPath": {
       "title": "DSC manifest path",
       "description": "Defines the absolute path to a DSC resource manifest on the system.",
       "type": "string"
+    },
+    "registry": {
+      "description": "The registry friendly name for a remotely discovered resource.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "manifestContent": {
+      "description": "The resource manifest content.",
+      "type": "object"
     }
-  }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "manifestPath"
+      ]
+    },
+    {
+      "required": [
+        "manifestContent"
+      ]
+    }
+  ]
 }

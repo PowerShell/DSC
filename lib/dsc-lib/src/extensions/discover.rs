@@ -67,6 +67,9 @@ pub enum ManifestKind {
 pub struct DiscoverResult {
     #[serde(flatten)]
     pub path_or_content: ManifestKind,
+    /// The registry friendly name for remotely discovered resources.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub registry: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -150,7 +153,11 @@ impl DscExtension {
                         ManifestKind::ManifestContent(manifest_value) => {
                             let imported_manifests = load_manifest_content(&manifest_value)?;
                             info!("{}", t!("extensions.dscextension.manifestImported", extension = self.type_name));
-                            for imported_manifest in imported_manifests {
+                            for mut imported_manifest in imported_manifests {
+                                if let ImportedManifest::Resource(resource) = &mut imported_manifest
+                                    && let Some(registry) = &discover_result.registry {
+                                    resource.registry = Some(registry.clone());
+                                }
                                 if matches!(imported_manifest, ImportedManifest::Resource(_) | ImportedManifest::Action(_)) {
                                     resources.push(imported_manifest);
                                 }
@@ -168,7 +175,11 @@ impl DscExtension {
                                     continue;
                                 }
                             };
-                            for imported_manifest in manifests {
+                            for mut imported_manifest in manifests {
+                                if let ImportedManifest::Resource(resource) = &mut imported_manifest
+                                    && let Some(registry) = &discover_result.registry {
+                                    resource.registry = Some(registry.clone());
+                                }
                                 if matches!(imported_manifest, ImportedManifest::Resource(_) | ImportedManifest::Action(_)) {
                                     resources.push(imported_manifest);
                                 }

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json",
+  "type": "Microsoft.Registry.OpenContainerInitiative/Discover",
+  "version": "0.1.0",
+  "description": "Discover DSC resource manifests in configured OCI registries.",
+  "discover": {
+    "jsonrpc": {
+      "executable": "oci_registry",
+      "args": ["discover"],
+      "initializeTimeoutMS": 5000,
+      "requestTimeoutMS": 300000,
+      "shutdownTimeoutMS": 5000
+    }
+  }
+}

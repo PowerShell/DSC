@@ -914,6 +914,7 @@ pub fn list_resources(
         t!("subcommand.tableHeader_version").to_string().as_ref(),
         t!("subcommand.tableHeader_capabilities").to_string().as_ref(),
         t!("subcommand.tableHeader_adapter").to_string().as_ref(),
+        t!("subcommand.tableHeader_registry").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
     if format == Some(&ListOutputFormat::TableNoTruncate) || (format.is_none() && io::stdout().is_terminal()) {
@@ -979,6 +980,7 @@ pub fn list_resources(
                     resource.version.to_string(),
                     capabilities,
                     resource.require_adapter.unwrap_or_default().to_string(),
+                    resource.registry.unwrap_or_default(),
                     resource.description.unwrap_or_default()
                 ]);
             }

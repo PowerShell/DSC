@@ -269,6 +269,7 @@ redactedSchemaErrorMessage = "'secureString' and 'secureObject' values are not c
 invokeNotSupportedForResources = "Operation argument 'invoke' is not supported for resources"
 
 [dscresources.dscresource]
+registryResourceNotInstalled = "Resource '%{resource}' from registry '%{registry}' is not installed; install its implementation before invoking it"
 invokeGet = "Invoking get for '%{resource}'"
 customResourceNotSupported = "Custom resource not supported"
 invokeSet = "Invoking set for '%{resource}'"

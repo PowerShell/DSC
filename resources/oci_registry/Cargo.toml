@@ -1,0 +1,39 @@
+[package]
+name = "oci_registry"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+base16ct = { workspace = true }
+clap = { workspace = true }
+futures-util = { workspace = true }
+http-auth = { workspace = true }
+oci-client = { workspace = true }
+reqwest = { workspace = true }
+rust-i18n = { workspace = true }
+schemars = { workspace = true }
+semver = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+url = { workspace = true }
+dsc-lib-security_context = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+oci-client = { workspace = true, features = ["native-tls"] }
+reqwest = { workspace = true, features = ["native-tls"] }
+
+[target.'cfg(not(windows))'.dependencies]
+oci-client = { workspace = true, features = ["rustls-tls-no-provider"] }
+reqwest = { workspace = true, features = ["rustls-no-provider"] }
+rustls = { workspace = true }
+
+[package.metadata.i18n]
+available-locales = ["en-us"]
+default-locale = "en-us"
+load-path = "locales"
+
+[lints.clippy]
+pedantic = "warn"

@@ -98,6 +98,45 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         $result.results[0].result.actualState.authenticated | Should -BeTrue
     }
 
+    It 'preserves the registry friendly name from a Discover result' {
+        $settings.registry = 'oci-test'
+        Set-RpcSettings
+        (Get-SecretDiscoveredResource).registry | Should -BeExactly 'oci-test'
+    }
+
+    It 'shows registry <ExpectedRegistry> after RequireAdapter in the resource table' -ForEach @(
+        @{ Registry = $null; ExpectedRegistry = 'local' }
+        @{ Registry = 'oci-test'; ExpectedRegistry = 'oci-test' }
+    ) {
+        $settings.registry = $Registry
+        $settings.requests = @()
+        Set-RpcSettings
+        $output = @(dsc resource list 'Test/SecretDiscovered' --output-format table-no-truncate 2>$TestDrive\error.log)
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
+        $header = @($output | Where-Object { $_ -match '^Type\s+Kind\s+' })[0]
+        $header | Should -Match 'RequireAdapter\s+Registry\s+Description'
+        $row = @($output | Where-Object { $_ -match '^Test/SecretDiscovered\s+' })[0]
+        $row.Substring($header.IndexOf('Registry'), $ExpectedRegistry.Length) |
+            Should -BeExactly $ExpectedRegistry
+    }
+
+    It 'does not execute an uninstalled registry resource manifest' {
+        $settings.registry = 'oci-test'
+        Set-RpcSettings
+        dsc resource get -r Test/SecretDiscovered 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Not -Be 0
+        Get-Content -Raw $TestDrive/error.log | Should -Match 'not installed'
+    }
+
+    It 'reads an embedded schema without executing an uninstalled registry resource' {
+        $settings.registry = 'oci-test'
+        Set-RpcSettings
+        $schema = dsc resource schema -r Test/SecretDiscovered 2>$TestDrive/error.log |
+            ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $schema.properties.authenticated.type | Should -BeExactly 'boolean'
+    }
+
     It 'uses the JSON-RPC provider through the existing secret() function' {
         $env:PATH = @($secretPath, $previousPath) -join [IO.Path]::PathSeparator
         $configuration = @{
@@ -126,7 +165,9 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         $env:PATH = @($discoverPath, $previousPath) -join [IO.Path]::PathSeparator
         $settings.requests = @()
         Set-RpcSettings
-        (Get-SecretDiscoveredResource).type | Should -BeExactly 'Test/SecretDiscovered'
+        $resource = Get-SecretDiscoveredResource
+        $resource.type | Should -BeExactly 'Test/SecretDiscovered'
+        $resource.registry | Should -BeExactly 'local'
         @((Get-ExtensionRpcEvent) | Where-Object role -EQ secret) | Should -HaveCount 0
     }
 
@@ -360,6 +401,29 @@ Start-Sleep -Seconds 30
             }
         }
         @((Get-ExtensionRpcEvent) | Where-Object event -EQ callback) | Should -HaveCount 2
+    }
+
+    It 'validates registry discovery results with <SchemaPath>' -ForEach @(
+        @{ SchemaPath = 'extension\stdout\discover.json' }
+        @{ SchemaPath = 'bundled\extension\stdout\discover.json' }
+        @{ SchemaPath = 'bundled\extension\stdout\discover.vscode.json' }
+    ) {
+        $schemaPath = Join-Path "$PSScriptRoot\..\..\..\schemas\v3" $SchemaPath
+        $schema = Get-Content -LiteralPath $schemaPath -Raw
+        foreach ($value in @(
+            @{ manifestPath = (Join-Path $testDirectory 'resource.dsc.resource.json'); registry = 'oci-test' }
+            @{ manifestContent = @{ type = 'Test/Example'; version = '1.0.0' }; registry = 'oci-test' }
+        )) {
+            $value | ConvertTo-Json -Depth 10 | Test-Json -Schema $schema | Should -BeTrue
+        }
+        foreach ($value in @(
+            @{ registry = 'oci-test' }
+            @{ manifestPath = 'example'; manifestContent = @{}; registry = 'oci-test' }
+            @{ manifestContent = @{}; registry = 42 }
+        )) {
+            $value | ConvertTo-Json -Depth 10 |
+                Test-Json -Schema $schema -ErrorAction SilentlyContinue | Should -BeFalse
+        }
     }
 
     It 'validates JSON-RPC extension manifests with the <SchemaKind> schema' -ForEach @(

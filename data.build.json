@@ -5,6 +5,9 @@
       "brew.dsc.resource.sh"
     ],
     "Linux": [
+      "oci_registry",
+      "oci_registry.dsc.extension.json",
+      "registrylist.dsc.resource.json",
       "dsc",
       "dsc_default.settings.json",
       "dsc.settings.json",
@@ -39,6 +42,9 @@
       "y2j"
     ],
     "macOS": [
+      "oci_registry",
+      "oci_registry.dsc.extension.json",
+      "registrylist.dsc.resource.json",
       "dsc",
       "dsc_default.settings.json",
       "dsc.settings.json",
@@ -73,6 +79,9 @@
       "y2j"
     ],
     "Windows": [
+      "oci_registry.exe",
+      "oci_registry.dsc.extension.json",
+      "registrylist.dsc.resource.json",
       "csp.exe",
       "csp.dsc.resource.json",
       "appx.dsc.extension.json",

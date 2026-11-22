@@ -317,6 +317,7 @@ displayed in the listed order:
   indicating it has the `get`, `set`, and `delete` capabilities.
 - **RequireAdapter** - The fully qualified type name of the adapter resource that DSC uses to
   invoke the returned resource.
+- **Registry** - The registry friendly name, or `local` for a locally discovered resource.
 - **Description** - The short description of the resource's purpose and usage.
 
 For more information about the formatting of the output data, see the
