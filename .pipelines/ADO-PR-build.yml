@@ -46,13 +46,7 @@ extends:
     - stage: BuildStage
       jobs:
       - job: BuildWindows
-        displayName: Build Windows
-        strategy:
-          matrix:
-            x86_64:
-              buildName: x86_64-pc-windows-msvc
-            aarch64:
-              buildName: aarch64-pc-windows-msvc
+        displayName: Build Windows x64
         pool:
           type: windows
         variables:
@@ -62,7 +56,7 @@ extends:
           inputs:
             rustVersion: $(RustVersion)
             toolchainFeed: '$(Rust.SDK)'
-            additionalTargets: $(buildName)
+            additionalTargets: x86_64-pc-windows-msvc
           displayName: Install rust
         - task: CargoAuthenticate@0
           inputs:
@@ -70,8 +64,31 @@ extends:
           displayName: Authenticate with Azure Artifacts
         - task: NugetAuthenticate@1
         - pwsh: |
-            Write-Verbose -Verbose "BuildName: $(buildName)"
-            ./build.ps1 -Release -Architecture $(buildName)
+            Write-Verbose -Verbose "BuildName: x86_64-pc-windows-msvc"
+            ./build.ps1 -Release -Architecture x86_64-pc-windows-msvc
+        condition: succeeded()
+
+      - job: BuildWindowsArm64
+        displayName: Build Windows arm64
+        pool:
+          type: windows
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: $(RustVersion)
+            toolchainFeed: '$(Rust.SDK)'
+            additionalTargets: aarch64-pc-windows-msvc
+          displayName: Install rust
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: '.cargo/config.toml'
+          displayName: Authenticate with Azure Artifacts
+        - task: NugetAuthenticate@1
+        - pwsh: |
+            Write-Verbose -Verbose "BuildName: aarch64-pc-windows-msvc"
+            ./build.ps1 -Release -Architecture aarch64-pc-windows-msvc
         condition: succeeded()
 
       - job: BuildLinuxMusl
