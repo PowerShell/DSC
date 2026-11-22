@@ -78,6 +78,7 @@
     {
       "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
       "type": "Test/OperationDeprecated",
+      "author": "Microsoft Corporation",
       "deprecationMessage": "This resource is deprecated",
       "version": "0.1.0",
       "get": {

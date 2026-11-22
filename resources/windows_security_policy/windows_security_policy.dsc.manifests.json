@@ -3,6 +3,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/UserRightsAssignment",
+            "author": "Microsoft Corporation",
             "description": "Manage which accounts hold a Windows user right or privilege (Local Security Policy > User Rights Assignment).",
             "tags": [
                 "Windows",

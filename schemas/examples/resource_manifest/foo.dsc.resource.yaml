@@ -4,6 +4,7 @@
 # Hover on the keys to see the documentation. Try changing values and adding new settings.
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json
 type: Example/Foo
+author: Microsoft Corporation
 version: 0.1.0
 description: An example resource to manage the foo application.
 tags:

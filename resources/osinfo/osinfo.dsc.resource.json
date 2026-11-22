@@ -8,6 +8,7 @@
         "macos"
     ],
     "type": "Microsoft/OSInfo",
+    "author": "Microsoft Corporation",
     "version": "0.1.0",
     "get": {
         "executable": "osinfo"

@@ -1,6 +1,7 @@
 {
   "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
   "type": "Microsoft.Windows/WindowsPowerShell",
+  "author": "Microsoft Corporation",
   "version": "0.1.0",
   "kind": "adapter",
   "deprecationMessage": "Use the 'Microsoft.Adapters/WindowsPowerShell' adapter instead.",

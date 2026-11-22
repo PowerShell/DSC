@@ -7,6 +7,7 @@
         "feature"
     ],
     "type": "Microsoft.Windows/WindowsFeatureList",
+    "author": "Microsoft Corporation",
     "version": "0.1.1",
     "get": {
         "executable": "dism_dsc",

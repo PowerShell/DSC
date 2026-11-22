@@ -31,7 +31,7 @@ using module ./helpers.build.psm1
     - `x86_64-unknown-linux-gnu` - Linux on x86 with the glibc build chain.
     - `x86_64-unknown-linux-musl` - Linux on x86 with the musl build chain.
 
-    When packaging, you _must_ specify a specific architecture.
+    When using PackageType, you _must_ specify a specific architecture.
 
     .PARAMETER Clippy
     Determines whether to lint the Rust projects with Clippy. When you specify this parameter, the
@@ -100,6 +100,12 @@ using module ./helpers.build.psm1
     - `deb` - Packages the project as a `.deb` file, only for Linux.
     - `rpm` - Packages the project as a `.rpm` file, only for Linux.
     - `zip` - Packages the project as a `.zip` file, only for Windows.
+
+    .PARAMETER CreateResourcePackages
+    Creates one ZIP per resource package defined in data.build.json for All and the target
+    platform. Uses existing build artifacts without compiling, like PackageType. Packages are
+    written to the resource-packages directory under the selected architecture's debug or
+    release output directory. Supports Architecture current.
 #>
 [CmdletBinding()]
 param(
@@ -128,6 +134,7 @@ param(
         'zip'
     )]
     $PackageType,
+    [switch]$CreateResourcePackages,
     [switch]$Test,
     [switch]$CodeCoverage,
     [string]$CodeCoverageOutputPath = (Join-Path $PSScriptRoot 'lcov.info'),
@@ -232,12 +239,11 @@ process {
     #region    Setup
     $progressParams.Activity = 'Performing setup steps'
     Write-BuildProgress @progressParams
-    Write-BuildProgress @progressParams -Status "Determining rustup info"
-    $rustup, $channel = Get-RustUp @VerboseParam
-
-    if ($null -ne $PackageType) {
+    if ($null -ne $PackageType -or $CreateResourcePackages) {
         $SkipBuild = $true
     } else {
+        Write-BuildProgress @progressParams -Status "Determining rustup info"
+        $rustup, $channel = Get-RustUp @VerboseParam
         Write-BuildProgress @progressParams -Status 'Configuring Rust environment'
         [hashtable]$priorRustEnvironment = Set-RustEnvironment -CacheRustBuild:$CacheRustBuild @VerboseParam
         Write-BuildProgress @progressParams -Status 'Configuring Cargo environment'
@@ -459,6 +465,12 @@ process {
         Write-Host "LCOV report: $CodeCoverageOutputPath"
     }
     #endregion Code coverage report
+
+    if ($CreateResourcePackages) {
+        $progressParams.Activity = 'Packaging resources'
+        Write-BuildProgress @progressParams
+        Build-DscResourcePackage -BuildData $BuildData -Architecture $Architecture -Release:$Release @VerboseParam
+    }
 
     if (-not [string]::IsNullOrEmpty($PackageType)) {
         $progressParams.Activity = "Packaging"

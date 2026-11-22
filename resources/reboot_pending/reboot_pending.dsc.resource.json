@@ -2,6 +2,7 @@
   "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
   "description": "Returns info about pending reboot.",
   "type": "Microsoft.Windows/RebootPending",
+  "author": "Microsoft Corporation",
   "version": "0.1.0",
   "get": {
     "executable": "powershell",

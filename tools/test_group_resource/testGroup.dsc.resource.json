@@ -1,6 +1,7 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Test/TestGroup",
+    "author": "Microsoft Corporation",
     "kind": "adapter",
     "version": "0.1.0",
     "get": {

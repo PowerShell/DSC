@@ -1,6 +1,7 @@
 {
   "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
   "type": "Microsoft.DSC/Group",
+  "author": "Microsoft Corporation",
   "version": "0.1.0",
   "description": "All resources in the supplied configuration is treated as a group.",
   "kind": "group",

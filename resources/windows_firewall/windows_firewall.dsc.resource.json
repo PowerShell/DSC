@@ -1,6 +1,7 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.Windows/FirewallRuleList",
+    "author": "Microsoft Corporation",
     "description": "Manage Windows Firewall rules using the netfw.h APIs.",
     "tags": [
         "Windows",

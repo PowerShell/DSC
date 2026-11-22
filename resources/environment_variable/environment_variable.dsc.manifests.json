@@ -3,6 +3,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/EnvironmentVariable",
+            "author": "Microsoft Corporation",
             "description": "Manage a scalar user or machine environment variable stored in the Windows registry.",
             "tags": [
                 "Windows",
@@ -101,6 +102,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/EnvironmentPathVariable",
+            "author": "Microsoft Corporation",
             "description": "Manage a delimiter-separated user or machine environment variable as an ordered list.",
             "tags": [
                 "Windows",
@@ -227,6 +229,7 @@
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Microsoft.Windows/EnvironmentVariableList",
+            "author": "Microsoft Corporation",
             "description": "Manage and export user and machine environment variables stored in the Windows registry.",
             "tags": [
                 "Windows",

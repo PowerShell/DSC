@@ -138,8 +138,16 @@ class DscProjectPackageFiles {
     [string[]] $Executable
 }
 
+class DscResourcePackageFiles {
+    [hashtable] $Linux
+    [hashtable] $MacOS
+    [hashtable] $Windows
+    [hashtable] $All
+}
+
 class DscProjectBuildData {
     [DscProjectPackageFiles]$PackageFiles
+    [DscResourcePackageFiles]$ResourcePackageFiles
     [DscProjectDefinition[]]$Projects
 
     [string] ToJson() {
@@ -153,6 +161,12 @@ class DscProjectBuildData {
                 Linux      = $this.PackageFiles.Linux
                 macOS      = $this.PackageFiles.MacOS
                 Windows    = $this.PackageFiles.Windows
+            }
+            ResourcePackageFiles = [ordered]@{
+                Linux   = $this.ResourcePackageFiles.Linux
+                macOS   = $this.ResourcePackageFiles.MacOS
+                Windows = $this.ResourcePackageFiles.Windows
+                All     = $this.ResourcePackageFiles.All
             }
             Projects = @()
         }
@@ -1773,6 +1787,7 @@ function Copy-BuildArtifact {
 
                 # A manifest list can replace a same-named standalone resource manifest.
                 if ($file -like '*.dsc.manifests.json') {
+                    Export-DscResourceManifest -Path $source -Destination (Join-Path $destination 'resource-manifests')
                     $oldName = [System.IO.Path]::GetFileName($file) -replace '\.dsc\.manifests\.json$', '.dsc.resource.json'
                     $oldSource = Join-Path (Split-Path $source -Parent) $oldName
                     $oldDestination = Join-Path $destination $oldName
@@ -2871,6 +2886,38 @@ function Test-RustProject {
     }
 }
 
+function Invoke-DscPester {
+    [CmdletBinding()]
+    param(
+        [string[]]$Path,
+        [string[]]$ExcludePath,
+        [string]$Output = 'Detailed'
+    )
+
+    $parameters = @{ Output = $Output }
+    if ($Path) {
+        $parameters.Path = $Path
+    }
+    if ($ExcludePath) {
+        $parameters.ExcludePath = $ExcludePath
+    }
+    $json = $parameters | ConvertTo-Json -Compress
+    $payload = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($json))
+    # Isolate fixture imports and mocks from the build module's session state.
+    $command = @"
+Import-Module Pester -ErrorAction Stop
+`$parameters = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('$payload')) | ConvertFrom-Json -AsHashtable
+`$result = Invoke-Pester @parameters -PassThru -ErrorAction Stop
+if (`$result.FailedCount -gt 0 -or `$result.TotalCount -eq 0) { exit 1 }
+"@
+    $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($command))
+    $pwsh = (Get-Process -Id $PID).Path
+    & $pwsh -NoProfile -NonInteractive -EncodedCommand $encodedCommand
+    if ($LASTEXITCODE -ne 0) {
+        throw "Pester failed with exit code $LASTEXITCODE."
+    }
+}
+
 function Test-ProjectWithPester {
     [cmdletbinding()]
     param(
@@ -2952,7 +2999,7 @@ function Test-ProjectWithPester {
         if ($ExcludePath) {
             $pesterParams.ExcludePath = $ExcludePath
         }
-        Invoke-Pester @pesterParams
+        Invoke-DscPester @pesterParams
     }
 }
 #endregion Test project functions
@@ -3401,6 +3448,160 @@ function Build-DscRpmPackage {
         Copy-Item $builtRpm.FullName $finalRpmPath -Force
 
         Write-Host -ForegroundColor Green "`nRPM package is created at $finalRpmPath"
+    }
+}
+
+function Export-DscResourceManifest {
+    <#
+        .SYNOPSIS
+        Generates individual OCI resource manifests from a distribution bundle.
+
+        .DESCRIPTION
+        Preserves the source bundle and writes one JSON file per resource or adapted resource.
+        Actions and extensions are not included. Filenames use the full resource type with
+        the slash replaced by a period, avoiding collisions between resource namespaces.
+        Adapted resources use the .dsc.adaptedResource.json suffix required by their loader.
+
+        .PARAMETER Path
+        Source JSON manifest bundle.
+
+        .PARAMETER Destination
+        Directory for the generated resource manifests.
+
+        .EXAMPLE
+        Export-DscResourceManifest -Path registry.dsc.manifests.json -Destination resource-manifests
+
+        .OUTPUTS
+        None.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Destination
+    )
+
+    $document = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+    $null = New-Item -ItemType Directory -Path $Destination -Force -ErrorAction Stop
+    foreach ($section in @('resources', 'adaptedResources')) {
+        foreach ($resource in @($document.$section)) {
+            if ($null -eq $resource) {
+                continue
+            }
+            if ($resource.type -cnotmatch '^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$') {
+                throw "Invalid resource type in manifest bundle '$Path'."
+            }
+            if ($resource.'$schema') {
+                $resource.'$schema' = $resource.'$schema' -replace '/bundled/', '/'
+            }
+            $suffix = $section -eq 'adaptedResources' ? '.dsc.adaptedResource.json' : '.dsc.resource.json'
+            $name = $resource.type.Replace('/', '.') + $suffix
+            $resource | ConvertTo-Json -Depth 100 |
+                Set-Content -LiteralPath (Join-Path $Destination $name) -Encoding utf8NoBOM -ErrorAction Stop
+        }
+    }
+}
+
+function Build-DscResourcePackage {
+    <#
+        .SYNOPSIS
+        Creates resource ZIP packages for the target platform.
+
+        .DESCRIPTION
+        Packages only the zipContents files listed in ResourcePackageFiles, excluding manifests.
+        Files from All and the target platform are combined by package name, preserving relative paths inside each ZIP.
+        Executable names are normalized to .exe on Windows and extensionless on Unix targets.
+
+        .PARAMETER BuildData
+        Build data containing the resource package definitions. Defaults to data.build.json.
+
+        .PARAMETER ArtifactDirectory
+        Artifact paths to use. Packages are written to the resource-packages directory under Bin.
+
+        .PARAMETER Architecture
+        Target architecture, or current to use the host platform.
+
+        .PARAMETER Release
+        Uses release artifacts instead of debug artifacts.
+
+        .EXAMPLE
+        Build-DscResourcePackage -Architecture x86_64-pc-windows-msvc -Release
+
+        .OUTPUTS
+        None.
+
+        .NOTES
+        Build the resources before invoking this function. Missing files terminate packaging.
+    #>
+    [CmdletBinding()]
+    param(
+        [DscProjectBuildData]$BuildData,
+        [DscArtifactDirectoryPath]$ArtifactDirectory,
+        [ValidateSet(
+            'current',
+            'aarch64-pc-windows-msvc',
+            'x86_64-pc-windows-msvc',
+            'aarch64-apple-darwin',
+            'x86_64-apple-darwin',
+            'aarch64-unknown-linux-gnu',
+            'aarch64-unknown-linux-musl',
+            'x86_64-unknown-linux-gnu',
+            'x86_64-unknown-linux-musl'
+        )]
+        [string]$Architecture = 'current',
+        [switch]$Release
+    )
+
+    process {
+        if ($null -eq $BuildData) {
+            $BuildData = Import-DscBuildData
+        }
+        if ($null -eq $ArtifactDirectory) {
+            $ArtifactDirectory = Get-ArtifactDirectoryPath -Architecture $Architecture -Release:$Release
+        }
+        $platform = if ($Architecture -match 'windows' -or ($Architecture -eq 'current' -and $IsWindows)) {
+            'Windows'
+        } elseif ($Architecture -match 'linux' -or ($Architecture -eq 'current' -and $IsLinux)) {
+            'Linux'
+        } elseif ($Architecture -match 'apple' -or ($Architecture -eq 'current' -and $IsMacOS)) {
+            'macOS'
+        } else {
+            throw "Cannot determine resource package platform for '$Architecture'"
+        }
+
+        $packages = @{}
+        foreach ($section in @('All', $platform)) {
+            foreach ($package in $BuildData.ResourcePackageFiles.$section.GetEnumerator()) {
+                if (-not $packages.ContainsKey($package.Key)) {
+                    $packages[$package.Key] = @()
+                }
+                $packages[$package.Key] = @($packages[$package.Key]) + $package.Value.zipContents
+            }
+        }
+
+        $outputDirectory = Join-Path $ArtifactDirectory.Bin 'resource-packages'
+        $null = New-Item -Path $outputDirectory -ItemType Directory -Force -ErrorAction Stop
+        foreach ($packageName in ($packages.Keys | Sort-Object)) {
+            $stagingDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
+            $null = New-Item -Path $stagingDirectory -ItemType Directory -ErrorAction Stop
+            try {
+                foreach ($file in ($packages[$packageName] | Sort-Object -Unique)) {
+                    if ($platform -eq 'Windows' -and -not [System.IO.Path]::HasExtension($file)) {
+                        $file = "$file.exe"
+                    } elseif ($platform -ne 'Windows' -and [System.IO.Path]::GetExtension($file) -eq '.exe') {
+                        $file = $file.Substring(0, $file.Length - 4)
+                    }
+                    $source = Join-Path $ArtifactDirectory.Bin $file
+                    $destination = Join-Path $stagingDirectory $file
+                    $null = New-Item -Path (Split-Path -Parent $destination) -ItemType Directory -Force -ErrorAction Stop
+                    Copy-Item -LiteralPath $source -Destination $destination -ErrorAction Stop
+                }
+                $zipFile = Join-Path $outputDirectory "$packageName.zip"
+                Compress-Archive -Path (Join-Path $stagingDirectory '*') -DestinationPath $zipFile -Force -ErrorAction Stop
+                Write-Host -ForegroundColor Green "Resource package is created at $zipFile"
+            } finally {
+                Remove-Item -LiteralPath $stagingDirectory -Recurse -Force -ErrorAction Stop
+            }
+        }
     }
 }
 

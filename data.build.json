@@ -11,7 +11,6 @@
       "dsc-bicep-ext",
       "dscecho",
       "echo.dsc.resource.json",
-      "file_dsc",
       "file_dsc.dsc.manifests.json",
       "assertion.dsc.resource.json",
       "apt.dsc.resource.json",
@@ -21,7 +20,6 @@
       "NOTICE.txt",
       "osinfo",
       "osinfo.dsc.resource.json",
-      "process",
       "process.dsc.manifests.json",
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
@@ -31,8 +29,6 @@
       "psscript.ps1",
       "psscript.dsc.resource.json",
       "RunCommandOnSet.dsc.resource.json",
-      "runcommandonset",
-      "sshdconfig",
       "sshd_config.dsc.resource.json",
       "sshd-subsystem.dsc.resource.json",
       "sshd-subsystemList.dsc.resource.json",
@@ -45,7 +41,6 @@
       "dsc-bicep-ext",
       "dscecho",
       "echo.dsc.resource.json",
-      "file_dsc",
       "file_dsc.dsc.manifests.json",
       "assertion.dsc.resource.json",
       "brew.dsc.resource.json",
@@ -55,7 +50,6 @@
       "NOTICE.txt",
       "osinfo",
       "osinfo.dsc.resource.json",
-      "process",
       "process.dsc.manifests.json",
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
@@ -65,28 +59,22 @@
       "psscript.ps1",
       "psscript.dsc.resource.json",
       "RunCommandOnSet.dsc.resource.json",
-      "runcommandonset",
-      "sshdconfig",
       "sshd_config.dsc.resource.json",
       "sshd-subsystem.dsc.resource.json",
       "sshd-subsystemList.dsc.resource.json",
       "y2j"
     ],
     "Windows": [
-      "csp.exe",
       "csp.dsc.resource.json",
       "appx.dsc.extension.json",
       "appx-discover.ps1",
-      "dism_dsc.exe",
       "dsc.exe",
       "dsc_default.settings.json",
       "dsc.settings.json",
       "dsc-bicep-ext.exe",
       "dscecho.exe",
       "echo.dsc.resource.json",
-      "file_dsc.exe",
       "file_dsc.dsc.manifests.json",
-      "environment_variable.exe",
       "environment_variable.dsc.manifests.json",
       "assertion.dsc.resource.json",
       "featureondemand.dsc.resource.json",
@@ -96,7 +84,6 @@
       "optionalfeature.dsc.resource.json",
       "osinfo.exe",
       "osinfo.dsc.resource.json",
-      "process.exe",
       "process.dsc.manifests.json",
       "powershell.dsc.extension.json",
       "powershell.discover.ps1",
@@ -109,10 +96,7 @@
       "reboot_pending.dsc.resource.json",
       "reboot_pending.resource.ps1",
       "registry.dsc.manifests.json",
-      "registry.exe",
       "RunCommandOnSet.dsc.resource.json",
-      "RunCommandOnSet.exe",
-      "sshdconfig.exe",
       "sshd-windows.dsc.resource.json",
       "sshd_config.dsc.resource.json",
       "sshd-subsystem.dsc.resource.json",
@@ -120,14 +104,10 @@
       "windowspowershell.dsc.resource.json",
       "WindowsPowerShell_adapter.dsc.resource.json",
       "windowsupdate.dsc.resource.json",
-      "wu_dsc.exe",
       "windows_firewall.dsc.resource.json",
       "windows_firewall.exe",
-      "windows_service.exe",
       "windows_service.dsc.manifests.json",
-      "windows_audit_policy.exe",
       "windows_audit_policy.dsc.manifests.json",
-      "windows_security_policy.exe",
       "windows_security_policy.dsc.manifests.json",
       "windows_feature.dsc.resource.json",
       "wmi.dsc.resource.json",
@@ -138,6 +118,183 @@
       "windows_inventory.dsc.yaml",
       "y2j.exe"
     ]
+  },
+  "ResourcePackageFiles": {
+    "Linux": {
+      "DSC.PackageManagement.Apt": {
+        "zipContents": [
+          "apt.dsc.resource.sh"
+        ],
+        "manifests": [
+          "apt.dsc.resource.json"
+        ]
+      }
+    },
+    "macOS": {},
+    "Windows": {
+      "Microsoft.Windows.DISM": {
+        "zipContents" : [
+          "dism_dsc.exe"
+        ],
+        "manifests" : [
+          "optionalfeature.dsc.resource.json",
+          "featureondemand.dsc.resource.json",
+          "windows_feature.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Windows.Filesystem.AccessControlList": {
+        "zipContents" : [
+          "file_dsc.exe"
+        ],
+        "manifests" : [
+          "resource-manifests/Microsoft.Windows.Filesystem.AccessControlList.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Adapter.GroupPolicyTemplate": {
+        "zipContents" : [
+          "group_policy_template.exe"
+        ],
+        "manifests" : [
+          "group_policy_template.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Windows.Adapter.ConfigurationServiceProvider": {
+        "zipContents" : [
+          "csp.exe"
+        ],
+        "manifests" : [
+          "csp.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Windows.AuditPolicy": {
+        "zipContents" : [
+          "windows_audit_policy.exe"
+        ],
+        "manifests" : [
+          "resource-manifests/Microsoft.Windows.AuditPolicy.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.AuditPolicyList.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.AuditPolicyOption.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Windows.EnvironmentVariable": {
+        "zipContents" : [
+          "environment_variable.exe"
+        ],
+        "manifests" : [
+          "resource-manifests/Microsoft.Windows.EnvironmentVariable.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.EnvironmentPathVariable.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.EnvironmentVariableList.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Windows.RebootPending": {
+        "zipContents" : [
+          "reboot_pending.resource.ps1"
+        ],
+        "manifests" : [
+          "reboot_pending.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Windows.Registry": {
+        "zipContents" : [
+          "registry.exe"
+        ],
+        "manifests" : [
+          "resource-manifests/Microsoft.Windows.Registry.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.RegistryList.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.Adapter.Registry.dsc.resource.json",
+          "windows_personalization.dsc.adaptedResource.yaml"
+        ]
+      },
+      "Microsoft.Windows.Service": {
+        "zipContents" : [
+          "windows_service.exe"
+        ],
+        "manifests" : [
+          "resource-manifests/Microsoft.Windows.Service.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Windows.UpdateList": {
+        "zipContents" : [
+          "wu_dsc.exe"
+        ],
+        "manifests" : [
+          "windowsupdate.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Windows.UserRightsAssignment": {
+        "zipContents" : [
+          "windows_security_policy.exe"
+        ],
+        "manifests" : [
+          "resource-manifests/Microsoft.Windows.UserRightsAssignment.dsc.resource.json"
+        ]
+      },
+      "Microsoft.Windows.WMI": {
+        "zipContents" : [
+          "wmi.resource.ps1",
+          "wmiAdapter.psd1",
+          "wmiAdapter.psm1"
+        ],
+        "manifests" : [
+          "wmi.dsc.resource.json"
+        ]
+      },
+      "Microsoft.OpenSSH.SSHD": {
+        "zipContents" : [
+          "sshdconfig.exe"
+        ],
+        "manifests" : [
+          "sshd_config.dsc.resource.json",
+          "sshd-subsystem.dsc.resource.json",
+          "sshd-subsystemList.dsc.resource.json",
+          "sshd-windows.dsc.resource.json"
+        ]
+      }
+    },
+    "All": {
+      "Microsoft.System.Process": {
+        "zipContents" : [
+          "process.exe"
+        ],
+        "manifests" : [
+          "resource-manifests/Microsoft.System.Process.dsc.resource.json"
+        ]
+      },
+      "Microsoft.OpenSSH.SSHD": {
+        "zipContents" : [
+          "sshdconfig.exe"
+        ],
+        "manifests" : [
+          "sshd_config.dsc.resource.json",
+          "sshd-subsystem.dsc.resource.json",
+          "sshd-subsystemList.dsc.resource.json"
+        ]
+      },
+      "Microsoft.FileSystem.File.Content": {
+        "zipContents" : [
+          "file_dsc.exe"
+        ],
+        "manifests" : [
+          "resource-manifests/Microsoft.Filesystem.File.Content.dsc.resource.json"
+        ]
+      },
+      "Microsoft.DSC.Transitional.PowerShellScript": {
+        "zipContents" : [
+          "psscript.ps1"
+        ],
+        "manifests" : [
+          "psscript.dsc.resource.json"
+        ]
+      },
+      "Microsoft.DSC.Transitional.RunCommandOnSet": {
+        "zipContents" : [
+          "runcommandonset.exe"
+        ],
+        "manifests" : [
+          "RunCommandOnSet.dsc.resource.json"
+        ]
+      }
+    }
   },
   "Projects": [
     {
