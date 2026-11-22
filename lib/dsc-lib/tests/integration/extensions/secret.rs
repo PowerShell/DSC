@@ -398,7 +398,10 @@ mod serde {
         let manifest = serde_json::from_value::<ExtensionManifest>(manifest).expect("manifest should be valid");
         let secret = manifest.secret.expect("secret should be defined");
 
-        assert_eq!(secret.args, vec![string_arg("get"), name_arg(), vault_arg()]);
+        let dsc_lib::extensions::jsonrpc::ExtensionMethod::Command(command) = &secret else {
+            panic!("expected a command secret operation");
+        };
+        assert_eq!(command.args, vec![string_arg("get"), name_arg(), vault_arg()]);
         pretty_assertions::assert_eq!(serde_json::to_value(&secret).unwrap()["args"], args);
     }
 }

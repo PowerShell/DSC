@@ -5,7 +5,7 @@ use crate::{
     configure::parameters::{SecureString, SecureObject},
     dscerror::DscError,
     dscresources::{
-        command_resource::invoke_command,
+        command_resource::{invoke_command_with_options, CommandInvocationOptions},
     },
     extensions::{
         dscextension::{
@@ -13,6 +13,7 @@ use crate::{
             DscExtension,
         },
         extension_manifest::ExtensionManifest,
+        jsonrpc::ExtensionMethod,
     },
     schemas::dsc_repo::{DscRepoSchema, schema_i18n}
 };
@@ -24,6 +25,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
+use std::time::Instant;
 use thiserror::Error;
 use tracing::{debug, warn};
 
@@ -345,6 +347,7 @@ impl Display for SecretArgs {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[serde(deny_unknown_fields)]
 #[schemars(
     transform = SecretMethod::transform_export_schema_uris,
     transform = SecretMethod::transform_schema_docs
@@ -405,6 +408,10 @@ impl DscExtension {
     ///
     /// This function will return an error if the secret retrieval fails or if the extension does not support the secret capability.
     pub(crate) fn secret(&self, name: &str, vault: Option<&str>) -> Result<Option<Value>, DscError> {
+        self.secret_with_deadline(name, vault, None, false)
+    }
+
+    fn secret_with_deadline(&self, name: &str, vault: Option<&str>, deadline: Option<Instant>, redact_errors: bool) -> Result<Option<Value>, DscError> {
         if self.capabilities.contains(&Capability::Secret) {
             debug!("{}", t!("extensions.dscextension.retrievingSecretFromExtension", name = name, extension = self.type_name));
             let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
@@ -416,17 +423,36 @@ impl DscExtension {
             let Some(secret) = extension.secret else {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Secret.to_string()));
             };
-            let args = secret.args.to_command_args(name, vault);
             if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
                 warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
             }
-            let (_exit_code, stdout, _stderr) = invoke_command(
+            let secret = match secret {
+                ExtensionMethod::JsonRpc { jsonrpc } => {
+                    let mut params = serde_json::json!({"operation": "secret", "name": name});
+                    if let Some(vault) = vault { params["vault"] = Value::String(vault.to_string()); }
+                    let result = crate::dscresources::jsonrpc::invoke_extension(
+                        self, &jsonrpc, "secret", params, &crate::configure::context::Context::new(), deadline
+                    )?;
+                    if result.is_null() { return Ok(None); }
+                    let valid = result.as_object().is_some_and(|object| object.len() == 1
+                        && (object.get("secureString").is_some_and(Value::is_string)
+                            || object.get("secureObject").is_some_and(Value::is_object)));
+                    if !valid {
+                        return Err(DscError::Extension(t!("extensions.jsonrpc.invalidSecret").to_string()));
+                    }
+                    return Ok(Some(result));
+                },
+                ExtensionMethod::Command(secret) => secret,
+            };
+            let args = secret.args.to_command_args(name, vault);
+            let (_exit_code, stdout, _stderr) = invoke_command_with_options(
                 &secret.executable,
                 Some(args),
                 vault,
                 Some(&self.directory),
                 None,
                 extension.exit_codes.as_ref(),
+                CommandInvocationOptions { deadline, redact_diagnostics: redact_errors },
             )?;
             if stdout.is_empty() {
                 debug!("{}", t!("extensions.dscextension.extensionReturnedNoSecret", extension = self.type_name));
@@ -447,6 +473,7 @@ impl DscExtension {
                     };
                     return Ok(Some(serde_json::to_value(&secure_object)?));
                 }
+
                 let secure_string = SecureString {
                     secure_string: secret.clone(),
                 };
@@ -459,4 +486,44 @@ impl DscExtension {
             ))
         }
     }
+}
+
+/// Resolve against the already-discovered providers, sharing secret() conflict semantics.
+/// Callback diagnostics omit provider-controlled error text, which might contain credentials.
+pub(crate) fn resolve_secret(extensions: &[DscExtension], name: &str, vault: Option<&str>,
+    deadline: Option<Instant>, redact_errors: bool) -> Result<Value, DscError>
+{
+    let providers: Vec<_> = extensions.iter().filter(|extension|
+        extension.capabilities.contains(&Capability::Secret)).collect();
+    if providers.is_empty() {
+        return Err(DscError::Function("secret".to_string(), t!("functions.secret.noExtensions").to_string()));
+    }
+    let mut result = None;
+    for extension in providers {
+        if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+            return Err(DscError::Operation(t!("extensions.jsonrpc.providerTimeout").to_string()));
+        }
+        let secret = if deadline.is_none() && !redact_errors { extension.secret(name, vault) } else {
+            extension.secret_with_deadline(name, vault, deadline, redact_errors)
+        };
+        match secret {
+            Ok(Some(value)) => {
+                if result.as_ref().is_some_and(|previous| previous != &value) {
+                    return Err(DscError::Function("secret".to_string(),
+                        t!("functions.secret.multipleSecrets", name = name).to_string()));
+                }
+                result = Some(value);
+            },
+            Ok(None) => {},
+            Err(err) => {
+                if redact_errors {
+                    warn!("{}", t!("extensions.jsonrpc.secretFailed"));
+                } else {
+                    warn!("{}", t!("functions.secret.extensionReturnedError", extension = extension.type_name, error = err));
+                }
+            },
+        }
+    }
+    result.ok_or_else(|| DscError::Function("secret".to_string(),
+        t!("functions.secret.secretNotFound", name = name).to_string()))
 }

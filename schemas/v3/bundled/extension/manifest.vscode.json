@@ -86,7 +86,75 @@
       }
     },
     "discover": {
-      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json"
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiscoverCommand"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "jsonrpc": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "args": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "executable": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "initializeTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "shutdownTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "executable"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "jsonrpc"
+              ],
+              "type": "object"
+            }
+          ],
+          "description": "An extension operation uses either its existing command contract or JSON-RPC."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Details how to call the Discover method of the extension."
     },
     "exitCodes": {
       "title": "Exit codes",
@@ -126,6 +194,77 @@
           }
         }
       ]
+    },
+    "secret": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SecretCommand"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "jsonrpc": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "args": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "executable": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "initializeTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "shutdownTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "executable"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "jsonrpc"
+              ],
+              "type": "object"
+            }
+          ],
+          "description": "An extension operation uses either its existing command contract or JSON-RPC."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Details how to call the Secret method of the extension."
     }
   },
   "$defs": {
@@ -266,6 +405,145 @@
           }
         }
       }
+    },
+    "DiscoverCommand": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "description": "The arguments to pass to the command to perform a Get.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "properties": {
+                  "extensionsArg": {
+                    "description": "The argument that accepts the extensions list.  The extensions list will be passed as a comma separated list of extensions.",
+                    "type": "string"
+                  },
+                  "includeQuotes": {
+                    "default": false,
+                    "description": "Whether to include quotes around the extensions list.  If true, the extensions list will be passed as a quoted string.",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "extensionsArg"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "executable": {
+          "description": "The command to run to get the state of the resource.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "executable"
+      ],
+      "type": "object"
+    },
+    "SecretCommand": {
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.secret.json",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Defines how to call the extension to retrieve a secret from a vault.",
+      "markdownDescription": "Defines how to call the extension to retrieve a secret from a vault at runtime. When\nthis property is defined, the extension has the `secret` capability and DSC can invoke\nthe extension for the [`secret()`][01] configuration function.\n\nWhen DSC invokes the `secret` command, it expects the extension to write the secret\nvalue to stdout as a single line. If the extension writes more than one line to stdout,\nDSC raises an error. If the extension writes nothing to stdout, DSC treats the secret as\nnot found for that extension.\n\nFor more information, see the [secret property reference][02].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/functions/secret\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/secret",
+      "properties": {
+        "args": {
+          "allOf": [
+            {
+              "contains": {
+                "required": [
+                  "nameArg"
+                ],
+                "type": "object"
+              },
+              "description": "The arguments must define exactly one object with the `nameArg` property.",
+              "errorMessage": "The `secret` command must define the secret name input argument exactly once. Define exactly one argument in `secret.args` as an object with the `nameArg` property.",
+              "markdownDescription": "The arguments must define exactly one object with the `nameArg` property. DSC passes\nthe value of `nameArg` followed by the name of the secret to retrieve. Without this\nargument, DSC can't tell the extension which secret to retrieve.",
+              "maxContains": 1,
+              "minContains": 1,
+              "title": "Secret name input argument"
+            },
+            {
+              "contains": {
+                "required": [
+                  "vaultArg"
+                ],
+                "type": "object"
+              },
+              "description": "The arguments may define at most one object with the `vaultArg` property.",
+              "errorMessage": "The `secret` command defines the vault input argument more than once. Define at most one argument in `secret.args` as an object with the `vaultArg` property.",
+              "markdownDescription": "The arguments may define at most one object with the `vaultArg` property. DSC passes\nthe value of `vaultArg` followed by the name of the vault when the `secret()` function\nspecifies a vault.",
+              "maxContains": 1,
+              "minContains": 0,
+              "title": "Vault input argument"
+            }
+          ],
+          "description": "The arguments to pass to the command to retrieve a secret. The arguments must define the secret name input argument exactly once and may define the vault input argument at most once.",
+          "items": {
+            "anyOf": [
+              {
+                "description": "A static string argument to pass to the command, like `get` or `--quiet`.",
+                "type": "string"
+              },
+              {
+                "additionalProperties": false,
+                "description": "The argument that accepts the secret name. DSC passes the name of the secret to retrieve\nafter this argument. The arguments must define this argument exactly once.",
+                "properties": {
+                  "nameArg": {
+                    "description": "The argument that accepts the secret name, like `--name` or `--secret-name`.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "nameArg"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "description": "The argument that accepts the vault name. DSC passes the name of the vault after this\nargument when the `secret()` function specifies a vault. The arguments may define this\nargument at most once.",
+                "properties": {
+                  "vaultArg": {
+                    "description": "The argument that accepts the vault name, like `--vault` or `--vault-name`.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "vaultArg"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "markdownDescription": "Defines the list of arguments to pass to the command to retrieve a secret. Each item\ncan be a string representing a static argument, an object with the `nameArg` property,\nor an object with the `vaultArg` property.\n\nThe arguments must define exactly one object with the `nameArg` property. DSC passes\nthe value of `nameArg` followed by the name of the secret to retrieve. Without this\nargument, DSC can't tell the extension which secret to retrieve, so DSC doesn't load\nthe extension manifest.\n\nThe arguments may define at most one object with the `vaultArg` property. DSC passes\nthe value of `vaultArg` followed by the name of the vault when the `secret()` function\nspecifies a vault. When the function doesn't specify a vault, DSC omits this argument.",
+          "title": "Arguments",
+          "type": "array"
+        },
+        "executable": {
+          "description": "The name of the command to run to retrieve a secret.",
+          "markdownDescription": "Defines the name of the command to run to retrieve a secret. The value must be the\nname of a command discoverable in the system's `PATH` environment variable or the\nfull path to the command. A file extension is only required when the command isn't\nrecognizable by the operating system as an executable.",
+          "title": "Executable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "executable",
+        "args"
+      ],
+      "title": "Secret command",
+      "type": "object"
     }
   }
 }

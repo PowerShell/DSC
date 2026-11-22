@@ -25,14 +25,27 @@ The `secret` property defines how to call the extension to retrieve a secret fro
 runtime. When this property is defined, the extension has the `secret` capability and DSC can
 invoke the extension for the [`secret()`][aa] configuration function.
 
-When DSC invokes the `secret` operation for an extension, it expects the extension to write the
+For a command definition, when DSC invokes the `secret` operation, it expects the extension to write the
 secret value to stdout as a single line. If the extension writes more than one line to stdout, DSC
 raises an error. If the extension writes nothing to stdout, DSC treats the secret as not found for
 that extension.
 
+Alternatively, set `secret.jsonrpc` to use the
+[JSON-RPC extension protocol](root.md#json-rpc-extension-operations). DSC sends
+`dsc_invoke` with `{"operation":"secret","name":"api-token","vault":"production"}`.
+The optional `vault` param is omitted when no vault is requested. No dynamic name or vault
+argument declarations are needed.
+
+Return `{"secureString":"..."}` for a string, `{"secureObject":{...}}` for an object, or `null`
+when this provider doesn't contain the requested secret. Other result shapes aren't valid.
+JSON-RPC providers support both the existing `secret()` configuration function and
+[`secret.get` callbacks](root.md#reverse-secret-requests) from Discover extensions and JSON-RPC
+resources. Secret providers themselves can't request secrets through callbacks.
+
 ## Required properties
 
-The `secret` definition must include these properties:
+The command form of `secret` must include these properties. The JSON-RPC form instead requires
+`jsonrpc.executable`.
 
 - [executable](#executable)
 - [args](#args)

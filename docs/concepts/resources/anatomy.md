@@ -128,6 +128,13 @@ An initialize response selects `protocolVersion: 1`. An invocation includes `ope
 For adapted resources, `context.targetResource` describes the target while the process belongs to
 the adapter host. Schema requests set `context.schemaKind` to `resource` or `exportInput`.
 
+Initialize params also advertise `hostServices: ["secret.get"]`. While a `dsc_invoke` request is
+pending, the resource can send optional reverse requests to retrieve secrets from loaded Secret
+extensions. The resource must dispatch callback responses while awaiting completion of its
+operation. Callback IDs have an independent namespace and may be strings or integers.
+See [reverse secret requests](../../reference/schemas/extension/manifest/root.md#reverse-secret-requests)
+for params, secure result wrappers, errors, and deadline rules.
+
 Return the existing logical operation output as a single `result` value. For `stateAndDiff`, return
 `{"actualState": {...}, "diff": ["propertyName"]}`. Export returns an array of instances. Operations
 without declared return output and actual delete return `null`. Schema commands return a JSON

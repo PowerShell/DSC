@@ -60,7 +60,75 @@
       }
     },
     "discover": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json"
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "jsonrpc": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "args": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "executable": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "initializeTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "shutdownTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "executable"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "jsonrpc"
+              ],
+              "type": "object"
+            }
+          ],
+          "description": "An extension operation uses either its existing command contract or JSON-RPC."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Details how to call the Discover method of the extension."
     },
     "exitCodes": {
       "title": "Exit codes",
@@ -87,6 +155,77 @@
           "3": "JSON serialization failed"
         }
       ]
+    },
+    "secret": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.secret.json"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "jsonrpc": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "args": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "executable": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "initializeTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "requestTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "shutdownTimeoutMS": {
+                      "format": "uint64",
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "executable"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "jsonrpc"
+              ],
+              "type": "object"
+            }
+          ],
+          "description": "An extension operation uses either its existing command contract or JSON-RPC."
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Details how to call the Secret method of the extension."
     }
   }
 }

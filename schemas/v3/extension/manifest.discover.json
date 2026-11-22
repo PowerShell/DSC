@@ -1,18 +1,47 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.discover.json",
-  "title": "Discover operation command",
-  "description": "Defines how DSC must call the DSC extension to discover the paths to resource manifests.",
-  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "args": {
+      "description": "The arguments to pass to the command to perform a Get.",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "properties": {
+              "extensionsArg": {
+                "description": "The argument that accepts the extensions list.  The extensions list will be passed as a comma separated list of extensions.",
+                "type": "string"
+              },
+              "includeQuotes": {
+                "default": false,
+                "description": "Whether to include quotes around the extensions list.  If true, the extensions list will be passed as a quoted string.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "extensionsArg"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "executable": {
+      "description": "The command to run to get the state of the resource.",
+      "type": "string"
+    }
+  },
   "required": [
     "executable"
   ],
-  "properties": {
-    "executable": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
-    },
-    "args": {
-      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandArgs.json"
-    }
-  }
+  "title": "DiscoverMethod",
+  "type": "object"
 }

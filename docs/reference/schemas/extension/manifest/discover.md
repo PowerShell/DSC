@@ -26,10 +26,22 @@ A DSC extension that can enumerate DSC resources not discoverable in the `PATH` 
 This property defines how DSC can get the path to, or the content of, otherwise undiscoverable
 manifests. When the manifest defines this property, the extension has the `discover` capability.
 
-When DSC performs discovery for any operation, it calls the command defined by this property with
+For a command definition, when DSC performs discovery for any operation, it calls the command with
 the folder containing the extension manifest as the working directory. The extension must return
 the discovered manifests as [JSON Lines][01]. Each JSON Line must be an object that validates
 against the [DSC extension discover operation stdout schema reference][02].
+
+Alternatively, set `discover.jsonrpc` to use the
+[JSON-RPC extension protocol](root.md#json-rpc-extension-operations). DSC sends
+`dsc_invoke` with `{"operation":"discover","extensions":[".dsc.resource.json", ...]}`.
+The `extensions` array contains the same recognized suffixes available to command arguments.
+Return an array of discover result objects, such as
+`[{"manifestPath":"/absolute/path/resource.dsc.resource.json"}]` or
+`[{"manifestContent":{...}}]`, instead of JSON Lines.
+
+JSON-RPC Discover extensions can optionally use
+[`secret.get` reverse requests](root.md#reverse-secret-requests) after reading their own settings.
+Extensions that don't need secrets don't make these requests and don't require a Secret provider.
 
 ## Examples
 
@@ -55,7 +67,8 @@ discover:
 
 ## Required properties
 
-The `discover` definition must include these properties:
+The command form of `discover` must include these properties. The JSON-RPC form instead requires
+`jsonrpc.executable`.
 
 - [executable](#executable)
 

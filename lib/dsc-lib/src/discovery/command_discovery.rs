@@ -44,6 +44,11 @@ static RESOURCES: LazyLock<RwLock<DiscoveryCache>> = LazyLock::new(|| RwLock::ne
 static EXTENSIONS: LazyLock<RwLock<DiscoveryExtensionCache>> = LazyLock::new(|| RwLock::new(DiscoveryExtensionCache::new()));
 static ADAPTED_RESOURCES: LazyLock<RwLock<DiscoveryCache>> = LazyLock::new(|| RwLock::new(DiscoveryCache::new()));
 
+/// Snapshot providers without starting discovery again during a reverse request.
+pub(crate) fn loaded_extensions() -> Vec<DscExtension> {
+    locked_clone!(EXTENSIONS).into_values().collect()
+}
+
 #[derive(Deserialize, JsonSchema, DscRepoSchema)]
 #[dsc_repo_schema(base_name = "list", folder_path = "manifests")]
 #[schemars(transform = Self::transform_export_schema_uris, transform = Self::transform_schema_docs)]
@@ -430,10 +435,12 @@ impl ResourceDiscovery for CommandDiscovery {
             }
             DiscoveryKind::Resource | DiscoveryKind::Action => {
                 // Now we need to call discover extensions and add those resource to the list of resources
-                for extension in locked_clone!(EXTENSIONS).values() {
+                let mut context = Context::new();
+                context.extensions = loaded_extensions();
+                for extension in &context.extensions {
                     if extension.capabilities.contains(&ExtensionCapability::Discover) {
                         debug!("{}", t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
-                        let discovered_resources = match extension.discover() {
+                        let discovered_resources = match extension.discover_with_context(&context) {
                             Ok(res) => res,
                             Err(e) => {
                                 warn!("{}", t!("discovery.commandDiscovery.extensionDiscoverFailed", extension = extension.type_name, error = e));
@@ -1193,11 +1200,19 @@ fn load_extension_manifest(path: Option<&Path>, manifest: &ExtensionManifest) ->
     let mut capabilities: Vec<dscextension::Capability> = vec![];
     let parent = path.and_then(|p| p.parent());
     if let Some(discover) = &manifest.discover {
-        verify_executable(&manifest.r#type, "discover", &discover.executable, parent);
+        let executable = match discover {
+            crate::extensions::jsonrpc::ExtensionMethod::Command(command) => &command.executable,
+            crate::extensions::jsonrpc::ExtensionMethod::JsonRpc { jsonrpc } => &jsonrpc.executable,
+        };
+        verify_executable(&manifest.r#type, "discover", executable, parent);
         capabilities.push(dscextension::Capability::Discover);
     }
     if let Some(secret) = &manifest.secret {
-        verify_executable(&manifest.r#type, "secret", &secret.executable, parent);
+        let executable = match secret {
+            crate::extensions::jsonrpc::ExtensionMethod::Command(command) => &command.executable,
+            crate::extensions::jsonrpc::ExtensionMethod::JsonRpc { jsonrpc } => &jsonrpc.executable,
+        };
+        verify_executable(&manifest.r#type, "secret", executable, parent);
         capabilities.push(dscextension::Capability::Secret);
     }
     let import = if let Some(import) = &manifest.import {
