@@ -93,6 +93,9 @@
         "return": "state"
     },
     "export": {
+        "schema": {
+            "embedded": { "type": "object" }
+        },
         "executable": "pwsh",
         "args": [
             "-NoLogo",
@@ -114,18 +117,10 @@
         "input": "stdin",
         "return": "state"
     },
-    "validate": {
-        "executable": "pwsh",
-        "args": [
-            "-NoLogo",
-            "-NonInteractive",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            "$Input | ./psDscAdapter/powershell.resource.ps1 Validate"
-        ],
-        "input": "stdin"
+    "schema": {
+        "embedded": {
+            "type": "object"
+        }
     },
     "exitCodes": {
         "0": "Success",

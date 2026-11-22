@@ -35,13 +35,13 @@ resources:
 - name: Windows Terminal
   type: Microsoft.WinGet.DSC/WinGetPackage
   properties:
-    Id: Microsoft.WindowsTerminal
-    Ensure: "[parameters('ensureTools')]"
+    id: Microsoft.WindowsTerminal
+    ensure: "[parameters('ensureTools')]"
 - name: Visual Studio Code
   type: Microsoft.WinGet.DSC/WinGetPackage
   properties:
-    Id: Microsoft.VisualStudioCode
-    Ensure: "[parameters('ensureTools')]"
+    id: Microsoft.VisualStudioCode
+    ensure: "[parameters('ensureTools')]"
 ```
 
 ## Setup
@@ -96,20 +96,19 @@ results:
   type: Microsoft.WinGet.DSC/WinGetPackage
   result:
     desiredState:
-      Id: Microsoft.WindowsTerminal
-      Ensure: Present
+      id: Microsoft.WindowsTerminal
+      ensure: Present
     actualState:
-      Version: null
-      MatchOption: EqualsCaseInsensitive
-      UseLatest: false
-      InstallMode: Silent
-      Id: Microsoft.WindowsTerminal
-      Ensure: Absent
-      Source: ''
+      matchOption: EqualsCaseInsensitive
+      useLatest: false
+      installMode: Silent
+      id: Microsoft.WindowsTerminal
+      ensure: Absent
+      source: ''
       _inDesiredState: false
     inDesiredState: false
     differingProperties:
-    - Ensure
+    - ensure
 - executionInformation:
     duration: PT7.6445836S
   metadata:
@@ -119,20 +118,19 @@ results:
   type: Microsoft.WinGet.DSC/WinGetPackage
   result:
     desiredState:
-      Id: Microsoft.VisualStudioCode
-      Ensure: Present
+      id: Microsoft.VisualStudioCode
+      ensure: Present
     actualState:
-      UseLatest: false
-      Version: null
-      Source: ''
-      Ensure: Absent
-      Id: Microsoft.VisualStudioCode
-      MatchOption: EqualsCaseInsensitive
-      InstallMode: Silent
+      useLatest: false
+      source: ''
+      ensure: Absent
+      id: Microsoft.VisualStudioCode
+      matchOption: EqualsCaseInsensitive
+      installMode: Silent
       _inDesiredState: false
     inDesiredState: false
     differingProperties:
-    - Ensure
+    - ensure
 messages: []
 hadErrors: false
 ```
@@ -160,26 +158,25 @@ results:
   type: Microsoft.WinGet.DSC/WinGetPackage
   result:
     beforeState:
-      InstallMode: Silent
-      UseLatest: false
-      Source: ''
-      Id: Microsoft.WindowsTerminal
-      Ensure: Absent
-      Version: null
-      MatchOption: EqualsCaseInsensitive
+      installMode: Silent
+      useLatest: false
+      source: ''
+      id: Microsoft.WindowsTerminal
+      ensure: Absent
+      matchOption: EqualsCaseInsensitive
     afterState:
-      Version: 1.24.10921.0
-      UseLatest: true
-      Source: winget
-      InstallMode: Silent
-      Ensure: Present
-      MatchOption: EqualsCaseInsensitive
-      Id: Microsoft.WindowsTerminal
+      version: 1.24.10921.0
+      useLatest: true
+      source: winget
+      installMode: Silent
+      ensure: Present
+      matchOption: EqualsCaseInsensitive
+      id: Microsoft.WindowsTerminal
     changedProperties:
-    - Version
-    - UseLatest
-    - Source
-    - Ensure
+    - version
+    - useLatest
+    - source
+    - ensure
 - executionInformation:
     duration: PT11.6464059S
   metadata:
@@ -189,26 +186,25 @@ results:
   type: Microsoft.WinGet.DSC/WinGetPackage
   result:
     beforeState:
-      UseLatest: false
-      Ensure: Absent
-      Id: Microsoft.VisualStudioCode
-      MatchOption: EqualsCaseInsensitive
-      InstallMode: Silent
-      Source: ''
-      Version: null
+      useLatest: false
+      ensure: Absent
+      id: Microsoft.VisualStudioCode
+      matchOption: EqualsCaseInsensitive
+      installMode: Silent
+      source: ''
     afterState:
-      Id: Microsoft.VisualStudioCode
-      MatchOption: EqualsCaseInsensitive
-      Source: winget
-      Version: 1.119.0
-      InstallMode: Silent
-      Ensure: Present
-      UseLatest: true
+      id: Microsoft.VisualStudioCode
+      matchOption: EqualsCaseInsensitive
+      source: winget
+      version: 1.119.0
+      installMode: Silent
+      ensure: Present
+      useLatest: true
     changedProperties:
-    - Source
-    - Version
-    - Ensure
-    - UseLatest
+    - source
+    - version
+    - ensure
+    - useLatest
 messages: []
 hadErrors: false
 ```

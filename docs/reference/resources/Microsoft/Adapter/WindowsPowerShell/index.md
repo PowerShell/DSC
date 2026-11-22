@@ -80,7 +80,7 @@ The following table defines the cache path for the Windows platform.
 | :------: | :---------------------------------------------- |
 | Windows  | `%LOCALAPPDATA%\dsc\WindowsPSAdapterCache.json` |
 
-The adapter versions the cache. The current version is `1`. If the version of the cache on a
+The adapter versions the cache. The current version is `4`. If the version of the cache on a
 machine differs from the current version, the adapter refreshes the cache.
 
 The adapter checks whether the cache is stale on each run and refreshes it if:
@@ -170,14 +170,46 @@ configuration document with the following exceptions:
    For more information about type names in DSC, see
    [DSC Resource fully qualified type name schema reference][06].
 
-1. The `properties` field for the instance is validated at runtime when the adapter tries to invoke
-   the adapted PSDSC resource instance. This adapter doesn't support static linting for adapted
-   instance properties in a configuration document.
+1. Discovered resources include an embedded JSON schema describing their DSC properties. DSC uses
+   this schema to validate property types, key and mandatory properties, and enumeration values
+   before invoking the resource. To retrieve a resource's schema, replace the placeholders in:
 
-   Each property name must be a configurable property of the PSDSC resource. The property name
-   isn't case sensitive. The value for each property must be valid for that property. If you
-   specify an invalid property name or value, the adapter raises an error when it tries to invoke
-   the resource.
+   ```powershell
+   dsc resource schema -r '<moduleName>/<resourceName>'
+   ```
+
+   Schemas use camelCase
+   property names, preserving names that contain nonalphanumeric characters. Use the spelling
+   shown in the schema, including for optional properties and key and mandatory properties listed
+   in `required`. DSC rejects unknown names, noncanonical casing, and schema-invalid values before
+   invoking the resource. The schema includes DSC's `_inDesiredState` test output property. DSC
+   omits `_metadata` injection when the resource schema rejects it. Class properties marked
+   `DscProperty(NotConfigurable)` are annotated `readOnly`.
+   Script-based resource schemas omit the LCM-only `DependsOn` and `PsDscRunAsCredential` properties.
+
+   Enumeration values remain case insensitive unless `ValidateSet` specifies `IgnoreCase = $false`.
+   Module-defined class properties use object schemas without nested member constraints. External
+   enums and types without a known JSON representation are validated by the underlying PowerShell
+   resource.
+   The adapter doesn't implement a separate `validate` operation.
+
+   Schemas also enforce discovered `ValidateSet` constraints, including constraints on array
+   items. For known JSON types, properties accept explicit `null` only when they have an
+   `[AllowNull()]` attribute or are both required and declared with a `Nullable[<PropertyType>]`
+   type. Optional nullable value types can be omitted but don't accept explicit `null`. The adapter
+   returns camelCase property names and omits unset optional null properties unless they explicitly
+   allow null. Allowing a null array doesn't allow null array items, and allowing null doesn't
+   bypass validation sets for non-null values.
+
+   **Migration:** This is a breaking change from case-insensitive input names and PascalCase output.
+   Update configurations and output consumers to use the names and nullability reported by
+   `dsc resource schema`. Deprecated full-configuration wrapper output is unchanged.
+
+   Export filters can omit key and mandatory properties; the resource validates its own filters.
+   Exported instances must still conform to the full resource schema. If resource metadata prevents
+   schema generation, the adapter logs a warning naming the resource and exposes a permissive object
+   schema so other resources remain discoverable. Nonnumeric numeric value maps also produce a
+   warning; numeric type validation remains in effect without the invalid enum constraint.
 
 ## Exit codes
 

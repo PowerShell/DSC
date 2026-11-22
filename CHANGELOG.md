@@ -116,6 +116,17 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Changed
 
+- **Breaking change:** PowerShell adapters now expose embedded resource schemas instead of an
+  always-successful `validate` operation. Resource input names must use the spelling reported by
+  `dsc resource schema -r '<moduleName>/<resourceName>'`, including camelCase key, mandatory, and
+  optional names. Unknown names and schema-invalid values are rejected before invocation.
+  Single-resource get, set, test, and export output uses camelCase names and omits unset optional
+  null properties unless explicitly nullable. Deprecated full-configuration wrapper output is
+  unchanged. Migrate existing configurations and output consumers to the generated schema's
+  property names and nullability.
+
+  Related PR: [#1775](https://github.com/PowerShell/DSC/pull/1775)
+
 - Extensions that implement the `secret` capability must now define the `args` property for the
   `secret` command with exactly one secret name input argument (`nameArg`) and at most one vault
   input argument (`vaultArg`). Previously, an extension could omit the secret name input argument,

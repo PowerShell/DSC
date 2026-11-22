@@ -31,11 +31,15 @@ Describe 'PowerShell adapter resource tests' {
         ($resources | Where-Object { $_.Type -eq 'TestClassResource/TestClassResource' }).Count | Should -Be 1
         ($resources | Where-Object -Property type -EQ 'TestClassResource/TestClassResource').capabilities | Should -BeIn @('get', 'set', 'test', 'export')
         ($resources | Where-Object -Property type -EQ 'TestClassResource/NoExport').capabilities | Should -BeIn @('get', 'set', 'test')
+        $resourceSchema = ($resources | Where-Object -Property type -EQ 'TestClassResource/TestClassResource').schema
+        $resourceSchema.type | Should -BeExactly 'object'
+        $resourceSchema.properties.baseProperty.type | Should -BeExactly 'string'
+        $resourceSchema.properties.PSObject.Properties.Name | Should -Not -Contain 'NonDscProperty'
     }
 
     It 'Get works on class-based resource' {
 
-        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $r = "{'name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.Prop1 | Should -BeExactly 'ValueForProp1'
@@ -48,31 +52,31 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get uses enum names on class-based resource' {
 
-        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $r = "{'name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.EnumProp | Should -BeExactly 'Expected'
     }
 
     It 'Get should return the correct properties on class-based resource' {
-        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $r = "{'name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json -AsHashtable
-        $res.actualState.ContainsKey('Name') | Should -Be $True
-        $res.actualState.ContainsKey('Prop1') | Should -Be $True
-        $res.actualState.ContainsKey('HashTableProp') | Should -Be $True
-        $res.actualState.ContainsKey('EnumProp') | Should -Be $True
-        $res.actualState.ContainsKey('Credential') | Should -Be $True
-        $res.actualState.ContainsKey('Ensure') | Should -Be $True
-        $res.actualState.ContainsKey('BaseProperty') | Should -Be $True
-        $res.actualState.ContainsKey('HiddenDscProperty') | Should -Be $True
+        $res.actualState.Keys -ccontains 'name' | Should -BeTrue
+        $res.actualState.Keys -ccontains 'prop1' | Should -BeTrue
+        $res.actualState.Keys -ccontains 'enumProp' | Should -BeTrue
+        $res.actualState.Keys -ccontains 'ensure' | Should -BeTrue
+        $res.actualState.ContainsKey('hashTableProp') | Should -BeFalse
+        $res.actualState.ContainsKey('credential') | Should -BeFalse
+        $res.actualState.ContainsKey('baseProperty') | Should -BeFalse
+        $res.actualState.ContainsKey('hiddenDscProperty') | Should -BeFalse
         $res.actualState.ContainsKey('NonDscProperty') | Should -Be $False
         $res.actualState.ContainsKey('HiddenNonDscProperty') | Should -Be $False
     }
 
     It 'Test works on class-based resource' {
 
-        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource' -f -
+        $r = "{'name':'TestClassResource1','prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.InDesiredState | Should -Be $True -Because $r
@@ -80,7 +84,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Set works on class-based resource' {
 
-        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r 'TestClassResource/TestClassResource' -f -
+        $r = "{'name':'TestClassResource1','prop1':'ValueForProp1'}" | dsc resource set -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.afterState.Prop1 | Should -BeExactly 'ValueForProp1'
@@ -373,7 +377,7 @@ Describe 'PowerShell adapter resource tests' {
     }
 
     It 'Can process a key-value pair object' {
-        $r = '{"HashTableProp":{"Name":"DSCv3"},"Name":"TestClassResource1"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $r = '{"hashTableProp":{"Name":"DSCv3"},"name":"TestClassResource1"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.HashTableProp.Name | Should -Be 'DSCv3'
@@ -392,7 +396,7 @@ Describe 'PowerShell adapter resource tests' {
     }
 
     It 'Can process SecureString property' {
-        $r = '{"Name":"TestClassResource1","SecureStringProp":"MySecretValue"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $r = '{"name":"TestClassResource1","secureStringProp":"MySecretValue"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.SecureStringProp | Should -Not -BeNullOrEmpty
@@ -400,42 +404,42 @@ Describe 'PowerShell adapter resource tests' {
 
     Context 'Tracing works' {
         It 'Error messages come from Write-Error' {
-            $null = dsc -l error resource set -r TestClassResource/StreamResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/error.log
+            $null = dsc -l error resource set -r TestClassResource/StreamResource -i '{"name":"TestClassResource1"}' 2> $TestDrive/error.log
             $logContent = Get-Content -Path $TestDrive/error.log -Raw
             $LASTEXITCODE | Should -Be 0 -Because $logContent
             $logContent | Should -Match 'ERROR .*? This is an Error message' -Because $logContent
         }
 
         It 'Warning messages come from Write-Warning' {
-            $null = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc -l warn resource get -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/warning.log
+            $null = "{'name':'TestClassResource1','prop1':'ValueForProp1'}" | dsc -l warn resource get -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/warning.log
             $logContent = Get-Content -Path $TestDrive/warning.log -Raw
             $LASTEXITCODE | Should -Be 0 -Because $logContent
             $logContent | Should -Match 'WARN .*? This is a Warning message' -Because $logContent
         }
 
         It 'Info messages come from Write-Host' {
-            $null = "{'Name':'TestClassResource1'}" | dsc -l info resource test -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/verbose.log
+            $null = "{'name':'TestClassResource1'}" | dsc -l info resource test -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/verbose.log
             $logContent = Get-Content -Path $TestDrive/verbose.log -Raw
             $LASTEXITCODE | Should -Be 0 -Because $logContent
             $logContent | Should -Match 'INFO .*? This is a Host message' -Because $logContent
         }
 
         It 'Debug messages come from Write-Verbose' {
-            $null = "{'Name':'TestClassResource1'}" | dsc -l debug resource set -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/debug.log
+            $null = "{'name':'TestClassResource1'}" | dsc -l debug resource set -r 'TestClassResource/StreamResource' -f - 2> $TestDrive/debug.log
             $logContent = Get-Content -Path $TestDrive/debug.log -Raw
             $LASTEXITCODE | Should -Be 0 -Because $logContent
             $logContent | Should -Match 'DEBUG .*? This is a Verbose message' -Because $logContent
         }
 
         It 'Trace messages come from Write-Debug' {
-            $null = dsc -l trace resource set -r TestClassResource/StreamResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/trace.log
+            $null = dsc -l trace resource set -r TestClassResource/StreamResource -i '{"name":"TestClassResource1"}' 2> $TestDrive/trace.log
             $logContent = Get-Content -Path $TestDrive/trace.log -Raw
             $LASTEXITCODE | Should -Be 0 -Because $logContent
             $logContent | Should -Match 'TRACE .*? This is a Debug message' -Because $logContent
         }
 
         It 'Trace messages come from Write-Information' {
-            $null = dsc -l trace resource test -r TestClassResource/StreamResource -i '{"Name":"TestClassResource1"}' 2> $TestDrive/trace_info.log
+            $null = dsc -l trace resource test -r TestClassResource/StreamResource -i '{"name":"TestClassResource1"}' 2> $TestDrive/trace_info.log
             $logContent = Get-Content -Path $TestDrive/trace_info.log -Raw
             $LASTEXITCODE | Should -Be 0 -Because $logContent
             $logContent | Should -Match 'INFO .*? This is an Information message' -Because $logContent

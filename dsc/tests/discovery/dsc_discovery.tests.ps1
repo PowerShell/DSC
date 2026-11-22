@@ -135,7 +135,8 @@ Describe 'tests for resource discovery' {
         $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../../adapters/powershell/Tests"
         $env:DSC_RESTRICTED_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
-        "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f - | Out-Null
+        "{'name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f - | Out-Null
+        $LASTEXITCODE | Should -Be 0
 
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
         $script:lookupTableFilePath | Should -FileContentMatchExactly 'testclassresource/testclassresource'
@@ -159,7 +160,8 @@ Describe 'tests for resource discovery' {
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table" -Because (Get-Content -Raw "$TestDrive/tracing.txt")
 
         # second invocation (without an update) should use but not save adapter lookup table
-        "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/tracing.txt
+        "{'name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/tracing.txt
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw "$TestDrive/tracing.txt")
         "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table" -Because (Get-Content -Raw "$TestDrive/tracing.txt")
 
         # third invocation (with an update) should save updated adapter lookup table
