@@ -102,6 +102,7 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         $env:PATH = @($secretPath, $previousPath) -join [IO.Path]::PathSeparator
         $configuration = @{
             '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            directives = @{ reuseResources = $false }
             resources = @(
                 @{
                     name = 'echo'; type = 'Microsoft.DSC.Debug/Echo'
@@ -113,6 +114,12 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
             ConvertFrom-Json -Depth 30
         $LASTEXITCODE | Should -Be 0
         $result.results[0].result.actualState.output | Should -BeExactly 'test-runtime-token'
+        $initialize = @((Get-ExtensionRpcEvent) | Where-Object {
+            $_.role -eq 'secret' -and $_.event -eq 'initialize'
+        })
+        $initialize | Should -HaveCount 1
+        $initialize[0].details.dscVersion | Should -BeExactly $result.executionInformation.version
+        $initialize[0].details.reuseForbidden | Should -BeExactly '1'
     }
 
     It 'does not require Secret extensions when no secrets are configured' {
@@ -199,6 +206,51 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         @((Get-ExtensionRpcEvent) | Where-Object event -EQ callbackRejected) | Should -HaveCount 1
     }
 
+    It 'redacts <Transport> provider deprecation warnings only for callbacks' -ForEach @(
+        @{ Transport = 'JSON-RPC' }
+        @{ Transport = 'command' }
+    ) {
+        $provider = Get-Content -LiteralPath "$secretPath/secret.dsc.extension.json" -Raw |
+            ConvertFrom-Json -AsHashtable
+        $provider.type = 'Test/DeprecatedSecret'
+        $provider.deprecationMessage = 'test-runtime-token test-runtime-password'
+        if ($Transport -eq 'JSON-RPC') {
+            $provider.secret.jsonrpc.args[-1] = Join-Path $secretPath secret.ps1
+        } else {
+            @'
+param([string]$Name)
+'test-runtime-token'
+'@ | Set-Content -LiteralPath "$testDirectory/deprecated-secret.ps1"
+            $provider.secret = @{
+                executable = 'pwsh'
+                args = @('-NoProfile', '-File', './deprecated-secret.ps1', @{ nameArg = '-Name' })
+            }
+        }
+        $provider | ConvertTo-Json -Depth 20 |
+            Set-Content -LiteralPath "$testDirectory/deprecated.dsc.extension.json"
+        $env:PATH = @($testDirectory, $discoverPath, $previousPath) -join [IO.Path]::PathSeparator
+        $settings.requests = @(@{ name = $secretName; expected = $stringSecret })
+        Set-RpcSettings
+        (Get-SecretDiscoveredResource).type | Should -BeExactly 'Test/SecretDiscovered'
+        Get-Content -LiteralPath $TestDrive/error.log -Raw |
+            Should -Not -Match 'test-runtime-token|test-runtime-password'
+
+        $env:PATH = @($testDirectory, $previousPath) -join [IO.Path]::PathSeparator
+        $configuration = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'echo'; type = 'Microsoft.DSC.Debug/Echo'
+                    properties = @{ output = "[secret('$secretName')]" }
+                }
+            )
+        }
+        $null = dsc -l warn config get -i ($configuration | ConvertTo-Json -Depth 10) 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive/error.log -Raw)
+        Get-Content -LiteralPath $TestDrive/error.log -Raw |
+            Should -Match ([regex]::Escape($provider.deprecationMessage))
+    }
+
     It 'terminates malformed reverse requests and cleans up discovery' {
         $settings.requests = @(@{ name = $secretName; expected = $stringSecret })
         $settings.malformedId = $true
@@ -247,7 +299,10 @@ Start-Sleep -Seconds 30
             Should -HaveCount 1
     }
 
-    It 'supports reverse requests from the existing resource JSON-RPC runner' {
+    It 'supports reverse requests from the resource JSON-RPC runner during <Invocation>' -ForEach @(
+        @{ Invocation = 'standalone invocation' }
+        @{ Invocation = 'configuration invocation' }
+    ) {
         @{
             '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
             type = 'Test/JsonRpcSecretConsumer'
@@ -264,9 +319,29 @@ Start-Sleep -Seconds 30
         $env:PATH = @($testDirectory, $secretPath, $previousPath) -join [IO.Path]::PathSeparator
         $settings.numericIds = $true
         Set-RpcSettings
-        $result = dsc resource get -r Test/JsonRpcSecretConsumer | ConvertFrom-Json -Depth 30
-        $LASTEXITCODE | Should -Be 0
-        $result.actualState.authenticated | Should -BeTrue
+        if ($Invocation -eq 'standalone invocation') {
+            $result = dsc resource get -r Test/JsonRpcSecretConsumer | ConvertFrom-Json -Depth 30
+            $LASTEXITCODE | Should -Be 0
+            $result.actualState.authenticated | Should -BeTrue
+        } else {
+            $configuration = @{
+                '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+                directives = @{ reuseResources = $false }
+                resources = @(@{ name = 'consumer'; type = 'Test/JsonRpcSecretConsumer' })
+            }
+            $result = dsc config get -i ($configuration | ConvertTo-Json -Depth 10) |
+                ConvertFrom-Json -Depth 30
+            $LASTEXITCODE | Should -Be 0
+            $result.results[0].result.actualState.authenticated | Should -BeTrue
+            $initialize = @((Get-ExtensionRpcEvent) | Where-Object {
+                $_.role -eq 'secret' -and $_.event -eq 'initialize'
+            })
+            $initialize | Should -HaveCount 2
+            foreach ($event in $initialize) {
+                $event.details.dscVersion | Should -BeExactly $result.executionInformation.version
+                $event.details.reuseForbidden | Should -BeExactly '1'
+            }
+        }
         @((Get-ExtensionRpcEvent) | Where-Object event -EQ callback) | Should -HaveCount 2
     }
 

@@ -403,8 +403,8 @@ begin {
                             continue
                         }
 
-                        # Add the referenced schema
-                        $Working.Add($Segment, $ReferenceSchema)
+                        # Authoring references use root-local pointers, not the embedded schema's URI.
+                        $Working.Add($Segment, (Remove-JsonSchemaKey -Schema $ReferenceSchema -KeyName '$id'))
                     }
 
                 }

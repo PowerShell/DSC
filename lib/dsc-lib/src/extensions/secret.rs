@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::{
+    configure::context::Context,
     configure::parameters::{SecureString, SecureObject},
     dscerror::DscError,
     dscresources::{
@@ -399,6 +400,7 @@ impl DscExtension {
     ///
     /// * `name` - The name of the secret to retrieve.
     /// * `vault` - An optional vault name to use for the secret.
+    /// * `context` - The invoking configuration context.
     ///
     /// # Returns
     ///
@@ -407,11 +409,13 @@ impl DscExtension {
     /// # Errors
     ///
     /// This function will return an error if the secret retrieval fails or if the extension does not support the secret capability.
-    pub(crate) fn secret(&self, name: &str, vault: Option<&str>) -> Result<Option<Value>, DscError> {
-        self.secret_with_deadline(name, vault, None, false)
+    pub(crate) fn secret(&self, name: &str, vault: Option<&str>, context: &Context) -> Result<Option<Value>, DscError> {
+        self.secret_with_deadline(name, vault, context, None, false)
     }
 
-    fn secret_with_deadline(&self, name: &str, vault: Option<&str>, deadline: Option<Instant>, redact_errors: bool) -> Result<Option<Value>, DscError> {
+    fn secret_with_deadline(&self, name: &str, vault: Option<&str>, context: &Context,
+        deadline: Option<Instant>, redact_errors: bool) -> Result<Option<Value>, DscError>
+    {
         if self.capabilities.contains(&Capability::Secret) {
             debug!("{}", t!("extensions.dscextension.retrievingSecretFromExtension", name = name, extension = self.type_name));
             let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
@@ -423,7 +427,7 @@ impl DscExtension {
             let Some(secret) = extension.secret else {
                 return Err(DscError::UnsupportedCapability(self.type_name.to_string(), Capability::Secret.to_string()));
             };
-            if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
+            if !redact_errors && let Some(deprecation_message) = extension.deprecation_message.as_ref() {
                 warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
             }
             let secret = match secret {
@@ -431,7 +435,7 @@ impl DscExtension {
                     let mut params = serde_json::json!({"operation": "secret", "name": name});
                     if let Some(vault) = vault { params["vault"] = Value::String(vault.to_string()); }
                     let result = crate::dscresources::jsonrpc::invoke_extension(
-                        self, &jsonrpc, "secret", params, &crate::configure::context::Context::new(), deadline
+                        self, &jsonrpc, "secret", params, context, deadline
                     )?;
                     if result.is_null() { return Ok(None); }
                     let valid = result.as_object().is_some_and(|object| object.len() == 1
@@ -491,7 +495,7 @@ impl DscExtension {
 /// Resolve against the already-discovered providers, sharing secret() conflict semantics.
 /// Callback diagnostics omit provider-controlled error text, which might contain credentials.
 pub(crate) fn resolve_secret(extensions: &[DscExtension], name: &str, vault: Option<&str>,
-    deadline: Option<Instant>, redact_errors: bool) -> Result<Value, DscError>
+    context: &Context, deadline: Option<Instant>, redact_errors: bool) -> Result<Value, DscError>
 {
     let providers: Vec<_> = extensions.iter().filter(|extension|
         extension.capabilities.contains(&Capability::Secret)).collect();
@@ -503,8 +507,8 @@ pub(crate) fn resolve_secret(extensions: &[DscExtension], name: &str, vault: Opt
         if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
             return Err(DscError::Operation(t!("extensions.jsonrpc.providerTimeout").to_string()));
         }
-        let secret = if deadline.is_none() && !redact_errors { extension.secret(name, vault) } else {
-            extension.secret_with_deadline(name, vault, deadline, redact_errors)
+        let secret = if deadline.is_none() && !redact_errors { extension.secret(name, vault, context) } else {
+            extension.secret_with_deadline(name, vault, context, deadline, redact_errors)
         };
         match secret {
             Ok(Some(value)) => {

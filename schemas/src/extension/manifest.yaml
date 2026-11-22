@@ -24,6 +24,41 @@ required:
   - $schema
   - type
   - version
+$defs:
+  jsonrpcOperation:
+    title: JSON-RPC extension operation
+    description: >-
+      Invokes an extension operation over a private JSON-RPC connection.
+    type: object
+    additionalProperties: false
+    required:
+      - jsonrpc
+    properties:
+      jsonrpc:
+        type: object
+        additionalProperties: false
+        required:
+          - executable
+        properties:
+          executable:
+            type: string
+            minLength: 1
+          args:
+            type: [array, 'null']
+            items:
+              type: string
+          initializeTimeoutMS:
+            type: [integer, 'null']
+            format: uint64
+            minimum: 1
+          requestTimeoutMS:
+            type: [integer, 'null']
+            format: uint64
+            minimum: 0
+          shutdownTimeoutMS:
+            type: [integer, 'null']
+            format: uint64
+            minimum: 1
 properties:
   $schema:
     title: Manifest Schema
@@ -458,9 +493,21 @@ properties:
         Invalid tag. Tags must be a string of alphanumeric characters and underscores. No other
         characters are permitted.
   discover:
-    $ref: /<PREFIX>/<VERSION>/extension/manifest.discover.yaml
+    anyOf:
+      - allOf:
+          - $ref: /<PREFIX>/<VERSION>/extension/manifest.discover.yaml
+          - not:
+              required: [jsonrpc]
+      - $ref: '#/$defs/jsonrpcOperation'
+      - type: 'null'
   secret:
-    $ref: /<PREFIX>/<VERSION>/extension/manifest.secret.yaml
+    anyOf:
+      - allOf:
+          - $ref: /<PREFIX>/<VERSION>/extension/manifest.secret.yaml
+          - not:
+              required: [jsonrpc]
+      - $ref: '#/$defs/jsonrpcOperation'
+      - type: 'null'
   exitCodes:
     # This setting in the root of the schema implies exit codes must have the
     # same meaning across all executions. What about implementations that

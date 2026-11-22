@@ -91,7 +91,8 @@ While its invocation is pending, DSC resolves the request against already-loaded
 extensions. Both command and JSON-RPC providers are supported. DSC doesn't recursively run
 discovery to find a provider. Multiple providers returning equal values are accepted; different
 values are a conflict. A provider failure doesn't prevent another provider from returning a
-secret.
+secret. JSON-RPC providers inherit the caller's DSC version, security context, and configuration
+resource reuse restrictions.
 
 The callback result is exactly one secure wrapper:
 

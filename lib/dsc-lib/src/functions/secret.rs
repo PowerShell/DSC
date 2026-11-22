@@ -41,7 +41,7 @@ impl Function for Secret {
             None
         };
 
-        resolve_secret(&context.extensions, &secret_name, vault_name.as_deref(), None, false)
+        resolve_secret(&context.extensions, &secret_name, vault_name.as_deref(), context, None, false)
     }
 }
 

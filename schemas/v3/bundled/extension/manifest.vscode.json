@@ -88,67 +88,21 @@
     "discover": {
       "anyOf": [
         {
-          "anyOf": [
+          "allOf": [
             {
               "$ref": "#/$defs/DiscoverCommand"
             },
             {
-              "additionalProperties": false,
-              "properties": {
-                "jsonrpc": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "args": {
-                      "items": {
-                        "type": "string"
-                      },
-                      "type": [
-                        "array",
-                        "null"
-                      ]
-                    },
-                    "executable": {
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "initializeTimeoutMS": {
-                      "format": "uint64",
-                      "minimum": 1,
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
-                    },
-                    "requestTimeoutMS": {
-                      "format": "uint64",
-                      "minimum": 0,
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
-                    },
-                    "shutdownTimeoutMS": {
-                      "format": "uint64",
-                      "minimum": 1,
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "executable"
-                  ],
-                  "type": "object"
-                }
-              },
-              "required": [
-                "jsonrpc"
-              ],
-              "type": "object"
+              "not": {
+                "required": [
+                  "jsonrpc"
+                ]
+              }
             }
-          ],
-          "description": "An extension operation uses either its existing command contract or JSON-RPC."
+          ]
+        },
+        {
+          "$ref": "#/$defs/jsonrpcOperation"
         },
         {
           "type": "null"
@@ -198,67 +152,21 @@
     "secret": {
       "anyOf": [
         {
-          "anyOf": [
+          "allOf": [
             {
               "$ref": "#/$defs/SecretCommand"
             },
             {
-              "additionalProperties": false,
-              "properties": {
-                "jsonrpc": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "args": {
-                      "items": {
-                        "type": "string"
-                      },
-                      "type": [
-                        "array",
-                        "null"
-                      ]
-                    },
-                    "executable": {
-                      "minLength": 1,
-                      "type": "string"
-                    },
-                    "initializeTimeoutMS": {
-                      "format": "uint64",
-                      "minimum": 1,
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
-                    },
-                    "requestTimeoutMS": {
-                      "format": "uint64",
-                      "minimum": 0,
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
-                    },
-                    "shutdownTimeoutMS": {
-                      "format": "uint64",
-                      "minimum": 1,
-                      "type": [
-                        "integer",
-                        "null"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "executable"
-                  ],
-                  "type": "object"
-                }
-              },
-              "required": [
-                "jsonrpc"
-              ],
-              "type": "object"
+              "not": {
+                "required": [
+                  "jsonrpc"
+                ]
+              }
             }
-          ],
-          "description": "An extension operation uses either its existing command contract or JSON-RPC."
+          ]
+        },
+        {
+          "$ref": "#/$defs/jsonrpcOperation"
         },
         {
           "type": "null"
@@ -544,6 +452,63 @@
       ],
       "title": "Secret command",
       "type": "object"
+    },
+    "jsonrpcOperation": {
+      "title": "JSON-RPC extension operation",
+      "description": "Invokes an extension operation over a private JSON-RPC connection.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "jsonrpc"
+      ],
+      "properties": {
+        "jsonrpc": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "executable"
+          ],
+          "properties": {
+            "executable": {
+              "type": "string",
+              "minLength": 1
+            },
+            "args": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
+            },
+            "initializeTimeoutMS": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 1
+            },
+            "requestTimeoutMS": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "shutdownTimeoutMS": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 1
+            }
+          }
+        }
+      }
     }
   }
 }

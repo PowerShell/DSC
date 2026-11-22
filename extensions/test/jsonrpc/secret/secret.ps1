@@ -17,6 +17,8 @@ Add-RpcEvent -Role secret -Event start
         name = $parameters.name
         vault = $parameters.vault
         hostServices = $parameters.hostServices
+        dscVersion = $parameters.dscVersion
+        reuseForbidden = $env:DSC_RESOURCE_REUSE_FORBIDDEN
     }
     switch ($method) {
         initialize {

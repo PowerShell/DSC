@@ -460,7 +460,7 @@ impl RpcProcess {
                     } else {
                         context.extensions.clone()
                     };
-                    match resolve_secret(&extensions, &params.name, params.vault.as_deref(), deadline, true) {
+                    match resolve_secret(&extensions, &params.name, params.vault.as_deref(), context, deadline, true) {
                         Ok(secret) => json!({"jsonrpc": "2.0", "id": id, "result": secret}),
                         Err(_) => {
                             // Provider diagnostics can contain plaintext; don't forward them to the wire.
