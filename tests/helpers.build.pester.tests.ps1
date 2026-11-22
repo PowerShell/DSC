@@ -11,7 +11,7 @@ Describe 'Test-ProjectWithPester' {
 
     BeforeEach {
         $originalPSModulePath = $env:PSModulePath
-        Mock Invoke-Pester -ModuleName helpers.build
+        Mock Invoke-DscPester -ModuleName helpers.build
     }
 
     AfterEach {
@@ -21,7 +21,7 @@ Describe 'Test-ProjectWithPester' {
     It 'Runs tests only from the selected project paths' {
         Test-ProjectWithPester -Project @($dscProject, $fileContentProject)
 
-        Should -Invoke Invoke-Pester -ModuleName helpers.build -Exactly 1 -ParameterFilter {
+        Should -Invoke Invoke-DscPester -ModuleName helpers.build -Exactly 1 -ParameterFilter {
             $Path.Count -eq 2 -and
             $Path -contains 'dsc' -and
             $Path -contains 'resources/file_dsc'
@@ -42,7 +42,7 @@ Describe 'Test-ProjectWithPester' {
     It 'Intersects selected projects with Pester test groups' {
         Test-ProjectWithPester -Project @($dscProject, $fileContentProject) -Group 'resources'
 
-        Should -Invoke Invoke-Pester -ModuleName helpers.build -Exactly 1 -ParameterFilter {
+        Should -Invoke Invoke-DscPester -ModuleName helpers.build -Exactly 1 -ParameterFilter {
             $Path.Count -eq 1 -and $Path -contains 'resources/file_dsc'
         }
     }
@@ -52,7 +52,7 @@ Describe 'Test-ProjectWithPester' {
 
         Test-ProjectWithPester -Project $rootProject -Group 'resources'
 
-        Should -Invoke Invoke-Pester -ModuleName helpers.build -Exactly 1 -ParameterFilter {
+        Should -Invoke Invoke-DscPester -ModuleName helpers.build -Exactly 1 -ParameterFilter {
             $Path.Count -eq 1 -and $Path -contains 'resources'
         }
     }
@@ -62,7 +62,7 @@ Describe 'Test-ProjectWithPester' {
             Test-ProjectWithPester -Project $dscProject -Group 'resources'
         } | Should -Throw 'None of the selected projects are in the specified Pester test groups.'
 
-        Should -Invoke Invoke-Pester -ModuleName helpers.build -Exactly 0
+        Should -Invoke Invoke-DscPester -ModuleName helpers.build -Exactly 0
     }
 }
 
@@ -84,17 +84,28 @@ Describe 'Build-DscResourcePackage' {
 
     BeforeEach {
         $buildData = Import-DscBuildData
+        $fixturePlatform = if ($TargetArchitecture -match 'windows') {
+            'Windows'
+        } elseif ($TargetArchitecture -match 'linux') {
+            'Linux'
+        } elseif ($TargetArchitecture -match 'apple') {
+            'macOS'
+        } else {
+            $IsWindows ? 'Windows' : ($IsMacOS ? 'macOS' : 'Linux')
+        }
         $bin = Join-Path $TestDrive ([guid]::NewGuid().ToString())
         $null = New-Item -Path $bin -ItemType Directory
-        foreach ($section in @('All', 'Linux', 'macOS', 'Windows')) {
+        foreach ($section in @('All', $fixturePlatform)) {
             foreach ($package in $buildData.ResourcePackageFiles.$section.Values) {
                 foreach ($file in $package.zipContents) {
+                    if ($fixturePlatform -eq 'Windows' -and -not [System.IO.Path]::HasExtension($file)) {
+                        $file = "$file.exe"
+                    } elseif ($fixturePlatform -ne 'Windows' -and [System.IO.Path]::GetExtension($file) -eq '.exe') {
+                        $file = $file.Substring(0, $file.Length - 4)
+                    }
                     $path = Join-Path $bin $file
                     $null = New-Item -Path (Split-Path -Parent $path) -ItemType Directory -Force
                     Set-Content -LiteralPath $path -Value $file
-                    if (-not [System.IO.Path]::HasExtension($file)) {
-                        Set-Content -LiteralPath "$path.exe" -Value $file
-                    }
                 }
             }
         }
@@ -172,24 +183,26 @@ Describe 'Build-DscResourcePackage' {
         $buildData.PackageFiles.Executable | Should -Contain 'apt.dsc.resource.sh'
     }
 
-    It 'Packages All and only the target platform for <Architecture>' -ForEach @(
-        @{ Architecture = 'x86_64-unknown-linux-gnu'; Count = 6; Apt = $true }
-        @{ Architecture = 'aarch64-apple-darwin'; Count = 5; Apt = $false }
-        @{ Architecture = 'aarch64-pc-windows-msvc'; Count = 17; Apt = $false }
+    It 'Packages All and only the target platform for <TargetArchitecture>' -ForEach @(
+        @{ TargetArchitecture = 'x86_64-unknown-linux-gnu'; Count = 6; Apt = $true }
+        @{ TargetArchitecture = 'aarch64-apple-darwin'; Count = 5; Apt = $false }
+        @{ TargetArchitecture = 'aarch64-pc-windows-msvc'; Count = 17; Apt = $false }
     ) {
-        Build-DscResourcePackage -BuildData $buildData -ArtifactDirectory $artifactDirectory -Architecture $Architecture
+        Build-DscResourcePackage -BuildData $buildData -ArtifactDirectory $artifactDirectory -Architecture $TargetArchitecture
 
         @(Get-ChildItem -Path $outputDirectory -Filter '*.zip') | Should -HaveCount $Count
         $entries = @(Get-ZipEntryName (Join-Path $outputDirectory 'Microsoft.System.Process.zip'))
         $entries | Should -HaveCount 1
-        $entries | Should -Contain 'process.exe'
+        $entries | Should -Contain ($fixturePlatform -eq 'Windows' ? 'process.exe' : 'process')
         Test-Path (Join-Path $outputDirectory 'DSC.PackageManagement.Apt.zip') | Should -Be $Apt
         Test-Path (Join-Path $outputDirectory 'Microsoft.Windows.DISM.zip') |
-            Should -Be ($Architecture -match 'windows')
+            Should -Be ($TargetArchitecture -match 'windows')
         Join-Path $outputDirectory 'Microsoft.Adapter.WindowsPowerShell.zip' | Should -Not -Exist
     }
 
-    It 'Merges zipContents, deduplicates shared files, and excludes existing manifests' {
+    It 'Merges zipContents, deduplicates shared files, and excludes existing manifests' -ForEach @(
+        @{ TargetArchitecture = 'x86_64-pc-windows-msvc' }
+    ) {
         $buildData.ResourcePackageFiles.All['Microsoft.OpenSSH.SSHD'].zipContents += 'nested\extra.ps1'
         $null = New-Item -Path (Join-Path $bin 'nested') -ItemType Directory
         Set-Content -LiteralPath (Join-Path $bin 'nested\extra.ps1') -Value 'extra'
@@ -216,14 +229,17 @@ Describe 'Build-DscResourcePackage' {
 
         Build-DscResourcePackage -BuildData $buildData
 
-        Get-ZipEntryName (Join-Path $outputDirectory 'Microsoft.System.Process.zip') | Should -Contain 'process.exe'
+        Get-ZipEntryName (Join-Path $outputDirectory 'Microsoft.System.Process.zip') |
+            Should -Contain ($fixturePlatform -eq 'Windows' ? 'process.exe' : 'process')
         Should -Invoke Get-ArtifactDirectoryPath -ModuleName helpers.build -Exactly 1 -ParameterFilter {
             $Architecture -eq 'current' -and -not $Release
         }
     }
 
-    It 'Fails rather than producing a partial package when a file is missing' {
-        Remove-Item -LiteralPath (Join-Path $bin 'process.exe')
+    It 'Fails rather than producing a partial package when a file is missing' -ForEach @(
+        @{ TargetArchitecture = 'x86_64-unknown-linux-gnu' }
+    ) {
+        Remove-Item -LiteralPath (Join-Path $bin 'process')
 
         {
             Build-DscResourcePackage -BuildData $buildData -ArtifactDirectory $artifactDirectory -Architecture x86_64-unknown-linux-gnu
@@ -231,7 +247,9 @@ Describe 'Build-DscResourcePackage' {
         Join-Path $outputDirectory 'Microsoft.System.Process.zip' | Should -Not -Exist
     }
 
-    It 'Creates release packages through the build switch without invoking compilation' {
+    It 'Creates release packages through the build switch without invoking compilation' -ForEach @(
+        @{ TargetArchitecture = 'x86_64-unknown-linux-gnu' }
+    ) {
         $fixtureRoot = Join-Path $TestDrive ([guid]::NewGuid().ToString())
         $null = New-Item -Path $fixtureRoot -ItemType Directory
         foreach ($file in @('build.ps1', 'helpers.build.psm1', 'data.build.json')) {
@@ -255,7 +273,7 @@ Describe 'Build-DscResourcePackage' {
         $exitCode | Should -Be 0 -Because ($output -join "`n")
         $packages = Join-Path $target 'resource-packages'
         @(Get-ChildItem -Path $packages -Filter '*.zip') | Should -HaveCount 6
-        Get-ZipEntryName (Join-Path $packages 'Microsoft.System.Process.zip') | Should -Contain 'process.exe'
+        Get-ZipEntryName (Join-Path $packages 'Microsoft.System.Process.zip') | Should -Contain 'process'
         $output -join "`n" | Should -Not -Match 'Compiling Rust|Configuring Rust environment'
     }
 

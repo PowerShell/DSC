@@ -88,6 +88,31 @@ function Save-DscArtifactLayer {
     }
 }
 
+function Enter-DscResourceCacheLock {
+    param([string]$Path)
+
+    $identity = [System.IO.Path]::GetFullPath($Path)
+    if ($IsWindows) {
+        $identity = $identity.ToUpperInvariant()
+    }
+    $hash = [System.Security.Cryptography.SHA256]::HashData([System.Text.Encoding]::UTF8.GetBytes($identity))
+    $prefix = $IsWindows ? 'Global\dsc-resource-cache-' : 'dsc-resource-cache-'
+    $mutex = [System.Threading.Mutex]::new($false, $prefix + [Convert]::ToHexString($hash))
+    try {
+        try {
+            if (-not $mutex.WaitOne([TimeSpan]::FromSeconds(30))) {
+                throw "Timed out waiting for the resource cache lock: '$Path'."
+            }
+        } catch [System.Threading.AbandonedMutexException] {
+            Write-Warning "Recovering an abandoned resource cache lock: '$Path'."
+        }
+        $mutex
+    } catch {
+        $mutex.Dispose()
+        throw
+    }
+}
+
 function Publish-Artifact {
     <#
     .SYNOPSIS
@@ -96,8 +121,9 @@ function Publish-Artifact {
     .DESCRIPTION
     Combines All and OS-specific ResourcePackageFiles definitions. Each resource gets
     resourceName-version tags, platform-specific child artifacts, and an OCI index.
-    ZIPs contain only zipContents; bundled manifests are split into individual resource
-    manifests. YAML manifests require the ConvertFrom-Yaml command.
+    ZIPs contain only zipContents; each manifest input must describe one resource.
+    The build generates individual OCI manifests from distribution bundles.
+    YAML manifests require the ConvertFrom-Yaml command.
     ORAS and Azure CLI must be installed. Sign in with az login before publishing;
     the module obtains an ACR access token and authenticates ORAS through stdin.
 
@@ -204,17 +230,18 @@ function Publish-Artifact {
             } else {
                 $document = $content | ConvertFrom-Json -AsHashtable -Depth 100
             }
-            $resources = if ($document.type) {
-                @($document)
-            } else {
-                @($document.resources) + @($document.adaptedResources)
+            if (-not $document.type -or $document.resources -or $document.adaptedResources -or
+                $document.actions -or $document.extensions) {
+                throw "Expected an individual resource manifest in '$($source.FullName)', not a bundle."
             }
-            if (@($resources | Where-Object { $null -ne $_ }).Count -eq 0) {
-                throw "No resources found in manifest '$($source.FullName)'."
-            }
-            foreach ($resource in ($resources | Where-Object { $null -ne $_ })) {
+            foreach ($resource in @($document)) {
                 if ($resource.type -notmatch '^[^/]+/[^/]+$' -or [string]::IsNullOrWhiteSpace($resource.version)) {
                     throw "Missing or invalid resource type/version in '$($source.FullName)'."
+                }
+                $semanticVersion = $null
+                if (-not [System.Management.Automation.SemanticVersion]::TryParse([string]$resource.version, [ref]$semanticVersion) -or
+                    $semanticVersion.ToString() -cne $resource.version) {
+                    throw "Invalid semantic version '$($resource.version)' in '$($source.FullName)'."
                 }
                 $slug = $resource.type.Split('/')[1].ToLowerInvariant()
                 $tag = "$slug-$($resource.version)"
@@ -543,10 +570,6 @@ function Get-Artifact {
     }
     $cacheRoot = Get-DscResourceCachePath
     $packageDirectory = Join-Path $cacheRoot ([System.IO.Path]::GetFileNameWithoutExtension($zipName))
-    if ((Test-Path -LiteralPath $packageDirectory) -and
-        ((Get-Item -LiteralPath $packageDirectory -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
-        throw "Cache package directory must not be a link: '$packageDirectory'."
-    }
     $destination = Join-Path $packageDirectory $artifact.Version
     $manifestPath = Join-Path $destination $manifestName
     $result = [pscustomobject]@{
@@ -558,76 +581,82 @@ function Get-Artifact {
         Path = $destination
         ManifestPath = $manifestPath
     }
-    $cacheMetadataPath = Join-Path $destination '.dsc-cache.json'
-    $cacheMetadata = $null
-    if (Test-Path -LiteralPath $destination) {
-        $existing = Get-Item -LiteralPath $destination -Force
-        if (-not $existing.PSIsContainer -or
-            ($existing.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
-            throw "Cache destination must be a directory, not a link: '$destination'."
-        }
-        if (Test-Path -LiteralPath $cacheMetadataPath -PathType Leaf) {
-            $cacheMetadata = Get-Content -LiteralPath $cacheMetadataPath -Raw | ConvertFrom-Json -AsHashtable
-        }
-    }
-    $reuseZip = $cacheMetadata -and $cacheMetadata.ZipDigest -ceq $zipLayer.digest -and
-        $cacheMetadata.Version -ceq $artifact.Version -and $cacheMetadata.Platform -eq $artifact.Platform -and
-        $cacheMetadata.Files.Count -gt 0
-    if ($reuseZip) {
-        foreach ($file in $cacheMetadata.Files) {
-            if (-not (Test-Path -LiteralPath (Join-Path $destination $file) -PathType Leaf)) {
-                $reuseZip = $false
-                break
-            }
-        }
-    }
-    if ($reuseZip -and $cacheMetadata.ManifestDigests[$manifestName] -ceq $resourceLayer.digest -and
-        (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
-        $cachedDigest = 'sha256:' + (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
-        if ($cachedDigest -ceq $resourceLayer.digest) {
-            return $result
-        }
-    }
     if (-not $PSCmdlet.ShouldProcess($destination, "Download and expand '$ResourceType' version '$($artifact.Version)'")) {
         return
     }
-    $null = New-Item -ItemType Directory -Path $cacheRoot -Force
-    $stagingDirectory = Join-Path $cacheRoot ('.' + [guid]::NewGuid().ToString())
-    $null = New-Item -ItemType Directory -Path $stagingDirectory
-    $backupDirectory = Join-Path $stagingDirectory 'previous'
-    $installed = $false
+    $cacheLock = Enter-DscResourceCacheLock -Path $destination
     try {
-        $repository = $artifact.Reference.Split('@')[0]
-        $downloadedManifest = Join-Path $stagingDirectory $manifestName
-        Save-DscArtifactLayer -Repository $repository -Layer $resourceLayer -Path $downloadedManifest
-        $resource = Get-Content -LiteralPath $downloadedManifest -Raw | ConvertFrom-Json -AsHashtable -Depth 100
-        if ($resource.type -ne $ResourceType -or $resource.version -cne $artifact.Version) {
-            throw 'Downloaded resource manifest does not match the requested resource type and version.'
+        if ((Test-Path -LiteralPath $packageDirectory) -and
+            ((Get-Item -LiteralPath $packageDirectory -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+            throw "Cache package directory must not be a link: '$packageDirectory'."
         }
-        if ($reuseZip) {
-            $preparedDirectory = $destination
-        } else {
-            $zipPath = Join-Path $stagingDirectory $zipName
-            Save-DscArtifactLayer -Repository $repository -Layer $zipLayer -Path $zipPath
-            $preparedDirectory = Join-Path $stagingDirectory 'expanded'
-            [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $preparedDirectory)
-            $cacheMetadata = @{
-                ZipDigest = $zipLayer.digest
-                Version = $artifact.Version
-                Platform = $artifact.Platform
-                ManifestDigests = @{}
-                Files = @(
-                    Get-ChildItem -LiteralPath $preparedDirectory -File -Recurse -Force | ForEach-Object {
-                        [System.IO.Path]::GetRelativePath($preparedDirectory, $_.FullName)
-                    }
-                )
+        $cacheMetadataPath = Join-Path $destination '.dsc-cache.json'
+        $cacheMetadata = $null
+        if (Test-Path -LiteralPath $destination) {
+            $existing = Get-Item -LiteralPath $destination -Force
+            if (-not $existing.PSIsContainer -or
+                ($existing.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                throw "Cache destination must be a directory, not a link: '$destination'."
+            }
+            if (Test-Path -LiteralPath $cacheMetadataPath -PathType Leaf) {
+                $cacheMetadata = Get-Content -LiteralPath $cacheMetadataPath -Raw | ConvertFrom-Json -AsHashtable
             }
         }
-        Copy-Item -LiteralPath $downloadedManifest -Destination (Join-Path $preparedDirectory $manifestName) -Force
-        $cacheMetadata.ManifestDigests[$manifestName] = $resourceLayer.digest
-        $cacheMetadata | ConvertTo-Json -Depth 10 |
-            Set-Content -LiteralPath (Join-Path $preparedDirectory '.dsc-cache.json') -Encoding utf8NoBOM
-        if (-not $reuseZip) {
+        $reuseZip = $cacheMetadata -and $cacheMetadata.ZipDigest -ceq $zipLayer.digest -and
+            $cacheMetadata.Version -ceq $artifact.Version -and $cacheMetadata.Platform -eq $artifact.Platform -and
+            $cacheMetadata.Files.Count -gt 0
+        if ($reuseZip) {
+            foreach ($file in $cacheMetadata.Files) {
+                if (-not (Test-Path -LiteralPath (Join-Path $destination $file) -PathType Leaf)) {
+                    $reuseZip = $false
+                    break
+                }
+            }
+        }
+        if ($reuseZip -and $cacheMetadata.ManifestDigests[$manifestName] -ceq $resourceLayer.digest -and
+            (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+            $cachedDigest = 'sha256:' + (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($cachedDigest -ceq $resourceLayer.digest) {
+                return $result
+            }
+        }
+        $null = New-Item -ItemType Directory -Path $cacheRoot -Force
+        $stagingDirectory = Join-Path $cacheRoot ('.' + [guid]::NewGuid().ToString())
+        $null = New-Item -ItemType Directory -Path $stagingDirectory
+        $backupDirectory = Join-Path $stagingDirectory 'previous'
+        $installed = $false
+        try {
+            $repository = $artifact.Reference.Split('@')[0]
+            $downloadedManifest = Join-Path $stagingDirectory $manifestName
+            Save-DscArtifactLayer -Repository $repository -Layer $resourceLayer -Path $downloadedManifest
+            $resource = Get-Content -LiteralPath $downloadedManifest -Raw | ConvertFrom-Json -AsHashtable -Depth 100
+            if ($resource.type -ne $ResourceType -or $resource.version -cne $artifact.Version) {
+                throw 'Downloaded resource manifest does not match the requested resource type and version.'
+            }
+            if ($reuseZip) {
+                $preparedDirectory = Join-Path $stagingDirectory 'expanded'
+                Copy-Item -LiteralPath $destination -Destination $preparedDirectory -Recurse -Force
+            } else {
+                $zipPath = Join-Path $stagingDirectory $zipName
+                Save-DscArtifactLayer -Repository $repository -Layer $zipLayer -Path $zipPath
+                $preparedDirectory = Join-Path $stagingDirectory 'expanded'
+                [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $preparedDirectory)
+                $cacheMetadata = @{
+                    ZipDigest = $zipLayer.digest
+                    Version = $artifact.Version
+                    Platform = $artifact.Platform
+                    ManifestDigests = @{}
+                    Files = @(
+                        Get-ChildItem -LiteralPath $preparedDirectory -File -Recurse -Force | ForEach-Object {
+                            [System.IO.Path]::GetRelativePath($preparedDirectory, $_.FullName)
+                        }
+                    )
+                }
+            }
+            Copy-Item -LiteralPath $downloadedManifest -Destination (Join-Path $preparedDirectory $manifestName) -Force
+            $cacheMetadata.ManifestDigests[$manifestName] = $resourceLayer.digest
+            $cacheMetadata | ConvertTo-Json -Depth 10 |
+                Set-Content -LiteralPath (Join-Path $preparedDirectory '.dsc-cache.json') -Encoding utf8NoBOM
             $null = New-Item -ItemType Directory -Path $packageDirectory -Force
             if (Test-Path -LiteralPath $destination) {
                 [System.IO.Directory]::Move($destination, $backupDirectory)
@@ -640,14 +669,20 @@ function Get-Artifact {
                 }
                 throw
             }
+            $installed = $true
+            $result
+        } finally {
+            if (-not $installed -and (Test-Path -LiteralPath $backupDirectory)) {
+                Write-Warning "Previous cache preserved for recovery at '$backupDirectory'."
+            } else {
+                Remove-Item -LiteralPath $stagingDirectory -Recurse -Force
+            }
         }
-        $installed = $true
-        $result
     } finally {
-        if (-not $installed -and (Test-Path -LiteralPath $backupDirectory)) {
-            Write-Warning "Previous cache preserved for recovery at '$backupDirectory'."
-        } else {
-            Remove-Item -LiteralPath $stagingDirectory -Recurse -Force
+        try {
+            $cacheLock.ReleaseMutex()
+        } finally {
+            $cacheLock.Dispose()
         }
     }
 }

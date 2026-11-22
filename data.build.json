@@ -147,7 +147,7 @@
           "file_dsc.exe"
         ],
         "manifests" : [
-          "file_dsc.dsc.manifests.json"
+          "resource-manifests/Microsoft.Windows.Filesystem.AccessControlList.dsc.resource.json"
         ]
       },
       "Microsoft.Adapter.GroupPolicyTemplate": {
@@ -171,7 +171,9 @@
           "windows_audit_policy.exe"
         ],
         "manifests" : [
-          "windows_audit_policy.dsc.manifests.json"
+          "resource-manifests/Microsoft.Windows.AuditPolicy.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.AuditPolicyList.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.AuditPolicyOption.dsc.resource.json"
         ]
       },
       "Microsoft.Windows.EnvironmentVariable": {
@@ -179,7 +181,9 @@
           "environment_variable.exe"
         ],
         "manifests" : [
-          "environment_variable.dsc.manifests.json"
+          "resource-manifests/Microsoft.Windows.EnvironmentVariable.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.EnvironmentPathVariable.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.EnvironmentVariableList.dsc.resource.json"
         ]
       },
       "Microsoft.Windows.RebootPending": {
@@ -195,7 +199,9 @@
           "registry.exe"
         ],
         "manifests" : [
-          "registry.dsc.manifests.json",
+          "resource-manifests/Microsoft.Windows.Registry.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.RegistryList.dsc.resource.json",
+          "resource-manifests/Microsoft.Windows.Adapter.Registry.dsc.resource.json",
           "windows_personalization.dsc.adaptedResource.yaml"
         ]
       },
@@ -204,7 +210,7 @@
           "windows_service.exe"
         ],
         "manifests" : [
-          "windows_service.dsc.manifests.json"
+          "resource-manifests/Microsoft.Windows.Service.dsc.resource.json"
         ]
       },
       "Microsoft.Windows.UpdateList": {
@@ -220,7 +226,7 @@
           "windows_security_policy.exe"
         ],
         "manifests" : [
-          "windows_security_policy.dsc.manifests.json"
+          "resource-manifests/Microsoft.Windows.UserRightsAssignment.dsc.resource.json"
         ]
       },
       "Microsoft.Windows.WMI": {
@@ -251,7 +257,7 @@
           "process.exe"
         ],
         "manifests" : [
-          "process.dsc.manifests.json"
+          "resource-manifests/Microsoft.System.Process.dsc.resource.json"
         ]
       },
       "Microsoft.OpenSSH.SSHD": {
@@ -269,7 +275,7 @@
           "file_dsc.exe"
         ],
         "manifests" : [
-          "file_dsc.dsc.manifests.json"
+          "resource-manifests/Microsoft.Filesystem.File.Content.dsc.resource.json"
         ]
       },
       "Microsoft.DSC.Transitional.PowerShellScript": {

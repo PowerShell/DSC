@@ -36,13 +36,13 @@ Describe 'Publish-Artifact' {
                 All = @{
                     'Microsoft.Test.Bundle' = @{
                         zipContents = @('shared.exe')
-                        manifests = @('bundle.dsc.manifests.json')
+                        manifests = @('one.dsc.resource.json', 'two.dsc.resource.json')
                     }
                 }
                 Windows = @{
                     'Microsoft.Test.Bundle' = @{
                         zipContents = @('shared.exe', 'nested\support.ps1')
-                        manifests = @('bundle.dsc.manifests.json', 'windows.dsc.resource.json')
+                        manifests = @('one.dsc.resource.json', 'two.dsc.resource.json', 'windows.dsc.resource.json')
                     }
                 }
                 Linux = @{}
@@ -71,6 +71,11 @@ Describe 'Publish-Artifact' {
             Set-Content -LiteralPath (Join-Path $bin 'resource-packages' 'untouched.zip') -Value 'keep'
             $bundle | ConvertTo-Json -Depth 10 |
                 Set-Content -LiteralPath (Join-Path $bin 'bundle.dsc.manifests.json')
+            $bundle.resources[0] | ConvertTo-Json -Depth 10 |
+                Set-Content -LiteralPath (Join-Path $bin 'one.dsc.resource.json')
+            $bundle.resources[1] | ConvertTo-Json -Depth 10 |
+                Set-Content -LiteralPath (Join-Path $bin 'two.dsc.resource.json')
+            Copy-Item -LiteralPath (Join-Path $bin 'shared.exe') -Destination (Join-Path $bin 'shared')
             @{ type = 'Microsoft.Test/Three'; version = '3.0.0'; author = 'Microsoft Corporation' } |
                 ConvertTo-Json | Set-Content -LiteralPath (Join-Path $bin 'windows.dsc.resource.json')
             $bin
@@ -226,6 +231,50 @@ Describe 'Publish-Artifact' {
             Should -Throw "*does not match OS 'Windows'*"
 
         Should -Invoke oras -ModuleName DSCOras -Exactly 0
+    }
+
+    It 'Rejects bundle inputs before authenticating or uploading' {
+        $data.ResourcePackageFiles.All['Microsoft.Test.Bundle'].manifests = @('bundle.dsc.manifests.json')
+        $data | ConvertTo-Json -Depth 20 |
+            Set-Content -LiteralPath (Join-Path $fixtureRoot 'data.build.json')
+
+        { Publish-Artifact -PackageName Microsoft.Test.Bundle -OS Windows -Platforms windows-arm64 6>$null } |
+            Should -Throw '*individual resource manifest*'
+
+        Should -Invoke az -ModuleName DSCOras -Exactly 0
+        Should -Invoke oras -ModuleName DSCOras -Exactly 0
+    }
+
+    It 'Rejects an invalid semantic version during preflight' -ForEach @(
+        @{ InvalidVersion = 'banana' },
+        @{ InvalidVersion = '1.0' }
+    ) {
+        $bundle.resources[0].version = $InvalidVersion
+        $bundle.resources[0] | ConvertTo-Json -Depth 10 |
+            Set-Content -LiteralPath (Join-Path $bins[2] 'one.dsc.resource.json')
+
+        { Publish-Artifact -PackageName Microsoft.Test.Bundle -OS Windows -Platforms windows-amd64, windows-arm64 6>$null } |
+            Should -Throw '*Invalid semantic version*'
+
+        Should -Invoke az -ModuleName DSCOras -Exactly 0
+        Should -Invoke oras -ModuleName DSCOras -Exactly 0
+    }
+
+    It 'Publishes native Unix binaries from .exe package definitions' -ForEach @(
+        @{ UnixOS = 'Linux'; UnixPlatform = 'linux-amd64'; UnixTarget = 'x86_64-unknown-linux-gnu' },
+        @{ UnixOS = 'macOS'; UnixPlatform = 'darwin-arm64'; UnixTarget = 'aarch64-apple-darwin' }
+    ) {
+        $bin = Join-Path $fixtureRoot 'bin' $UnixTarget 'debug'
+        $null = New-Item -ItemType Directory -Path $bin -Force
+        Copy-Item -LiteralPath (Join-Path $bins[0] 'shared') -Destination $bin
+        Copy-Item -LiteralPath (Join-Path $bins[0] 'one.dsc.resource.json'),(Join-Path $bins[0] 'two.dsc.resource.json') -Destination $bin
+
+        Publish-Artifact -PackageName Microsoft.Test.Bundle -OS $UnixOS -Platforms $UnixPlatform 6>$null
+
+        $pushes | Should -HaveCount 2
+        foreach ($push in $pushes) {
+            $push.Entries | Should -Be @('shared')
+        }
     }
 
     It 'Converts an adapted YAML manifest into a separate JSON layer' {
@@ -555,6 +604,115 @@ Describe 'Get-Artifact' {
         $registryList.ManifestPath | Should -Exist
         Should -Invoke Invoke-OrasCommand -ModuleName DSCOras -Exactly 1 -ParameterFilter {
             $Arguments[0] -eq 'blob' -and $Arguments[2] -eq "$repository@$zipDigest"
+        }
+    }
+
+    It 'Preserves the live cache if staging a reused-cache metadata update fails' {
+        $existing = Get-Artifact -ResourceType Microsoft.Windows/RegistryList
+        $metadataPath = Join-Path $existing.Path '.dsc-cache.json'
+        $metadataBefore = Get-Content -LiteralPath $metadataPath -Raw
+        $manifestBefore = Get-Content -LiteralPath $existing.ManifestPath -Raw
+        Mock Set-Content -ModuleName DSCOras { throw 'Metadata write failed' } -ParameterFilter {
+            $LiteralPath -like '*expanded*.dsc-cache.json'
+        }
+
+        { Get-Artifact -ResourceType Microsoft.Windows/Registry } | Should -Throw '*Metadata write failed*'
+
+        Get-Content -LiteralPath $metadataPath -Raw | Should -BeExactly $metadataBefore
+        Get-Content -LiteralPath $existing.ManifestPath -Raw | Should -BeExactly $manifestBefore
+        Join-Path $existing.Path 'registry.dsc.resource.json' | Should -Not -Exist
+        @(Get-ChildItem -LiteralPath $cacheRoot -Force) | Should -HaveCount 1
+    }
+
+    It 'Serializes cross-process acquisitions and preserves both shared-resource manifests' {
+        $signals = Join-Path $fixtureRoot 'signals'
+        $null = New-Item -ItemType Directory -Path $signals
+        $modulePath = Join-Path $PSScriptRoot '..' 'packaging' 'oci' 'DSCOras.psm1'
+        $worker = {
+            param($ModulePath, $CacheRoot, $Artifact, $Documents, $Blobs, $Signals, $HoldDownload)
+            Import-Module $ModulePath -Force
+            & (Get-Module DSCOras) {
+                param($Root, $Selection, $Documents, $Blobs, $Signals, $HoldDownload)
+                $script:fixture = @{
+                    Root = $Root; Artifact = $Selection; Documents = $Documents
+                    Blobs = $Blobs; Signals = $Signals; HoldDownload = $HoldDownload
+                }
+                $script:originalEnter = (Get-Command Enter-DscResourceCacheLock).ScriptBlock
+                function script:Find-Artifact { $script:fixture.Artifact }
+                function script:Get-DscResourceCachePath { $script:fixture.Root }
+                function script:Enter-DscResourceCacheLock {
+                    param($Path)
+                    $slug = $script:fixture.Artifact.ResourceType.Split('/')[1]
+                    [System.IO.File]::WriteAllText((Join-Path $script:fixture.Signals "$slug-enter"), 'ready')
+                    & $script:originalEnter -Path $Path
+                }
+                function script:Invoke-OrasCommand {
+                    param($Arguments)
+                    $state = $script:fixture
+                    if ($Arguments[0] -eq 'manifest') {
+                        return $state.Documents[$Arguments[2]] | ConvertTo-Json -Depth 20
+                    }
+                    if ($state.HoldDownload) {
+                        [System.IO.File]::WriteAllText((Join-Path $state.Signals 'held'), 'ready')
+                        $deadline = [DateTime]::UtcNow.AddSeconds(15)
+                        while (-not [System.IO.File]::Exists((Join-Path $state.Signals 'release'))) {
+                            if ([DateTime]::UtcNow -gt $deadline) { throw 'Timed out synchronizing cache writers.' }
+                            Start-Sleep -Milliseconds 50
+                        }
+                        $state.HoldDownload = $false
+                    }
+                    $digest = $Arguments[2].Split('@')[1]
+                    $slug = $state.Artifact.ResourceType.Split('/')[1]
+                    [System.IO.File]::AppendAllText((Join-Path $state.Signals "$slug-downloads"), "$digest`n")
+                    Copy-Item -LiteralPath $state.Blobs[$digest] -Destination $Arguments[4]
+                }
+                Get-Artifact -ResourceType $Selection.ResourceType -Version $Selection.Version -Platform $Selection.Platform
+            } $CacheRoot $Artifact $Documents $Blobs $Signals $HoldDownload
+        }
+        $waitForSignal = {
+            param($Path, $Job)
+            $deadline = [DateTime]::UtcNow.AddSeconds(15)
+            while (-not (Test-Path -LiteralPath $Path)) {
+                if ([DateTime]::UtcNow -gt $deadline -or $Job.State -in @('Failed', 'Completed')) {
+                    Receive-Job -Job $Job -ErrorAction Stop
+                    throw "Worker did not signal '$Path'."
+                }
+                Start-Sleep -Milliseconds 50
+            }
+        }
+        $jobs = @()
+        try {
+            foreach ($type in @('Microsoft.Windows/RegistryList', 'Microsoft.Windows/Registry')) {
+                $selection = $artifacts | Where-Object {
+                    $_.ResourceType -eq $type -and $_.Version -eq '2.10.0' -and $_.Platform -eq 'windows-amd64'
+                } | Select-Object -First 1
+                $jobs += Start-Job -ScriptBlock $worker -ArgumentList @(
+                    $modulePath, $cacheRoot, $selection, $documents, $blobs, $signals, ($jobs.Count -eq 0)
+                )
+                if ($jobs.Count -eq 1) {
+                    & $waitForSignal (Join-Path $signals 'held') $jobs[0]
+                }
+            }
+            & $waitForSignal (Join-Path $signals 'Registry-enter') $jobs[1]
+            Join-Path $signals 'Registry-downloads' | Should -Not -Exist
+            Set-Content -LiteralPath (Join-Path $signals 'release') -Value 'continue'
+            $null = $jobs | Wait-Job -Timeout 20
+            foreach ($job in $jobs) {
+                $job.State | Should -Be 'Completed'
+                Receive-Job -Job $job -ErrorAction Stop | Out-Null
+            }
+            $destination = Join-Path $cacheRoot 'Microsoft.Windows.Registry' '2.10.0'
+            Join-Path $destination 'registry.dsc.resource.json' | Should -Exist
+            Join-Path $destination 'registrylist.dsc.resource.json' | Should -Exist
+            $metadata = Get-Content -LiteralPath (Join-Path $destination '.dsc-cache.json') -Raw | ConvertFrom-Json -AsHashtable
+            $metadata.ManifestDigests.Keys | Should -HaveCount 2
+            @(Get-Content -LiteralPath (Join-Path $signals 'Registry-downloads'),(Join-Path $signals 'RegistryList-downloads') |
+                Where-Object { $_ -eq $zipDigest }) | Should -HaveCount 1
+        } finally {
+            foreach ($job in $jobs) {
+                if ($job.State -eq 'Running') { Stop-Job -Job $job }
+                Remove-Job -Job $job -Force
+            }
         }
     }
 

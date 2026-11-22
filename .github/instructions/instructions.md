@@ -311,7 +311,8 @@ Each package has `zipContents` and `manifests` arrays. Only `zipContents` files 
 files listed in `manifests` are not required to create the ZIP and are not included.
 The `All` section is combined with the target's `Linux`, `macOS`, or `Windows` section. Entries with
 the same package name are merged into one ZIP, and nested file paths are preserved. Extensionless
-executable names in `All` receive `.exe` for Windows targets. Package names use the resource type
+executable names receive `.exe` for Windows targets; configured `.exe` suffixes are removed for Unix targets.
+Package names use the resource type
 with `/` replaced by `.`, and become the ZIP filenames. Related resources can share a package:
 Registry and RegistryList use `Microsoft.Windows.Registry.zip`, and the three DISM resources use
 `Microsoft.Windows.DISM.zip`. Test resources must not be included. Missing files fail packaging.
@@ -331,8 +332,12 @@ Publish-Artifact -PackageName Microsoft.Windows.Registry -OS Windows -Platforms 
 The default uses current host artifacts. Explicit platforms use their architecture-specific
 build directories. The module obtains an ACR token with `az acr login --expose-token` and passes it
 to `oras login --password-stdin`. Each resource is published with a separate JSON manifest, a shared implementation
-ZIP, and a `resourceName-version` OCI index. Bundled manifests are split into resource entries;
-YAML manifests require `ConvertFrom-Yaml`. Existing resource packages are not deleted.
+ZIP, and a `resourceName-version` OCI index. Normal builds preserve distribution bundles and also
+generate individual JSON files under `bin/<target>/<configuration>/resource-manifests` (or
+`bin/<configuration>/resource-manifests` for the current target). `ResourcePackageFiles.manifests`
+selects these individual files, keeping File Content separate from Windows-only ACL publication.
+Publication rejects bundled inputs and invalid semantic versions before authenticating or uploading.
+YAML inputs must describe a single resource and require `ConvertFrom-Yaml`. Existing packages are not deleted.
 
 Use `Find-Artifact` to discover a resource by its full type, including resources in shared packages:
 
@@ -360,7 +365,9 @@ name taken from the ZIP without its extension, such as `Microsoft.Windows.Regist
 The individual resource manifest is placed in that same version folder, and multiple versions coexist.
 Downloads are digest-verified and staged before installation. Matching packages are reused, including
 shared ZIPs; switching platform or ZIP replaces only the selected version's contents. `-WhatIf` skips
-downloads and cache changes.
+downloads and cache changes. A per-package/version cross-process lock covers cache validation,
+installation, and rollback. Even reused packages are copied to staging before manifest and metadata
+updates, so a failed update preserves the previous live installation.
 
 ## CI/CD Workflows
 

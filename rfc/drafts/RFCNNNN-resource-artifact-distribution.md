@@ -119,7 +119,10 @@ Packaging metadata distinguishes implementation files (`zipContents`) from manif
 {
   "Microsoft.Windows.Registry": {
     "zipContents": ["registry.exe"],
-    "manifests": ["registry.dsc.manifests.json"]
+    "manifests": [
+      "resource-manifests/Microsoft.Windows.Registry.dsc.resource.json",
+      "resource-manifests/Microsoft.Windows.RegistryList.dsc.resource.json"
+    ]
   }
 }
 ```
@@ -129,7 +132,8 @@ The repository's build metadata groups these definitions under `All`, `Linux`, `
 entries with the same package name, and deduplicates file paths.
 
 Only implementation files enter the ZIP. They can include executables, scripts, and required
-support files; nested relative paths are preserved. Manifest sources are processed separately
+support files; nested relative paths are preserved. Executable filenames use the target platform's
+native suffix, regardless of how they are written in shared metadata. Manifest sources are processed separately
 and are not required merely to assemble the ZIP. Official production package definitions MUST
 exclude test resources.
 
@@ -137,10 +141,13 @@ For publication, all declared implementation files and manifest sources MUST be 
 every requested platform. Producers validate the complete publication input before uploading.
 Artifact-directory organization and build tools are implementation choices.
 
-A manifest source can be a standalone JSON resource, a JSON bundle containing `resources` or
-`adaptedResources`, or a YAML resource manifest. The producer emits an individual JSON manifest
-for each resource entry, preserving its DSC properties and existing author. Actions and extensions
-in bundles are not published as resources.
+Each publication input MUST describe one resource, in JSON or YAML; bundles are rejected.
+Build preparation can generate individual resource files from source bundles, preserving the
+bundles for ordinary distribution and retaining resource properties and existing authors.
+Actions and extensions in bundles are not emitted as resources. Package definitions select the
+individual files appropriate for each operating system. The same resource version and platform
+MUST NOT be advertised by multiple packages; Windows-only ACL manifests are excluded from Unix
+package definitions even when their implementation is shared with File Content.
 
 ### Registry addressing
 
@@ -388,9 +395,12 @@ prepared directory is installed successfully, restoring it if installation fails
 cannot complete, retained recovery data and its location MUST be reported.
 
 For a matching shared implementation, only the required resource manifest and its metadata entry
-need updating. Success is reported only after both are installed. Writers targeting the same
-version directory must coordinate to avoid losing shared manifests or publishing inconsistent
-metadata; the locking or transactional mechanism is implementation-defined.
+need updating, but these updates MUST preserve the live installation until both are ready.
+Staging a copy of the matching directory allows the same replacement and recovery mechanism
+to apply without downloading the implementation again. Success is reported only after both
+are installed. Writers targeting the same version directory MUST coordinate before reading
+cache state and through installation and rollback to avoid losing shared manifests or publishing
+inconsistent metadata; the locking or transactional mechanism is implementation-defined.
 
 Consumers clean up only staging directories they own. Failed downloads, invalid archives,
 digest mismatches, malformed manifests, and filesystem errors MUST NOT yield successful
