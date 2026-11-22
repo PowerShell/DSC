@@ -117,7 +117,8 @@ and cleanup are bounded by the remaining deadline, including command-based provi
 terminates the operation's process rather than retrying or resetting its deadline.
 
 DSC doesn't log callback values and uses generic callback/provider diagnostics instead of
-forwarding provider-controlled error text. Secrets cross private process pipes in plaintext, so
+forwarding provider-controlled error text, trace messages, or progress messages from Secret
+providers. Progress counts are preserved. Secrets cross private process pipes in plaintext, so
 extensions remain responsible for not logging or embedding them in discovered manifests, trace
 notifications, progress messages, or other output. This callback isn't an authorization boundary
 between trusted extensions.

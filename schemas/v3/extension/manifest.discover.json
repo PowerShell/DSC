@@ -4,35 +4,34 @@
   "additionalProperties": false,
   "properties": {
     "args": {
-      "description": "The arguments to pass to the command to perform a Get.",
+      "type": [
+        "array",
+        "null"
+      ],
       "items": {
         "anyOf": [
           {
             "type": "string"
           },
           {
-            "properties": {
-              "extensionsArg": {
-                "description": "The argument that accepts the extensions list.  The extensions list will be passed as a comma separated list of extensions.",
-                "type": "string"
-              },
-              "includeQuotes": {
-                "default": false,
-                "description": "Whether to include quotes around the extensions list.  If true, the extensions list will be passed as a quoted string.",
-                "type": "boolean"
-              }
-            },
+            "type": "object",
             "required": [
               "extensionsArg"
             ],
-            "type": "object"
+            "properties": {
+              "extensionsArg": {
+                "description": "The argument that accepts the extensions list as a comma-separated string.",
+                "type": "string"
+              },
+              "includeQuotes": {
+                "description": "Whether DSC surrounds the extensions list with quotes.",
+                "type": "boolean",
+                "default": false
+              }
+            }
           }
         ]
-      },
-      "type": [
-        "array",
-        "null"
-      ]
+      }
     },
     "executable": {
       "description": "The command to run to get the state of the resource.",

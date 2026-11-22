@@ -365,11 +365,11 @@ impl RpcProcess {
                 }
                 let params = &value["params"];
                 let message = params["message"].as_str().ok_or_else(protocol_error)?;
+                let redacted_message = t!("extensions.jsonrpc.secretFailed");
+                let message = if self.redact_diagnostics { redacted_message.as_ref() } else { message };
                 match value["method"].as_str() {
                     Some("dsc_trace") => {
                         let pid = self.child.id();
-                        let redacted_message = t!("extensions.jsonrpc.secretFailed");
-                        let message = if self.redact_diagnostics { redacted_message.as_ref() } else { message };
                         match params["level"].as_str() {
                             Some("error") => tracing::error!(pid, "{message}"),
                             Some("warn") => tracing::warn!(pid, "{message}"),

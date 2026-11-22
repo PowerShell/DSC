@@ -302,6 +302,7 @@ Start-Sleep -Seconds 30
     It 'supports reverse requests from the resource JSON-RPC runner during <Invocation>' -ForEach @(
         @{ Invocation = 'standalone invocation' }
         @{ Invocation = 'configuration invocation' }
+        @{ Invocation = 'configuration invocation with provider progress' }
     ) {
         @{
             '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
@@ -324,15 +325,31 @@ Start-Sleep -Seconds 30
             $LASTEXITCODE | Should -Be 0
             $result.actualState.authenticated | Should -BeTrue
         } else {
+            if ($Invocation -eq 'configuration invocation with provider progress') {
+                $env:DSC_TEST_SECRET_RPC_FAULT = 'progress'
+            }
             $configuration = @{
                 '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
                 directives = @{ reuseResources = $false }
                 resources = @(@{ name = 'consumer'; type = 'Test/JsonRpcSecretConsumer' })
             }
-            $result = dsc config get -i ($configuration | ConvertTo-Json -Depth 10) |
+            $result = dsc --progress-format json config get -i ($configuration | ConvertTo-Json -Depth 10) 2>$TestDrive/error.log |
                 ConvertFrom-Json -Depth 30
             $LASTEXITCODE | Should -Be 0
+            $result.hadErrors | Should -BeFalse
             $result.results[0].result.actualState.authenticated | Should -BeTrue
+            $diagnostics = Get-Content -LiteralPath $TestDrive/error.log -Raw
+            $diagnostics | Should -Not -Match 'test-runtime-token|test-runtime-password'
+            if ($Invocation -eq 'configuration invocation with provider progress') {
+                $progress = @(Get-Content -LiteralPath $TestDrive/error.log | ConvertFrom-Json |
+                    Where-Object resourceProgress)
+                $progress | Should -HaveCount 2
+                foreach ($record in $progress) {
+                    $record.resourceProgress.completed | Should -Be 1
+                    $record.resourceProgress.total | Should -Be 1
+                    $record.activity | Should -Not -BeNullOrEmpty
+                }
+            }
             $initialize = @((Get-ExtensionRpcEvent) | Where-Object {
                 $_.role -eq 'secret' -and $_.event -eq 'initialize'
             })
@@ -349,6 +366,8 @@ Start-Sleep -Seconds 30
         @{ SchemaKind = 'engine' }
         @{ SchemaKind = 'published bundle' }
         @{ SchemaKind = 'authoring bundle' }
+        @{ SchemaKind = 'published extension-list bundle' }
+        @{ SchemaKind = 'authoring extension-list bundle' }
     ) {
         $schema = switch ($SchemaKind) {
             engine {
@@ -361,14 +380,23 @@ Start-Sleep -Seconds 30
             'authoring bundle' {
                 Get-Content -LiteralPath "$PSScriptRoot/../../../schemas/v3/bundled/extension/manifest.vscode.json" -Raw
             }
+            'published extension-list bundle' {
+                Get-Content -LiteralPath "$PSScriptRoot/../../../schemas/v3/bundled/outputs/extension/list.json" -Raw
+            }
+            'authoring extension-list bundle' {
+                Get-Content -LiteralPath "$PSScriptRoot/../../../schemas/v3/bundled/outputs/extension/list.vscode.json" -Raw
+            }
         }
         foreach ($path in @("$discoverPath/discover.dsc.extension.json", "$secretPath/secret.dsc.extension.json")) {
-            Get-Content -LiteralPath $path -Raw | Test-Json -Schema $schema | Should -BeTrue
+            $manifest = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -AsHashtable
+            $value = if ($SchemaKind -like '*extension-list*') { @{ manifest = $manifest } } else { $manifest }
+            $value | ConvertTo-Json -Depth 30 | Test-Json -Schema $schema | Should -BeTrue
         }
         $manifest = Get-Content -LiteralPath "$secretPath/secret.dsc.extension.json" -Raw |
             ConvertFrom-Json -AsHashtable
         $manifest.secret.executable = 'pwsh'
-        $manifest | ConvertTo-Json -Depth 20 | Test-Json -Schema $schema -ErrorAction SilentlyContinue |
+        $value = if ($SchemaKind -like '*extension-list*') { @{ manifest = $manifest } } else { $manifest }
+        $value | ConvertTo-Json -Depth 30 | Test-Json -Schema $schema -ErrorAction SilentlyContinue |
             Should -BeFalse
     }
 }

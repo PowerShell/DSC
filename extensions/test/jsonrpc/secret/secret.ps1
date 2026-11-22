@@ -32,6 +32,17 @@ Add-RpcEvent -Role secret -Event start
             }
             switch ($env:DSC_TEST_SECRET_RPC_FAULT) {
                 timeout { Start-Sleep -Seconds 30 }
+                progress {
+                    Write-RpcMessage @{
+                        jsonrpc = '2.0'; method = 'dsc_progress'
+                        params = @{
+                            requestId = $request.id
+                            message = 'test-runtime-token test-runtime-password'
+                            completed = 1
+                            total = 1
+                        }
+                    }
+                }
                 error {
                     [Console]::Error.WriteLine('{"error":"test-runtime-token test-runtime-password"}')
                     Write-RpcMessage @{
