@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource list' command
-ms.date:     03/25/2025
+ms.date:     11/22/2026
 ms.topic:    reference
 title:       dsc resource list
 ---
@@ -33,6 +33,10 @@ DSC returns the list of discovered resources with their implementation informati
 the command includes the `RESOURCE_NAME` argument, DSC filters the list of discovered resources
 before returning them. The `--description` and `--tags` options filter the results by the resource
 descriptions and tags. Filters are always applied after resource discovery.
+
+When discovery calls a Discover extension, progress identifies the extension being called.
+This activity appears in both console progress and JSON progress from
+`dsc --progress-format json resource list`. Discovery remains in progress until the extensions finish.
 
 ### Adapted resource cache
 

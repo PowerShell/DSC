@@ -427,8 +427,6 @@ impl ResourceDiscovery for CommandDiscovery {
             }
         }
 
-        progress.write_increment(1);
-
         match kind {
             DiscoveryKind::Extension => {
                 locked_extend!(EXTENSIONS, extensions);
@@ -439,6 +437,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 context.extensions = loaded_extensions();
                 for extension in &context.extensions {
                     if extension.capabilities.contains(&ExtensionCapability::Discover) {
+                        progress.write_activity(&t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
                         debug!("{}", t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
                         let discovered_resources = match extension.discover_with_context(&context) {
                             Ok(res) => res,
@@ -472,6 +471,7 @@ impl ResourceDiscovery for CommandDiscovery {
             },
         }
 
+        progress.write_increment(1);
         Ok(())
     }
 

@@ -107,6 +107,22 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         $result.results[0].result.actualState.authenticated | Should -BeTrue
     }
 
+    It 'reports the active Discover extension during <Kind> discovery' -ForEach @(
+        @{ Kind = 'resource' }
+        @{ Kind = 'action' }
+    ) {
+        $settings.requests = @()
+        Set-RpcSettings
+        dsc --trace-format json --progress-format json $Kind list 'Test/*' 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $progress = @(Get-Content $TestDrive/error.log | ConvertFrom-Json | Where-Object {
+            $_.activity -eq "Calling extension 'Test/JsonRpcDiscover' to discover resources"
+        })
+        @($progress | Where-Object completedItems -EQ 0) | Should -HaveCount 1
+        $progress[0].totalItems | Should -Be 1
+        $progress[0].id | Should -Not -BeNullOrEmpty
+    }
+
     It 'preserves the registry friendly name from a Discover result' {
         $settings.registry = 'oci-test'
         Set-RpcSettings
