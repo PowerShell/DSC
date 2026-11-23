@@ -101,15 +101,18 @@ failures do not discard collected tags or prevent other repositories from being 
 
 Remote definitions are imported as ordinary or adapted DSC resource metadata, without evaluating
 conditions or executing schema commands. Adapted resources retain their required adapter,
-capabilities, content, and schema; schemas can be read without invoking an adapter. Action and
+capabilities, content, and schema; known embedded schemas can be read without enumerating or
+invoking installed adapters. Action and
 manifest-list payloads are rejected, and remote definitions cannot supply trusted local resource
 paths. A remote adapted resource remains uninstalled even when it names an existing local path.
 
 Remote list results include `registry` set to the friendly name. Locally discovered resources
 include `registry: local`. An installed local resource takes precedence over a remote resource
 with the same type and version, consistently for listing and invocation.
-Before accepting remote adapted metadata for invocation, DSC checks the installed adapter for a
-matching resource. Adapter-filtered lists also include matching remote adapted metadata, retaining
+Before accepting remote adapted metadata for invocation, DSC searches eligible installed adapters
+for a matching resource, checking the advertised adapter first when installed. An explicit
+`requireAdapter` restricts this search; otherwise another installed adapter can provide the resource.
+Adapter-filtered lists also include matching remote adapted metadata, retaining
 installed adapter-list results over remote duplicates without executing uninstalled remote adapters.
 Registries must permit repository catalog enumeration. An unavailable registry or failed
 credential lookup produces a warning identifying that registry; discovery continues with the

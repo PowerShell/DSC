@@ -35,6 +35,7 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
             $listed | ConvertTo-Json -Compress | Set-Content (Join-Path $testDirectory listed.json)
             @'
 param([string]$Operation)
+Add-Content -LiteralPath (Join-Path $PSScriptRoot adapter-calls.log) -Value $Operation
 if ($Operation -eq 'list') {
     Get-Content -LiteralPath (Join-Path $PSScriptRoot listed.json)
 } else {
@@ -59,6 +60,7 @@ if ($Operation -eq 'list') {
                 schema = @{ embedded = @{ type = 'object' } }
             } | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $testDirectory adapter.dsc.resource.json)
             $env:PATH = @($testDirectory, $env:PATH) -join [IO.Path]::PathSeparator
+            $env:DSC_RESTRICTED_PATH = @($testDirectory, $discoverPath, $secretPath, $PSHOME) -join [IO.Path]::PathSeparator
             $settings.registry = 'oci-test'
             $settings.requests = @()
             $settings.manifest = @{
@@ -81,11 +83,13 @@ if ($Operation -eq 'list') {
         $previousLocalAppData = $env:LOCALAPPDATA
         $previousProgramData = $env:ProgramData
         $previousResourcePath = $env:DSC_RESOURCE_PATH
+        $previousRestrictedPath = $env:DSC_RESTRICTED_PATH
         $previousLog = $env:DSC_TEST_EXTENSION_RPC_LOG
         $previousSettings = $env:DSC_TEST_EXTENSION_RPC_SETTINGS
         $previousFault = $env:DSC_TEST_SECRET_RPC_FAULT
         $env:PATH = @($discoverPath, $secretPath, $previousPath) -join [IO.Path]::PathSeparator
         $env:DSC_RESOURCE_PATH = $null
+        $env:DSC_RESTRICTED_PATH = $null
         $env:DSC_TEST_EXTENSION_RPC_LOG = Join-Path $TestDrive "$([guid]::NewGuid()).jsonl"
         $env:DSC_TEST_EXTENSION_RPC_SETTINGS = Join-Path $TestDrive "$([guid]::NewGuid()).json"
         $env:DSC_TEST_SECRET_RPC_FAULT = $null
@@ -116,6 +120,7 @@ if ($Operation -eq 'list') {
         $env:LOCALAPPDATA = $previousLocalAppData
         $env:ProgramData = $previousProgramData
         $env:DSC_RESOURCE_PATH = $previousResourcePath
+        $env:DSC_RESTRICTED_PATH = $previousRestrictedPath
         $env:DSC_TEST_EXTENSION_RPC_LOG = $previousLog
         $env:DSC_TEST_EXTENSION_RPC_SETTINGS = $previousSettings
         $env:DSC_TEST_SECRET_RPC_FAULT = $previousFault
@@ -241,6 +246,136 @@ if ($Operation -eq 'list') {
         }
     }
 
+    It 'uses a different installed adapter for <Operation> when the advertised adapter is installed <AdvertisedInstalled>' -ForEach @(
+        @{ Operation = 'get'; AdvertisedInstalled = $false }
+        @{ Operation = 'get'; AdvertisedInstalled = $true }
+        @{ Operation = 'set'; AdvertisedInstalled = $false }
+        @{ Operation = 'set'; AdvertisedInstalled = $true }
+    ) {
+        New-RegistryAdapterFixture
+        $settings.manifest.requireAdapter = 'Test/AdvertisedRegistryAdapter'
+        $marker = Join-Path $testDirectory advertised-adapter-called
+        if ($AdvertisedInstalled) {
+            $escapedMarker = $marker.Replace("'", "''")
+            @{
+                '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+                type = 'Test/AdvertisedRegistryAdapter'
+                version = '0.1.0'
+                kind = 'adapter'
+                adapter = @{
+                    inputKind = 'single'
+                    list = @{
+                        executable = 'pwsh'
+                        args = @('-NoProfile', '-NonInteractive', '-Command',
+                            "Set-Content -LiteralPath '$escapedMarker' -Value listed")
+                    }
+                }
+            } | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $testDirectory advertised.dsc.resource.json)
+        }
+        Set-RpcSettings
+        $result = dsc resource $Operation -r Test/SecretDiscovered --version '=0.1.0' -i '{"installed":true}' 2>$TestDrive/error.log |
+            ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        if ($Operation -eq 'get') {
+            $result.actualState.installed | Should -BeTrue
+        } else {
+            $result.afterState.installed | Should -BeTrue
+        }
+        if ($AdvertisedInstalled) {
+            $marker | Should -Exist
+        } else {
+            $marker | Should -Not -Exist
+        }
+    }
+
+    It 'retains installed candidates for different explicit adapter requirements in one configuration' {
+        New-RegistryAdapterFixture
+        $otherAdapter = 'Test/OtherInstalledAdapter'
+        $listed = Get-Content -Raw (Join-Path $testDirectory listed.json) | ConvertFrom-Json
+        $listed.requireAdapter = $otherAdapter
+        $listed | ConvertTo-Json -Compress | Set-Content (Join-Path $testDirectory other-listed.json)
+        $manifest = Get-Content -Raw (Join-Path $testDirectory adapter.dsc.resource.json) | ConvertFrom-Json -AsHashtable
+        $manifest.type = $otherAdapter
+        $escapedPath = (Join-Path $testDirectory other-listed.json).Replace("'", "''")
+        $manifest.adapter.list.args = @('-NoProfile', '-NonInteractive', '-Command', "Get-Content -LiteralPath '$escapedPath'")
+        $manifest | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $testDirectory other-adapter.dsc.resource.json)
+        $settings.additionalManifest = $settings.manifest.Clone()
+        $settings.additionalManifest.requireAdapter = $otherAdapter
+        Set-RpcSettings
+        $configuration = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'first'
+                    type = 'Test/SecretDiscovered'
+                    directives = @{ requireAdapter = 'Test/InstalledRegistryAdapter' }
+                }
+                @{
+                    name = 'second'
+                    type = 'Test/SecretDiscovered'
+                    directives = @{ requireAdapter = $otherAdapter }
+                }
+            )
+        }
+        $result = dsc config get -i ($configuration | ConvertTo-Json -Depth 10) 2>$TestDrive/error.log |
+            ConvertFrom-Json -Depth 30
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $result.hadErrors | Should -BeFalse
+        $result.results | Should -HaveCount 2
+        $result.results[0].result.actualState.installed | Should -BeTrue
+        $result.results[1].result.actualState.installed | Should -BeTrue
+    }
+
+    It 'does not search other installed adapters when the remote adapter is explicitly required' {
+        New-RegistryAdapterFixture
+        $settings.manifest.requireAdapter = 'Test/AdvertisedRegistryAdapter'
+        Set-RpcSettings
+        $configuration = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(@{
+                name = 'pinned'
+                type = 'Test/SecretDiscovered'
+                directives = @{ requireAdapter = 'Test/AdvertisedRegistryAdapter' }
+            })
+        }
+        dsc config get -i ($configuration | ConvertTo-Json -Depth 10) 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 2
+        Get-Content -Raw $TestDrive/error.log | Should -Match "Resource 'Test/SecretDiscovered' from registry 'oci-test' is not installed"
+        Join-Path $testDirectory adapter-calls.log | Should -Not -Exist
+    }
+
+    It 'reads remote embedded schemas without calling an installed adapter that provides the resource <ProvidesResource>' -ForEach @(
+        @{ ProvidesResource = $false }
+        @{ ProvidesResource = $true }
+    ) {
+        New-RegistryAdapterFixture
+        if (-not $ProvidesResource) {
+            $listed = Get-Content -Raw (Join-Path $testDirectory listed.json) | ConvertFrom-Json
+            $listed.type = 'Test/OtherResource'
+            $listed | ConvertTo-Json -Compress | Set-Content (Join-Path $testDirectory listed.json)
+        }
+        $settings.manifest.schema = @{
+            embedded = @{ type = 'object'; properties = @{ metadataOnly = @{ type = 'boolean' } } }
+        }
+        Set-RpcSettings
+        $schema = dsc resource schema -r Test/SecretDiscovered --version '=0.1.0' 2>$TestDrive/error.log |
+            ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $schema.properties.metadataOnly.type | Should -BeExactly 'boolean'
+        Join-Path $testDirectory adapter-calls.log | Should -Not -Exist
+    }
+
+    It 'still discovers installed adapted schemas when no matching resource metadata is available' {
+        New-RegistryAdapterFixture
+        $settings.manifest.type = 'Test/OtherMetadata'
+        Set-RpcSettings
+        $schema = dsc resource schema -r Test/SecretDiscovered --version '=0.1.0' 2>$TestDrive/error.log |
+            ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $schema.type | Should -BeExactly 'object'
+        Get-Content (Join-Path $testDirectory adapter-calls.log) | Should -Contain 'list'
+    }
+
     It 'includes remote versions in adapter-filtered lists but keeps installed duplicates first' {
         New-RegistryAdapterFixture
         $settings.additionalManifest = $settings.manifest.Clone()
@@ -344,6 +479,7 @@ if ($Operation -eq 'list') {
         @{ Payload = 'existing-path'; SchemaShape = 'direct' }
         @{ Payload = 'missing-path'; SchemaShape = 'embedded' }
     ) {
+        $env:DSC_RESTRICTED_PATH = @($testDirectory, $discoverPath, $secretPath, $PSHOME) -join [IO.Path]::PathSeparator
         $localPath = Join-Path $testDirectory 'untrusted-path.json'
         if ($Payload -eq 'existing-path') {
             '{"untrusted":true}' | Set-Content -LiteralPath $localPath

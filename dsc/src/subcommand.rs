@@ -582,11 +582,7 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             list_resources(&mut dsc, resource_name, adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format)?;
         },
         ResourceSubCommand::Schema { resource, required_version: version, output_format } => {
-            if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {
-                error!("{}: {err}", t!("subcommand.failedDiscoverResource"));
-                return Err(ExitCode::from(EXIT_DSC_ERROR));
-            }
-            resource_command::schema(&mut dsc, resource, version.as_ref(), output_format.as_ref())?;
+            resource_command::schema(&mut dsc, resource, version.as_ref(), output_format.as_ref(), progress_format)?;
         },
         ResourceSubCommand::Export { resource, required_version: version, input, file, output_format } => {
             if let Err(err) = dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone(), None)], progress_format) {

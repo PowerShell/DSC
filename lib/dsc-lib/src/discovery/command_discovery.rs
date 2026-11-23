@@ -25,7 +25,7 @@ use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::{BTreeSet, HashMap, HashSet}, sync::{LazyLock, RwLock}};
+use std::{collections::{HashMap, HashSet}, sync::{LazyLock, RwLock}};
 use std::env;
 use std::ffi::OsStr;
 use std::fs::{create_dir_all, read, read_to_string, write};
@@ -100,24 +100,46 @@ impl CommandDiscovery {
     #[must_use]
     pub fn get_extensions(&self) -> DiscoveryExtensionCache { locked_clone!(EXTENSIONS) }
 
+    pub(crate) fn find_resource_for_schema(&mut self, filter: &DiscoveryFilter) -> Result<Option<Box<dyn ResourceInvoke>>, DscError> {
+        self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
+        if let Some(resources) = locked_get!(RESOURCES, filter.resource_type())
+            && let Some(resource) = resources.into_iter().find(|resource|
+                filter.require_version().is_none_or(|version| version.matches(&resource.version()))
+                    && matches_adapter_requirement(resource.as_ref(), filter)) {
+            return Ok(Some(resource));
+        }
+        Ok(self.find(std::slice::from_ref(filter))?.remove(filter.resource_type())
+            .and_then(|resources| resources.into_iter().next()))
+    }
+
     fn discover_registry_resource_adapters(&mut self, filters: &[DiscoveryFilter]) -> Result<(), DscError> {
-        let mut adapters = BTreeSet::new();
+        let installed_adapters = locked_clone!(ADAPTERS);
+        let mut searched = HashSet::new();
         for filter in filters {
-            if let Some(resources) = locked_get!(RESOURCES, filter.resource_type()) {
-                for resource in resources {
-                    if is_remote_adapted_resource(resource.as_ref())
-                        && matches_adapter_requirement(resource.as_ref(), filter)
-                        && let Some(adapter) = resource.as_dsc_resource().and_then(|resource| resource.require_adapter.clone())
-                        && locked_get!(ADAPTERS, &adapter).is_some() {
-                        adapters.insert(adapter);
-                    }
+            let Some(resources) = locked_get!(RESOURCES, filter.resource_type()) else { continue };
+            if !resources.iter().any(|resource| is_remote_adapted_resource(resource.as_ref())
+                && matches_adapter_requirement(resource.as_ref(), filter)) {
+                continue;
+            }
+            let mut adapters: Vec<_> = installed_adapters.keys()
+                .filter(|adapter| filter.require_adapter().is_none_or(|required| required == *adapter))
+                .cloned().collect();
+            adapters.sort_by_key(|adapter| !resources.iter().any(|resource|
+                resource.as_dsc_resource().and_then(|resource| resource.require_adapter.as_ref()) == Some(adapter)));
+            for adapter in adapters {
+                if resource_candidates(filter)
+                    .and_then(|resources| resources.into_iter().find(|resource|
+                        filter.require_version().is_none_or(|version| version.matches(&resource.version()))
+                            && matches_adapter_requirement(resource.as_ref(), filter)))
+                    .is_some_and(|resource| !is_remote_adapted_resource(resource.as_ref())) {
+                    break;
+                }
+                if searched.insert(adapter.clone()) {
+                    self.discover_adapted_resources(&TypeNameFilter::default(), &adapter.into())?;
                 }
             }
         }
-        for adapter in &adapters {
-            self.discover_adapted_resources(&TypeNameFilter::default(), &adapter.clone().into())?;
-        }
-        if !adapters.is_empty() {
+        if !searched.is_empty() {
             add_resources_to_lookup_table(&locked_clone!(ADAPTED_RESOURCES));
         }
         Ok(())
@@ -588,7 +610,15 @@ impl ResourceDiscovery for CommandDiscovery {
             return Err(DscError::AdapterNotFound(adapter_filter.to_string()));
         }
 
-        locked_extend!(ADAPTED_RESOURCES, adapted_resources);
+        let mut cached = ADAPTED_RESOURCES.write().unwrap();
+        for (resource_name, listed) in adapted_resources {
+            let versions = cached.entry(resource_name).or_default();
+            versions.retain(|previous| !listed.iter().any(|resource|
+                previous.as_dsc_resource().and_then(|resource| resource.require_adapter.as_ref())
+                    == resource.as_dsc_resource().and_then(|resource| resource.require_adapter.as_ref())));
+            versions.extend(listed);
+            versions.sort_by_key(|resource| std::cmp::Reverse(resource.version()));
+        }
 
         Ok(())
     }

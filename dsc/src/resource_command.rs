@@ -11,6 +11,7 @@ use dsc_lib::discovery::discovery_trait::DiscoveryFilter;
 use dsc_lib::DscManager;
 use dsc_lib::dscresources::dscresource::{ResourceCapability, get_diff};
 use dsc_lib::dscerror::DscError;
+use dsc_lib::progress::ProgressFormat;
 use dsc_lib::resources::{invoke_result::{DeleteResultKind, GetResult, ResourceGetResponse, SetResult, ResourceSetResponse}, resource_invoke::ResourceInvoke};
 use dsc_lib::types::{FullyQualifiedTypeName, ResourceVersionReq};
 use rust_i18n::t;
@@ -313,8 +314,13 @@ pub fn delete(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, vers
     Ok(())
 }
 
-pub fn schema(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, format: Option<&OutputFormat>) -> Result<(), ExitCode> {
-    let Some(resource) = get_resource(dsc, resource_type, version) else {
+pub fn schema(dsc: &mut DscManager, resource_type: &FullyQualifiedTypeName, version: Option<&ResourceVersionReq>, format: Option<&OutputFormat>, progress_format: ProgressFormat) -> Result<(), ExitCode> {
+    let resource = dsc.find_resource_for_schema(&DiscoveryFilter::new(resource_type, version.cloned(), None), progress_format)
+        .map_err(|error| {
+            error!("{error}");
+            ExitCode::from(EXIT_DSC_ERROR)
+        })?;
+    let Some(resource) = resource else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.map_or(String::new(), |v| v.to_string())));
         return Err(ExitCode::from(EXIT_DSC_RESOURCE_NOT_FOUND));
     };
