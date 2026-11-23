@@ -12,7 +12,7 @@
   "set": {
     "executable": "oci_registry",
     "args": ["set", {"jsonInputArg": "--input", "mandatory": true}],
-    "implementsPretest": false,
+    "implementsPretest": true,
     "return": "state"
   },
   "export": {

@@ -48,6 +48,8 @@ The resource reads, tests, replaces, and exports one registry settings file. `sc
 not the merged effective discovery configuration. Missing files return an empty list; invalid
 JSON, invalid entries, and inaccessible files are errors. Set replaces the selected list
 atomically, and an empty `registries` array clears it.
+Set requires a non-null `registries` array even when the selected file is already compliant.
+It validates its input before comparing the complete list and avoids rewriting an unchanged file.
 
 Test compares the entire selected registry list, including array order and optional
 authentication fields. Removing `authentication` or `secretVault` from the desired list is a
@@ -106,6 +108,9 @@ paths. A remote adapted resource remains uninstalled even when it names an exist
 Remote list results include `registry` set to the friendly name. Locally discovered resources
 include `registry: local`. An installed local resource takes precedence over a remote resource
 with the same type and version, consistently for listing and invocation.
+Before accepting remote adapted metadata for invocation, DSC checks the installed adapter for a
+matching resource. Adapter-filtered lists also include matching remote adapted metadata, retaining
+installed adapter-list results over remote duplicates without executing uninstalled remote adapters.
 Registries must permit repository catalog enumeration. An unavailable registry or failed
 credential lookup produces a warning identifying that registry; discovery continues with the
 remaining registries and retains earlier results. Invalid remote manifests are also reported as

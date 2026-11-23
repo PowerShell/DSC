@@ -186,6 +186,10 @@ pub fn set(input: &RegistryList) -> Result<RegistryList, String> {
     if input.scope == Scope::AllUsers && get_security_context() != SecurityContext::Admin {
         return Err(t!("settings.elevated").to_string());
     }
+    let current = get(input)?;
+    if current.registries.as_ref() == Some(&settings.registries) {
+        return Ok(current);
+    }
     write(&path, &settings, input.scope)?;
     get(input)
 }

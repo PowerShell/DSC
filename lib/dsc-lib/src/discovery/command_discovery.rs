@@ -25,7 +25,7 @@ use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::{HashMap, HashSet}, sync::{LazyLock, RwLock}};
+use std::{collections::{BTreeSet, HashMap, HashSet}, sync::{LazyLock, RwLock}};
 use std::env;
 use std::ffi::OsStr;
 use std::fs::{create_dir_all, read, read_to_string, write};
@@ -99,6 +99,29 @@ impl CommandDiscovery {
 
     #[must_use]
     pub fn get_extensions(&self) -> DiscoveryExtensionCache { locked_clone!(EXTENSIONS) }
+
+    fn discover_registry_resource_adapters(&mut self, filters: &[DiscoveryFilter]) -> Result<(), DscError> {
+        let mut adapters = BTreeSet::new();
+        for filter in filters {
+            if let Some(resources) = locked_get!(RESOURCES, filter.resource_type()) {
+                for resource in resources {
+                    if is_remote_adapted_resource(resource.as_ref())
+                        && matches_adapter_requirement(resource.as_ref(), filter)
+                        && let Some(adapter) = resource.as_dsc_resource().and_then(|resource| resource.require_adapter.clone())
+                        && locked_get!(ADAPTERS, &adapter).is_some() {
+                        adapters.insert(adapter);
+                    }
+                }
+            }
+        }
+        for adapter in &adapters {
+            self.discover_adapted_resources(&TypeNameFilter::default(), &adapter.clone().into())?;
+        }
+        if !adapters.is_empty() {
+            add_resources_to_lookup_table(&locked_clone!(ADAPTED_RESOURCES));
+        }
+        Ok(())
+    }
 
     /// Retrieves the resolved resource paths, computing and caching them if
     /// necessary.
@@ -599,7 +622,16 @@ impl ResourceDiscovery for CommandDiscovery {
             DiscoveryKind::Resource => {
                 if let Some(adapter_name_filter) = adapter_name_filter {
                     self.discover(kind, &TypeNameFilter::default())?;
-                    self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
+                    let remote_resources: Vec<_> = locked_clone!(RESOURCES).into_values().flatten()
+                        .filter(|resource| is_remote_adapted_resource(resource.as_ref()))
+                        .filter_map(|resource| resource.as_dsc_resource().cloned())
+                        .filter(|resource| type_name_filter.is_match(&resource.type_name)
+                            && resource.require_adapter.as_ref().is_some_and(|adapter| adapter_name_filter.is_match(adapter)))
+                        .collect();
+                    if remote_resources.is_empty()
+                        || locked_clone!(ADAPTERS).keys().any(|adapter| adapter_name_filter.is_match(adapter)) {
+                        self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
+                    }
 
                     // add/update found adapted resources to the lookup_table
                     let adapted_resources = locked_clone!(ADAPTED_RESOURCES);
@@ -609,10 +641,17 @@ impl ResourceDiscovery for CommandDiscovery {
                         let mut imported_manifests = Vec::new();
                         for adapted in adapted_vec {
                             if let Some(resource) = adapted.as_dsc_resource() {
-                                imported_manifests.push(ImportedManifest::Resource(resource.clone()));
+                                if type_name_filter.is_match(&resource.type_name)
+                                    && resource.require_adapter.as_ref().is_some_and(|adapter| adapter_name_filter.is_match(adapter)) {
+                                    imported_manifests.push(ImportedManifest::Resource(resource.clone()));
+                                }
                             }
                         }
                         resources.insert(adapted_name.clone(), imported_manifests);
+                    }
+                    for resource in remote_resources {
+                        resources.entry(resource.type_name.clone()).or_default()
+                            .push(ImportedManifest::Resource(resource));
                     }
                 } else {
                     self.discover(kind, type_name_filter)?;
@@ -646,6 +685,7 @@ impl ResourceDiscovery for CommandDiscovery {
         if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || !self.resources_discovered {
             self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
         }
+        self.discover_registry_resource_adapters(required_resource_types)?;
         let mut found_resources = DiscoveryCache::new();
         let mut required_resources = HashMap::<DiscoveryFilter, bool>::new();
         for filter in required_resource_types {
@@ -653,7 +693,7 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         for filter in required_resource_types {
-            if let Some(resource) = locked_get!(RESOURCES, filter.resource_type()) {
+            if let Some(resource) = resource_candidates(filter) {
                 filter_resources(&mut found_resources, &mut required_resources, &resource, filter);
             }
             if required_resources.values().all(|&v| v) {
@@ -745,6 +785,25 @@ impl ResourceDiscovery for CommandDiscovery {
     fn set_discovery_mode(&mut self, mode: &ResourceDiscoveryMode) {
         self.discovery_mode = mode.clone();
     }
+}
+
+fn is_remote_adapted_resource(resource: &dyn ResourceInvoke) -> bool {
+    resource.as_dsc_resource().is_some_and(|resource|
+        resource.require_adapter.is_some() && resource.path.is_none()
+            && resource.registry.as_deref().is_some_and(|registry| registry != "local"))
+}
+
+fn resource_candidates(filter: &DiscoveryFilter) -> Option<Vec<Box<dyn ResourceInvoke>>> {
+    let mut resources = locked_get!(RESOURCES, filter.resource_type())?;
+    if resources.iter().any(|resource| is_remote_adapted_resource(resource.as_ref())) {
+        if let Some(adapted) = locked_get!(ADAPTED_RESOURCES, filter.resource_type()) {
+            resources.extend(adapted);
+        }
+        resources.sort_by(|left, right|
+            right.version().cmp(&left.version()).then_with(||
+                is_remote_adapted_resource(left.as_ref()).cmp(&is_remote_adapted_resource(right.as_ref()))));
+    }
+    Some(resources)
 }
 
 fn filter_resources(found_resources: &mut DiscoveryCache, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[Box<dyn ResourceInvoke>], filter: &DiscoveryFilter) {

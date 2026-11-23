@@ -22,6 +22,57 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive/error.log -Raw)
             $output | ConvertFrom-Json
         }
+
+        function New-RegistryAdapterFixture {
+            $listed = @{
+                type = 'Test/SecretDiscovered'
+                kind = 'resource'
+                version = '0.1.0'
+                capabilities = @('get', 'set')
+                requireAdapter = 'Test/InstalledRegistryAdapter'
+                description = 'Installed adapter-list result'
+            }
+            $listed | ConvertTo-Json -Compress | Set-Content (Join-Path $testDirectory listed.json)
+            @'
+param([string]$Operation)
+if ($Operation -eq 'list') {
+    Get-Content -LiteralPath (Join-Path $PSScriptRoot listed.json)
+} else {
+    '{"installed":true}'
+}
+'@ | Set-Content (Join-Path $testDirectory adapter.ps1)
+            $arguments = @('-NoProfile', '-NonInteractive', '-File', (Join-Path $testDirectory adapter.ps1))
+            @{
+                '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+                type = 'Test/InstalledRegistryAdapter'
+                version = '0.1.0'
+                kind = 'adapter'
+                get = @{ executable = 'pwsh'; args = $arguments + @('-Operation', 'get') }
+                set = @{
+                    executable = 'pwsh'; args = $arguments + @('-Operation', 'set')
+                    implementsPretest = $true; return = 'state'
+                }
+                adapter = @{
+                    inputKind = 'single'
+                    list = @{ executable = 'pwsh'; args = $arguments + @('-Operation', 'list') }
+                }
+                schema = @{ embedded = @{ type = 'object' } }
+            } | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $testDirectory adapter.dsc.resource.json)
+            $env:PATH = @($testDirectory, $env:PATH) -join [IO.Path]::PathSeparator
+            $settings.registry = 'oci-test'
+            $settings.requests = @()
+            $settings.manifest = @{
+                '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json'
+                type = 'Test/SecretDiscovered'
+                version = '0.1.0'
+                kind = 'resource'
+                capabilities = @('get', 'set')
+                requireAdapter = 'Test/InstalledRegistryAdapter'
+                content = @{ remote = $true }
+                schema = @{ embedded = @{ type = 'object' } }
+            }
+            Set-RpcSettings
+        }
     }
 
     BeforeEach {
@@ -154,6 +205,100 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         $result = dsc resource get -r Test/SecretDiscovered 2>$TestDrive\error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
         $result.actualState.installed | Should -BeTrue
+    }
+
+    It 'prefers installed adapter-list resources for <Operation> with adapter pinned <Pinned> and remote version <RemoteVersion>' -ForEach @(
+        @{ Operation = 'get'; Pinned = $false; RemoteVersion = '0.1.0' }
+        @{ Operation = 'get'; Pinned = $true; RemoteVersion = '0.1.0' }
+        @{ Operation = 'set'; Pinned = $false; RemoteVersion = '0.1.0' }
+        @{ Operation = 'set'; Pinned = $true; RemoteVersion = '0.1.0' }
+        @{ Operation = 'get'; Pinned = $false; RemoteVersion = '0.2.0' }
+    ) {
+        New-RegistryAdapterFixture
+        $settings.manifest.version = $RemoteVersion
+        Set-RpcSettings
+        $instance = @{
+            name = 'installed'
+            type = 'Test/SecretDiscovered'
+            requireVersion = '=0.1.0'
+            properties = @{ installed = $true }
+        }
+        if ($Pinned) {
+            $instance.directives = @{ requireAdapter = 'Test/InstalledRegistryAdapter' }
+        }
+        $configuration = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @($instance)
+        }
+        $result = dsc config $Operation -i ($configuration | ConvertTo-Json -Depth 10) 2>$TestDrive/error.log |
+            ConvertFrom-Json -Depth 30
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $result.hadErrors | Should -BeFalse
+        if ($Operation -eq 'get') {
+            $result.results[0].result.actualState.installed | Should -BeTrue
+        } else {
+            $result.results[0].result.afterState.installed | Should -BeTrue
+        }
+    }
+
+    It 'includes remote versions in adapter-filtered lists but keeps installed duplicates first' {
+        New-RegistryAdapterFixture
+        $settings.additionalManifest = $settings.manifest.Clone()
+        $settings.additionalManifest.version = '0.2.0'
+        Set-RpcSettings
+        $resources = @(dsc resource list Test/SecretDiscovered --adapter Test/InstalledRegistryAdapter 2>$TestDrive/error.log |
+            ConvertFrom-Json)
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $resources | Should -HaveCount 2
+        $installed = @($resources | Where-Object version -EQ '0.1.0')
+        $installed | Should -HaveCount 1
+        $installed[0].registry | Should -BeExactly 'local'
+        $installed[0].description | Should -BeExactly 'Installed adapter-list result'
+        $remote = @($resources | Where-Object version -EQ '0.2.0')
+        $remote | Should -HaveCount 1
+        $remote[0].registry | Should -BeExactly 'oci-test'
+        $remote[0].requireAdapter | Should -BeExactly 'Test/InstalledRegistryAdapter'
+        $remote[0].path | Should -BeNullOrEmpty
+    }
+
+    It 'lists remote adapted metadata without executing its uninstalled adapter' {
+        $marker = Join-Path $testDirectory remote-adapter-executed
+        $escapedMarker = $marker.Replace("'", "''")
+        $settings.registry = 'oci-test'
+        $settings.requests = @()
+        $settings.manifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/RemoteAdapter'
+            version = '0.1.0'
+            kind = 'adapter'
+            adapter = @{
+                inputKind = 'single'
+                list = @{
+                    executable = 'pwsh'
+                    args = @('-NoProfile', '-NonInteractive', '-Command',
+                        "Set-Content -LiteralPath '$escapedMarker' -Value executed")
+                }
+            }
+            schema = @{ embedded = @{ type = 'object' } }
+        }
+        $settings.additionalManifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json'
+            type = 'Test/SecretDiscovered'
+            version = '0.1.0'
+            kind = 'resource'
+            capabilities = @('get')
+            requireAdapter = 'Test/RemoteAdapter'
+            content = @{ remote = $true }
+            schema = @{ embedded = @{ type = 'object' } }
+        }
+        Set-RpcSettings
+        $resources = @(dsc resource list Test/SecretDiscovered --adapter 'Test/Remote*' 2>$TestDrive/error.log |
+            ConvertFrom-Json)
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $resources | Should -HaveCount 1
+        $resources[0].registry | Should -BeExactly 'oci-test'
+        $resources[0].requireAdapter | Should -BeExactly 'Test/RemoteAdapter'
+        $marker | Should -Not -Exist
     }
 
     It 'rejects remote <Shape> manifests without executing schema commands' -ForEach @(

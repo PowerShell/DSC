@@ -82,6 +82,43 @@ Describe 'OCI RegistryList set' {
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
         ($tested | ConvertFrom-Json).inDesiredState | Should -BeTrue
     }
+    It 'rejects set input <InputJson> before compliance can skip validation' -ForEach @(
+        @{ InputJson = '{}' }
+        @{ InputJson = '{"registries":null}' }
+    ) {
+        $folder = if ($IsWindows) { 'dsc' } else { '.dsc' }
+        $settingsPath = Join-Path $root "$folder\Microsoft.Registry.OpenContainerInitaitive.settings.json"
+        $InputJson | dsc resource set -r $resource -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Not -Be 0
+        Get-Content -Raw $TestDrive/error.log | Should -Match 'registries property is required for set'
+        $settingsPath | Should -Not -Exist
+
+        $desired = '{"registries":[{"public":{"location":"example.com"}}]}'
+        $desired | dsc resource set -r $resource -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $before = Get-Content -Raw $settingsPath
+        $tested = $InputJson | dsc resource test -r $resource -f - 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $tested.inDesiredState | Should -BeTrue
+        $InputJson | dsc resource set -r $resource -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Not -Be 0
+        Get-Content -Raw $TestDrive/error.log | Should -Match 'registries property is required for set'
+        Get-Content -Raw $settingsPath | Should -BeExactly $before
+    }
+
+    It 'does not rewrite a complete registry list that is already compliant' {
+        $desired = '{"registries":[{"public":{"location":"example.com"}}]}'
+        $desired | dsc resource set -r $resource -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $folder = if ($IsWindows) { 'dsc' } else { '.dsc' }
+        $settingsPath = Join-Path $root "$folder\Microsoft.Registry.OpenContainerInitaitive.settings.json"
+        $timestamp = [datetime]::new(2000, 1, 1, 0, 0, 0, [DateTimeKind]::Utc)
+        [IO.File]::SetLastWriteTimeUtc($settingsPath, $timestamp)
+        $desired | dsc resource set -r $resource -f - 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        [IO.File]::GetLastWriteTimeUtc($settingsPath) | Should -Be $timestamp
+    }
+
     It 'rejects an invalid registry without writing settings' -ForEach @(
         '{"registries":[{"public":{}}]}'
         '{"registries":[{"private":{"location":"example.com","authentication":{}}}]}'
