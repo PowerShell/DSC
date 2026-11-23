@@ -123,7 +123,11 @@ async fn serve_with_settings(
                             };
                             let discovered = match token {
                                 Ok(token) => {
-                                    crate::oci::discover(&registry.location, token.as_deref()).await
+                                    crate::oci::discover(&registry.location, token.as_deref(), |repository, tag, error| {
+                                        writeln!(diagnostics, "{}", json!({
+                                            "warn": t!("oci.entry", registry = name, repository = repository, tag = tag, error = error).to_string()
+                                        })).map_err(|error| error.to_string())
+                                    }).await
                                 }
                                 Err(error) => Err(error),
                             };
@@ -164,10 +168,11 @@ mod tests {
     use std::io::Cursor;
 
     #[tokio::test]
-    async fn retains_healthy_registries_before_and_after_catalog_and_secret_failures() {
+    async fn retains_healthy_registries_before_and_after_catalog_metadata_and_secret_failures() {
         for secret_service in [false, true] {
             let healthy = RegistryServer::new(routes(false), None);
             let unavailable = RegistryServer::new(routes(false), Some("sensitive"));
+            let malformed = RegistryServer::new(routes(true), None);
             let anonymous = Registry {
                 location: healthy.url.clone(),
                 authentication: None,
@@ -182,7 +187,14 @@ mod tests {
                     },
                 ),
                 (
-                    "c-secret".into(),
+                    "c-metadata".into(),
+                    Registry {
+                        location: malformed.url.clone(),
+                        ..anonymous.clone()
+                    },
+                ),
+                (
+                    "d-secret".into(),
                     Registry {
                         authentication: Some(Authentication {
                             secret_name: "access".into(),
@@ -191,7 +203,7 @@ mod tests {
                         ..anonymous.clone()
                     },
                 ),
-                ("d-healthy".into(), anonymous),
+                ("e-healthy".into(), anonymous),
             ]);
             let services = if secret_service {
                 vec!["secret.get"]
@@ -241,7 +253,7 @@ mod tests {
                 .iter()
                 .map(|result| result["registry"].as_str().unwrap())
                 .collect();
-            assert_eq!(names, ["a-healthy", "d-healthy"]);
+            assert_eq!(names, ["a-healthy", "e-healthy"]);
             assert_eq!(
                 responses
                     .iter()
@@ -254,14 +266,21 @@ mod tests {
                 .lines()
                 .map(|line| serde_json::from_str(line).unwrap())
                 .collect();
-            assert_eq!(warnings.len(), 2);
+            assert_eq!(warnings.len(), 3);
             assert!(
                 warnings[0]["warn"]
                     .as_str()
                     .unwrap()
                     .contains("b-unavailable")
             );
-            assert!(warnings[1]["warn"].as_str().unwrap().contains("c-secret"));
+            assert!(warnings[1]["warn"].as_str().unwrap().contains("c-metadata"));
+            assert!(
+                warnings[1]["warn"]
+                    .as_str()
+                    .unwrap()
+                    .contains("dsc/resource/test.oci:example-1.0.0")
+            );
+            assert!(warnings[2]["warn"].as_str().unwrap().contains("d-secret"));
             assert!(!output.contains("sensitive"));
             assert!(!diagnostics.contains("sensitive"));
         }

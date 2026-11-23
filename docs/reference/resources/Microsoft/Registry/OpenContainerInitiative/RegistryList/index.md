@@ -90,6 +90,11 @@ verifying SHA-256 digests, sizes, and resource identity. It does **not** downloa
 ZIPs, install packages, or modify resource search paths. Resources still need their implementations
 installed before invocation.
 
+Index, platform manifest, and JSON resource downloads enforce an 8 MiB limit while streaming,
+including responses without a declared size. Malformed metadata, integrity failures, and oversized
+documents produce sanitized warnings identifying the registry, repository, and tag. Discovery
+continues with later tags and preserves valid resources already collected from that registry.
+
 Remote definitions are imported only as ordinary DSC resource manifests, without evaluating
 conditions or executing schema commands. Action, adapted-resource, and manifest-list payloads
 are rejected, and remote definitions cannot supply trusted local resource paths.

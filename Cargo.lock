@@ -2702,6 +2702,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "url",
+ "winresource",
 ]
 
 [[package]]

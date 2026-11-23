@@ -3,13 +3,13 @@
 
 use futures_util::TryStreamExt;
 use oci_client::{
-    Client, Reference,
+    Client, Reference, RegistryOperation,
     client::{ClientConfig, ClientProtocol},
     secrets::RegistryAuth,
 };
 use reqwest::{
     Url,
-    header::{LINK, WWW_AUTHENTICATE},
+    header::{ACCEPT, LINK, WWW_AUTHENTICATE},
 };
 use rust_i18n::t;
 use serde_json::Value;
@@ -271,7 +271,13 @@ async fn catalog(
     Ok(repositories)
 }
 
-async fn limited_json(mut response: reqwest::Response) -> Result<Value, String> {
+async fn limited_bytes(mut response: reqwest::Response) -> Result<Vec<u8>, String> {
+    if response
+        .content_length()
+        .is_some_and(|size| size > LIMIT as u64)
+    {
+        return Err(t!("oci.limit").to_string());
+    }
     let mut bytes = Vec::new();
     while let Some(chunk) = response.chunk().await.map_err(transport_error)? {
         if bytes.len() + chunk.len() > LIMIT {
@@ -279,32 +285,53 @@ async fn limited_json(mut response: reqwest::Response) -> Result<Value, String> 
         }
         bytes.extend_from_slice(&chunk);
     }
-    serde_json::from_slice(&bytes).map_err(|_| invalid())
+    Ok(bytes)
+}
+
+async fn limited_json(response: reqwest::Response) -> Result<Value, String> {
+    serde_json::from_slice(&limited_bytes(response).await?).map_err(|_| invalid())
 }
 
 async fn manifest(
-    client: &Client,
+    http: &reqwest::Client,
+    base: &Url,
     reference: &Reference,
-    auth: &RegistryAuth,
+    token: Option<&str>,
 ) -> Result<Vec<u8>, String> {
-    let (bytes, _) = client
-        .pull_manifest_raw(reference, auth, &[INDEX, IMAGE])
-        .await
-        .map_err(transport_error)?;
-    if bytes.len() > LIMIT {
-        return Err(t!("oci.limit").to_string());
+    let mut url = base.clone();
+    url.path_segments_mut()
+        .map_err(|()| invalid())?
+        .clear()
+        .push("v2")
+        .extend(reference.repository().split('/'))
+        .push("manifests")
+        .push(
+            reference
+                .digest()
+                .or_else(|| reference.tag())
+                .ok_or_else(invalid)?,
+        );
+    let mut request = http.get(url).header(ACCEPT, format!("{INDEX}, {IMAGE}"));
+    if let Some(token) = token {
+        request = request.bearer_auth(token);
     }
-    Ok(bytes.to_vec())
+    let response = request.send().await.map_err(transport_error)?;
+    if !response.status().is_success() {
+        return Err(transport_error(response.status()));
+    }
+    limited_bytes(response).await
 }
 
 async fn resource_manifest(
     client: &Client,
+    http: &reqwest::Client,
+    base: &Url,
     reference: &Reference,
-    auth: &RegistryAuth,
+    token: Option<&str>,
     child: &Value,
     expected: (&str, &str),
 ) -> Result<Value, String> {
-    let child_bytes = manifest(client, reference, auth).await?;
+    let child_bytes = manifest(http, base, reference, token).await?;
     verify(&child_bytes, child)?;
     let document: Value = serde_json::from_slice(&child_bytes).map_err(|_| invalid())?;
     if document["mediaType"] != IMAGE
@@ -368,7 +395,11 @@ async fn resource_manifest(
     Ok(resource)
 }
 
-pub async fn discover(location: &str, token: Option<&str>) -> Result<Vec<Value>, String> {
+pub async fn discover(
+    location: &str,
+    token: Option<&str>,
+    mut warn: impl FnMut(&str, &str, &str) -> Result<(), String>,
+) -> Result<Vec<Value>, String> {
     #[cfg(not(windows))]
     TLS_PROVIDER.as_ref().map_err(Clone::clone)?;
     let base = registry_url(location)?;
@@ -397,6 +428,10 @@ pub async fn discover(location: &str, token: Option<&str>) -> Result<Vec<Value>,
         let reference: Reference = format!("{authority}/{repository}:latest")
             .parse()
             .map_err(transport_error)?;
+        let repository_token = client
+            .auth(&reference, &auth, RegistryOperation::Pull)
+            .await
+            .map_err(transport_error)?;
         let mut tags = BTreeSet::new();
         let mut last = None;
         loop {
@@ -415,30 +450,47 @@ pub async fn discover(location: &str, token: Option<&str>) -> Result<Vec<Value>,
             last = Some(cursor);
         }
         for tag in tags {
-            let reference: Reference = format!("{authority}/{repository}:{tag}")
+            let result = async {
+                let reference: Reference = format!("{authority}/{repository}:{tag}")
+                    .parse()
+                    .map_err(transport_error)?;
+                let bytes = manifest(&http, &base, &reference, repository_token.as_deref()).await?;
+                let index: Value = serde_json::from_slice(&bytes).map_err(|_| invalid())?;
+                if index["mediaType"] != INDEX || index["artifactType"] != ARTIFACT {
+                    return Ok(None);
+                }
+                let (name, version) = identity(&index)?;
+                let slug = name.split_once('/').ok_or_else(invalid)?.1.to_lowercase();
+                if tag != format!("{slug}-{version}") {
+                    return Err(invalid());
+                }
+                let Some(child) = select_child(&index, platform)? else {
+                    return Ok(None);
+                };
+                let child_ref: Reference = format!(
+                    "{authority}/{repository}@{}",
+                    child["digest"].as_str().ok_or_else(invalid)?
+                )
                 .parse()
                 .map_err(transport_error)?;
-            let bytes = manifest(&client, &reference, &auth).await?;
-            let index: Value = serde_json::from_slice(&bytes).map_err(|_| invalid())?;
-            if index["mediaType"] != INDEX || index["artifactType"] != ARTIFACT {
-                continue;
+                resource_manifest(
+                    &client,
+                    &http,
+                    &base,
+                    &child_ref,
+                    repository_token.as_deref(),
+                    child,
+                    (name, version),
+                )
+                .await
+                .map(Some)
             }
-            let (name, version) = identity(&index)?;
-            let slug = name.split_once('/').ok_or_else(invalid)?.1.to_lowercase();
-            if tag != format!("{slug}-{version}") {
-                return Err(invalid());
+            .await;
+            match result {
+                Ok(Some(resource)) => resources.push(resource),
+                Ok(None) => {}
+                Err(error) => warn(&repository, &tag, &error)?,
             }
-            let Some(child) = select_child(&index, platform)? else {
-                continue;
-            };
-            let child_ref: Reference = format!(
-                "{authority}/{repository}@{}",
-                child["digest"].as_str().ok_or_else(invalid)?
-            )
-            .parse()
-            .map_err(transport_error)?;
-            resources
-                .push(resource_manifest(&client, &child_ref, &auth, child, (name, version)).await?);
         }
     }
     Ok(resources)
@@ -533,7 +585,14 @@ pub(crate) mod tests {
                         ("404 Not Found", String::new(), b"{}".to_vec())
                     };
                     write!(socket, "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n{headers}\r\n", body.len()).unwrap();
-                    socket.write_all(&body).unwrap();
+                    if let Err(error) = socket.write_all(&body) {
+                        assert!(matches!(
+                            error.kind(),
+                            std::io::ErrorKind::BrokenPipe
+                                | std::io::ErrorKind::ConnectionReset
+                                | std::io::ErrorKind::ConnectionAborted
+                        ));
+                    }
                 }
             });
             Self {
@@ -556,9 +615,13 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn routes(corrupt: bool) -> BTreeMap<String, (String, Vec<u8>)> {
+        version_routes(corrupt, "1.0.0")
+    }
+
+    fn version_routes(corrupt: bool, version: &str) -> BTreeMap<String, (String, Vec<u8>)> {
         let resource = serde_json::to_vec(&json!({
             "$schema":"https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-            "type":"Test.Oci/Example", "version":"1.0.0",
+            "type":"Test.Oci/Example", "version":version,
             "get":{"executable":"not-downloaded"},
             "schema":{"embedded":{"type":"object"}}
         }))
@@ -566,18 +629,18 @@ pub(crate) mod tests {
         let mut layer = descriptor(&resource, "application/json");
         layer["annotations"] = json!({
             "com.microsoft.dsc.resource.id":"Test.Oci/Example",
-            "com.microsoft.dsc.resource.version":"1.0.0",
+            "com.microsoft.dsc.resource.version":version,
             "org.opencontainers.image.title":"example.dsc.resource.json"
         });
         let mut zip = descriptor(b"not-downloaded", "application/zip");
         zip["annotations"] = json!({
             "com.microsoft.dsc.resource.id":"Test.Oci/Example",
-            "com.microsoft.dsc.resource.version":"1.0.0",
+            "com.microsoft.dsc.resource.version":version,
             "org.opencontainers.image.title":"Test.Oci.zip"
         });
         let annotations = json!({
             "com.microsoft.dsc.resource.id":"Test.Oci/Example",
-            "com.microsoft.dsc.version":"1.0.0",
+            "com.microsoft.dsc.version":version,
             "com.microsoft.dsc.kind":"resource",
             "org.opencontainers.image.created":"2026-11-22T00:00:00Z"
         });
@@ -616,20 +679,20 @@ pub(crate) mod tests {
                 (
                     String::new(),
                     serde_json::to_vec(
-                        &json!({"name":"dsc/resource/test.oci","tags":["example-1.0.0"]}),
+                        &json!({"name":"dsc/resource/test.oci","tags":[format!("example-{version}")]}),
                     )
                     .unwrap(),
                 ),
             ),
             (
-                format!("{prefix}/tags/list?n=100&last=example-1.0.0"),
+                format!("{prefix}/tags/list?n=100&last=example-{version}"),
                 (
                     String::new(),
                     serde_json::to_vec(&json!({"name":"dsc/resource/test.oci","tags":[]})).unwrap(),
                 ),
             ),
             (
-                format!("{prefix}/manifests/example-1.0.0"),
+                format!("{prefix}/manifests/example-{version}"),
                 (
                     format!("Content-Type: {INDEX}\r\n"),
                     serde_json::to_vec(&index).unwrap(),
@@ -653,7 +716,9 @@ pub(crate) mod tests {
     async fn paginated_discovery_downloads_only_resource_manifest_for_both_auth_modes() {
         for token in [None, Some("test-token")] {
             let server = RegistryServer::new(routes(false), token);
-            let resources = discover(&server.url, token).await.unwrap();
+            let resources = discover(&server.url, token, |_, _, error| panic!("{error}"))
+                .await
+                .unwrap();
             assert_eq!(resources.len(), 1);
             assert_eq!(resources[0]["type"], "Test.Oci/Example");
             let requests = server.requests.lock().unwrap();
@@ -728,16 +793,168 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
-    async fn catalog_permissions_and_corrupt_content_are_errors() {
+    async fn catalog_permissions_are_errors_and_corrupt_content_is_warned() {
         let server = RegistryServer::new(routes(false), Some("required-token"));
         assert!(
-            discover(&server.url, None)
+            discover(&server.url, None, |_, _, error| panic!("{error}"))
                 .await
                 .unwrap_err()
                 .contains("401")
         );
         let server = RegistryServer::new(routes(true), None);
-        assert!(discover(&server.url, None).await.is_err());
+        let mut warnings = Vec::new();
+        assert!(
+            discover(&server.url, None, |_, _, error| {
+                warnings.push(error.to_string());
+                Ok(())
+            })
+            .await
+            .unwrap()
+            .is_empty()
+        );
+        assert_eq!(warnings, [t!("oci.transport").to_string()]);
+    }
+
+    #[tokio::test]
+    async fn malformed_metadata_retains_healthy_versions_before_and_after_failures() {
+        let prefix = "/v2/dsc/resource/test.oci";
+        let mut all_routes = BTreeMap::new();
+        for version in 1..=6 {
+            let version = format!("{version}.0.0");
+            let mut routes = version_routes(version == "5.0.0", &version);
+            let index_path = format!("{prefix}/manifests/example-{version}");
+            let mut index: Value = serde_json::from_slice(&routes[&index_path].1).unwrap();
+            match version.as_str() {
+                "2.0.0" => routes.get_mut(&index_path).unwrap().1 = b"confidential-body".to_vec(),
+                "3.0.0" => {
+                    index["manifests"][0]["platform"]["architecture"] = json!("invalid");
+                    routes.get_mut(&index_path).unwrap().1 = serde_json::to_vec(&index).unwrap();
+                }
+                "4.0.0" => {
+                    let child_path = format!(
+                        "{prefix}/manifests/{}",
+                        index["manifests"][0]["digest"].as_str().unwrap()
+                    );
+                    routes.get_mut(&child_path).unwrap().1 = b"confidential-body".to_vec();
+                }
+                _ => {}
+            }
+            all_routes.extend(routes);
+        }
+        all_routes.get_mut(&format!("{prefix}/tags/list?n=100")).unwrap().1 =
+            serde_json::to_vec(&json!({"name": "dsc/resource/test.oci", "tags": (1..=6).map(|version| format!("example-{version}.0.0")).collect::<Vec<_>>()})).unwrap();
+        let server = RegistryServer::new(all_routes, None);
+        let mut warnings = Vec::new();
+        let resources = discover(&server.url, None, |repository, tag, error| {
+            warnings.push((repository.to_string(), tag.to_string(), error.to_string()));
+            Ok(())
+        })
+        .await
+        .unwrap();
+        assert_eq!(
+            resources
+                .iter()
+                .map(|resource| resource["version"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            ["1.0.0", "6.0.0"]
+        );
+        assert_eq!(warnings.len(), 4);
+        for (warning, version) in warnings.iter().zip(2..=5) {
+            assert_eq!(warning.0, "dsc/resource/test.oci");
+            assert_eq!(warning.1, format!("example-{version}.0.0"));
+            assert!(!warning.2.contains("confidential-body"));
+        }
+    }
+
+    #[tokio::test]
+    async fn manifest_accepts_exact_limit_and_rejects_declared_oversize() {
+        for size in [LIMIT, LIMIT + 1] {
+            let path = "/v2/dsc/resource/test.oci/manifests/example-1.0.0";
+            let server = RegistryServer::new(
+                BTreeMap::from([(
+                    path.into(),
+                    (format!("Content-Type: {INDEX}\r\n"), vec![b' '; size]),
+                )]),
+                Some("test-token"),
+            );
+            let base = registry_url(&server.url).unwrap();
+            let authority = &base[url::Position::BeforeHost..url::Position::AfterPort];
+            let reference: Reference = format!("{authority}/dsc/resource/test.oci:example-1.0.0")
+                .parse()
+                .unwrap();
+            let result = manifest(
+                &reqwest::Client::new(),
+                &base,
+                &reference,
+                Some("test-token"),
+            )
+            .await;
+            if size == LIMIT {
+                assert_eq!(result.unwrap().len(), LIMIT);
+            } else {
+                assert_eq!(result.unwrap_err(), t!("oci.limit").to_string());
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn tag_and_digest_manifest_streams_stop_at_limit_before_eof() {
+        for selector in ["example-1.0.0".to_string(), sha256_digest(b"child")] {
+            let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+            let address = listener.local_addr().unwrap();
+            let (release, wait) = std::sync::mpsc::channel();
+            let worker = thread::spawn(move || {
+                let (mut socket, _) = listener.accept().unwrap();
+                socket
+                    .set_write_timeout(Some(Duration::from_secs(5)))
+                    .unwrap();
+                let mut reader = BufReader::new(socket.try_clone().unwrap());
+                let mut line = String::new();
+                reader.read_line(&mut line).unwrap();
+                let path = line.split_whitespace().nth(1).unwrap().to_string();
+                loop {
+                    line.clear();
+                    reader.read_line(&mut line).unwrap();
+                    if line == "\r\n" {
+                        break;
+                    }
+                }
+                socket.write_all(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n").unwrap();
+                for chunk in [vec![b' '; LIMIT], vec![b' '; 1]] {
+                    if write!(socket, "{:x}\r\n", chunk.len())
+                        .and_then(|()| socket.write_all(&chunk))
+                        .and_then(|()| socket.write_all(b"\r\n"))
+                        .is_err()
+                    {
+                        break;
+                    }
+                }
+                // Keep EOF withheld until the bounded reader has returned.
+                wait.recv_timeout(Duration::from_secs(10)).unwrap();
+                path
+            });
+            let base = registry_url(&format!("http://{address}")).unwrap();
+            let separator = if selector.starts_with("sha256:") {
+                "@"
+            } else {
+                ":"
+            };
+            let reference: Reference =
+                format!("{address}/dsc/resource/test.oci{separator}{selector}")
+                    .parse()
+                    .unwrap();
+            let result = tokio::time::timeout(
+                Duration::from_secs(5),
+                manifest(&reqwest::Client::new(), &base, &reference, None),
+            )
+            .await;
+            release.send(()).unwrap();
+            assert_eq!(
+                worker.join().unwrap(),
+                format!("/v2/dsc/resource/test.oci/manifests/{selector}")
+            );
+            assert_eq!(result.unwrap().unwrap_err(), t!("oci.limit").to_string());
+        }
     }
 
     #[test]

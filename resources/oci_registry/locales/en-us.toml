@@ -29,6 +29,7 @@ location = "Location must be a registry hostname, optionally with https://; HTTP
 catalog = "Cannot enumerate registry repositories (HTTP %{status}); repository listing access is required"
 transport = "Registry transport failed"
 document = "Invalid OCI DSC resource metadata"
+entry = "Skipping resource metadata in registry %{registry} at %{repository}:%{tag}: %{error}"
 integrity = "OCI resource content does not match its SHA-256 digest or size"
 pagination = "Registry pagination did not advance or returned an unsafe next-page link"
 platform = "The host operating system or architecture is not supported"
