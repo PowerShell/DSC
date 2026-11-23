@@ -640,11 +640,10 @@ impl ResourceDiscovery for CommandDiscovery {
                     for (adapted_name, adapted_vec) in &adapted_resources {
                         let mut imported_manifests = Vec::new();
                         for adapted in adapted_vec {
-                            if let Some(resource) = adapted.as_dsc_resource() {
-                                if type_name_filter.is_match(&resource.type_name)
-                                    && resource.require_adapter.as_ref().is_some_and(|adapter| adapter_name_filter.is_match(adapter)) {
-                                    imported_manifests.push(ImportedManifest::Resource(resource.clone()));
-                                }
+                            if let Some(resource) = adapted.as_dsc_resource()
+                                && type_name_filter.is_match(&resource.type_name)
+                                && resource.require_adapter.as_ref().is_some_and(|adapter| adapter_name_filter.is_match(adapter)) {
+                                imported_manifests.push(ImportedManifest::Resource(resource.clone()));
                             }
                         }
                         resources.insert(adapted_name.clone(), imported_manifests);
