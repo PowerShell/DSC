@@ -140,14 +140,11 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         $result.actualState.installed | Should -BeTrue
     }
 
-    It 'rejects remote <Shape> manifests without executing schema commands or trusting local paths' -ForEach @(
+    It 'rejects remote <Shape> manifests without executing schema commands' -ForEach @(
         @{ Shape = 'action' }
-        @{ Shape = 'adapted-resource' }
         @{ Shape = 'wrong-schema' }
     ) {
         $marker = Join-Path $testDirectory 'schema-command-executed'
-        $localPath = Join-Path $testDirectory 'untrusted-path.json'
-        '{}' | Set-Content -LiteralPath $localPath
         $manifest = @{
             '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json'
             type = 'Test/SecretDiscovered'
@@ -167,14 +164,6 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
                     }
                 }
             }
-            adapted-resource {
-                $manifest.'$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json'
-                $manifest.kind = 'resource'
-                $manifest.capabilities = @('get')
-                $manifest.path = $localPath
-                $manifest.requireAdapter = 'Test/Adapter'
-                $manifest.schema = @{ type = 'object' }
-            }
             wrong-schema {
                 $manifest.get = @{ executable = 'pwsh' }
                 $manifest.schema = @{ embedded = @{ type = 'object' } }
@@ -187,6 +176,83 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         @(Get-SecretDiscoveredResource) | Should -HaveCount 0
         $marker | Should -Not -Exist
         Get-Content -LiteralPath $TestDrive\error.log -Raw | Should -Match "Registry 'oci-test' returned an invalid resource manifest"
+    }
+
+    It 'lists remote adapted metadata with <Payload> and reads its <SchemaShape> schema without trusting local paths' -ForEach @(
+        @{ Payload = 'content'; SchemaShape = 'embedded' }
+        @{ Payload = 'existing-path'; SchemaShape = 'direct' }
+        @{ Payload = 'missing-path'; SchemaShape = 'embedded' }
+    ) {
+        $localPath = Join-Path $testDirectory 'untrusted-path.json'
+        if ($Payload -eq 'existing-path') {
+            '{"untrusted":true}' | Set-Content -LiteralPath $localPath
+        }
+        $schema = @{ type = 'object'; properties = @{ adapted = @{ type = 'boolean' } } }
+        $settings.registry = 'oci-test'
+        $settings.requests = @()
+        $settings.manifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json'
+            type = 'Test/SecretDiscovered'
+            version = '0.1.0'
+            kind = 'resource'
+            condition = '[false]'
+            capabilities = @('get', 'set')
+            requireAdapter = 'Test/Adapter'
+            schema = if ($SchemaShape -eq 'embedded') { @{ embedded = $schema } } else { $schema }
+        }
+        if ($Payload -eq 'content') {
+            $settings.manifest.content = @{ adapted = $true }
+        } else {
+            $settings.manifest.path = $localPath
+        }
+        Set-RpcSettings
+        $resources = @(Get-SecretDiscoveredResource)
+        $resources | Should -HaveCount 1
+        $resources[0].registry | Should -BeExactly 'oci-test'
+        $resources[0].requireAdapter | Should -BeExactly 'Test/Adapter'
+        $resources[0].capabilities | Should -BeExactly @('get', 'set')
+        $resources[0].path | Should -BeNullOrEmpty
+        $resources[0].directory | Should -BeNullOrEmpty
+        Get-Content -Raw $TestDrive/error.log | Should -Not -Match 'invalid resource manifest'
+        $actualSchema = dsc resource schema -r Test/SecretDiscovered 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $actualSchema.properties.adapted.type | Should -BeExactly 'boolean'
+        dsc resource get -r Test/SecretDiscovered 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Not -Be 0
+        Get-Content -Raw $TestDrive/error.log | Should -Match 'not installed'
+    }
+
+    It 'preserves valid results around an invalid <Failure> discovery record' -ForEach @(
+        @{ Failure = 'record' }
+        @{ Failure = 'manifest' }
+        @{ Failure = 'remote-path' }
+    ) {
+        $valid = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/Before'
+            version = '0.1.0'
+            get = @{ executable = 'not-installed' }
+            schema = @{ embedded = @{ type = 'object' } }
+        }
+        $bad = switch ($Failure) {
+            record { @{ registry = 'oci-test'; invalid = 'record' } }
+            manifest { @{ registry = 'oci-test'; manifestContent = @{ type = 'invalid' } } }
+            remote-path { @{ registry = 'oci-test'; manifestPath = (Join-Path $testDirectory 'remote.dsc.resource.json') } }
+        }
+        $after = $valid.Clone()
+        $after.type = 'Test/After'
+        $settings.requests = @()
+        $settings.results = @(
+            @{ registry = 'oci-test'; manifestContent = $valid }
+            $bad
+            @{ registry = 'oci-test'; manifestContent = $after }
+        )
+        Set-RpcSettings
+        $resources = @(dsc resource list 'Test/*' 2>$TestDrive/error.log | ConvertFrom-Json)
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $resources.type | Should -Contain 'Test/Before'
+        $resources.type | Should -Contain 'Test/After'
+        Get-Content -Raw $TestDrive/error.log | Should -Match 'WARN'
     }
 
     It 'imports ordinary adapter metadata without evaluating its remote condition' {

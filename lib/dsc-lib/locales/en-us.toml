@@ -174,7 +174,7 @@ invalidAdaptedResourceManifest = "Invalid manifest for adapted resource '%{resou
 invalidManifestList = "Invalid manifest list '%{resource}': %{err}"
 invalidManifestFile = "Invalid manifest file '%{resource}': %{err}"
 invalidManifestContent = "Manifest content did not match any known manifest types"
-invalidRegistryResourceSchema = "Registry discovery requires a recognized DSC resource manifest schema"
+invalidRegistryResourceSchema = "Registry discovery requires a recognized DSC resource or adapted resource manifest schema"
 extensionResourceFound = "Extension found resource '%{resource}'"
 callingExtension = "Calling extension '%{extension}' to discover resources"
 extensionFoundResources = "Extension '%{extension}' found %{count} resources"
@@ -337,6 +337,7 @@ importProcessingOutput = "Processing output from extension '%{extension}'"
 deprecationMessage = "Extension '%{extension}' is deprecated: %{message}"
 failedLoadManifest = "Extension '%{extension}' failed to load manifest: %{err}"
 invalidRegistryManifest = "Registry '%{registry}' returned an invalid resource manifest: %{err}"
+registryManifestPath = "Registry '%{registry}' returned a local manifest path; remote discovery requires manifest content"
 manifestImported = "Manifest imported from extension %{extension}"
 
 [extensions.extension_manifest]

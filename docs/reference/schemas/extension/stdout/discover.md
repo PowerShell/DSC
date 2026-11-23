@@ -27,7 +27,7 @@ to stdout for the **Discover** operation to adhere to this schema.
 
 The output must be a JSON object. The object must define exactly one of the [manifestPath][01] or
 [manifestContent][02] properties. If an extension returns JSON that is invalid against this schema,
-DSC raises an error.
+DSC warns and skips that record, preserving other valid results.
 
 The optional [registry][03] property identifies the source registry for discovered resources.
 
@@ -70,7 +70,7 @@ The value for this property must be the content of a manifest as a JSON object. 
 identifies a remote registry, DSC processes the value the same way it processes a manifest file,
 including evaluating the
 `condition` property of the manifest. The value can be a resource manifest, an adapted resource
-manifest, or a manifest list. If the value isn't a valid manifest, DSC raises an error. This
+manifest, or a manifest list. If the value isn't a valid manifest, DSC warns and skips that record. This
 property was added in DSC version 3.3.0.
 
 ```yaml
@@ -86,11 +86,13 @@ The friendly name of the registry containing a discovered resource. DSC includes
 Returning manifest content does not install its implementation. DSC rejects operations on an
 uninstalled remote resource, but can return a schema embedded in its manifest.
 
-When `registry` is neither omitted nor `local`, manifest content must be an ordinary DSC resource
-manifest using a recognized resource manifest schema. DSC imports it as metadata without
-evaluating conditions or executing schema commands. Action, adapted-resource, and manifest-list
-shapes cannot supply remote resource metadata or trusted local installation paths. Invalid remote
-manifests produce warnings and are skipped without discarding valid discovery results.
+When `registry` is neither omitted nor `local`, manifest content must be an ordinary or adapted
+DSC resource manifest using a recognized schema. DSC imports it as metadata without evaluating
+conditions, executing schema commands, or resolving executable or adapted-resource paths.
+Adapted metadata preserves its capabilities, required adapter, content, and schema, but remote
+paths never establish local installation. Embedded schemas can be read without invoking an
+adapter. Remote `manifestPath` results, action manifests, and manifest lists are not supported.
+Invalid records produce warnings and are skipped without discarding other discovery results.
 
 ```yaml
 Type:     [string, 'null']

@@ -94,10 +94,14 @@ Index, platform manifest, and JSON resource downloads enforce an 8 MiB limit whi
 including responses without a declared size. Malformed metadata, integrity failures, and oversized
 documents produce sanitized warnings identifying the registry, repository, and tag. Discovery
 continues with later tags and preserves valid resources already collected from that registry.
+Catalog pagination failures retain repositories already enumerated; repository and tag pagination
+failures do not discard collected tags or prevent other repositories from being processed.
 
-Remote definitions are imported only as ordinary DSC resource manifests, without evaluating
-conditions or executing schema commands. Action, adapted-resource, and manifest-list payloads
-are rejected, and remote definitions cannot supply trusted local resource paths.
+Remote definitions are imported as ordinary or adapted DSC resource metadata, without evaluating
+conditions or executing schema commands. Adapted resources retain their required adapter,
+capabilities, content, and schema; schemas can be read without invoking an adapter. Action and
+manifest-list payloads are rejected, and remote definitions cannot supply trusted local resource
+paths. A remote adapted resource remains uninstalled even when it names an existing local path.
 
 Remote list results include `registry` set to the friendly name. Locally discovered resources
 include `registry: local`. An installed local resource takes precedence over a remote resource

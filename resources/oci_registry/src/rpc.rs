@@ -124,8 +124,13 @@ async fn serve_with_settings(
                             let discovered = match token {
                                 Ok(token) => {
                                     crate::oci::discover(&registry.location, token.as_deref(), |repository, tag, error| {
+                                        let reference = if tag.is_empty() {
+                                            repository.to_string()
+                                        } else {
+                                            format!("{repository}:{tag}")
+                                        };
                                         writeln!(diagnostics, "{}", json!({
-                                            "warn": t!("oci.entry", registry = name, repository = repository, tag = tag, error = error).to_string()
+                                            "warn": t!("oci.entry", registry = name, reference = reference, error = error).to_string()
                                         })).map_err(|error| error.to_string())
                                     }).await
                                 }

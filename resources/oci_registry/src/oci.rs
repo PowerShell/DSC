@@ -216,56 +216,69 @@ async fn catalog(
     http: &reqwest::Client,
     base: &Url,
     token: Option<&str>,
+    mut warn: impl FnMut(&str) -> Result<(), String>,
 ) -> Result<BTreeSet<String>, String> {
     let mut next = Some(base.join("v2/_catalog?n=100").map_err(transport_error)?);
     let mut pages = BTreeSet::new();
     let mut repositories = BTreeSet::new();
     let mut catalog_token = token.map(str::to_string);
     while let Some(url) = next.take() {
-        if url.origin() != base.origin()
-            || url.path() != "/v2/_catalog"
-            || !pages.insert(url.to_string())
-        {
-            return Err(t!("oci.pagination").to_string());
-        }
-        let mut request = http.get(url.clone());
-        if let Some(token) = &catalog_token {
-            request = request.bearer_auth(token);
-        }
-        let mut response = request.send().await.map_err(transport_error)?;
-        if response.status() == reqwest::StatusCode::UNAUTHORIZED && catalog_token.is_none() {
-            let token = anonymous_token(http, base, &response).await?;
-            response = http
-                .get(url.clone())
-                .bearer_auth(&token)
-                .send()
-                .await
-                .map_err(transport_error)?;
-            catalog_token = Some(token);
-        }
-        if !response.status().is_success() {
-            return Err(t!("oci.catalog", status = response.status().as_u16()).to_string());
-        }
-        if let Some(link) = response.headers().get(LINK) {
-            let link = link.to_str().map_err(transport_error)?;
-            for part in link.split(',') {
-                if part.contains("rel=\"next\"") || part.contains("rel=next") {
-                    let end = part.find('>').ok_or_else(invalid)?;
-                    let start = part.find('<').ok_or_else(invalid)? + 1;
-                    next = Some(
-                        url.join(part.get(start..end).ok_or_else(invalid)?)
-                            .map_err(transport_error)?,
-                    );
+        let result = async {
+            if url.origin() != base.origin()
+                || url.path() != "/v2/_catalog"
+                || !pages.insert(url.to_string())
+            {
+                return Err(t!("oci.pagination").to_string());
+            }
+            let mut request = http.get(url.clone());
+            if let Some(token) = &catalog_token {
+                request = request.bearer_auth(token);
+            }
+            let mut response = request.send().await.map_err(transport_error)?;
+            if response.status() == reqwest::StatusCode::UNAUTHORIZED && catalog_token.is_none() {
+                let token = anonymous_token(http, base, &response).await?;
+                response = http
+                    .get(url.clone())
+                    .bearer_auth(&token)
+                    .send()
+                    .await
+                    .map_err(transport_error)?;
+                catalog_token = Some(token);
+            }
+            if !response.status().is_success() {
+                return Err(t!("oci.catalog", status = response.status().as_u16()).to_string());
+            }
+            let link = response.headers().get(LINK).cloned();
+            let document = limited_json(response).await?;
+            let entries = document["repositories"].as_array().ok_or_else(invalid)?;
+            for entry in entries {
+                let Some(repository) = entry.as_str() else {
+                    warn(&invalid())?;
+                    continue;
+                };
+                if repository.starts_with("dsc/resource/") {
+                    repositories.insert(repository.to_string());
                 }
             }
-        }
-        let document = limited_json(response).await?;
-        let entries = document["repositories"].as_array().ok_or_else(invalid)?;
-        for entry in entries {
-            let repository = entry.as_str().ok_or_else(invalid)?;
-            if repository.starts_with("dsc/resource/") {
-                repositories.insert(repository.to_string());
+            if let Some(link) = link {
+                let link = link.to_str().map_err(transport_error)?;
+                for part in link.split(',') {
+                    if part.contains("rel=\"next\"") || part.contains("rel=next") {
+                        let end = part.find('>').ok_or_else(invalid)?;
+                        let start = part.find('<').ok_or_else(invalid)? + 1;
+                        next = Some(
+                            url.join(part.get(start..end).ok_or_else(invalid)?)
+                                .map_err(transport_error)?,
+                        );
+                    }
+                }
             }
+            Ok(())
+        }
+        .await;
+        if let Err(error) = result {
+            warn(&error)?;
+            break;
         }
     }
     Ok(repositories)
@@ -395,6 +408,45 @@ async fn resource_manifest(
     Ok(resource)
 }
 
+async fn discover_tag(
+    client: &Client,
+    http: &reqwest::Client,
+    base: &Url,
+    reference: &Reference,
+    token: Option<&str>,
+    platform: (&str, &str),
+) -> Result<Option<Value>, String> {
+    let bytes = manifest(http, base, reference, token).await?;
+    let index: Value = serde_json::from_slice(&bytes).map_err(|_| invalid())?;
+    if index["mediaType"] != INDEX || index["artifactType"] != ARTIFACT {
+        return Ok(None);
+    }
+    let (name, version) = identity(&index)?;
+    let slug = name.split_once('/').ok_or_else(invalid)?.1.to_lowercase();
+    if reference.tag() != Some(format!("{slug}-{version}").as_str()) {
+        return Err(invalid());
+    }
+    let Some(child) = select_child(&index, platform)? else {
+        return Ok(None);
+    };
+    let child_ref = Reference::with_digest(
+        reference.registry().to_string(),
+        reference.repository().to_string(),
+        child["digest"].as_str().ok_or_else(invalid)?.to_string(),
+    );
+    resource_manifest(
+        client,
+        http,
+        base,
+        &child_ref,
+        token,
+        child,
+        (name, version),
+    )
+    .await
+    .map(Some)
+}
+
 pub async fn discover(
     location: &str,
     token: Option<&str>,
@@ -424,27 +476,46 @@ pub async fn discover(
     });
     let platform = host_platform()?;
     let mut resources = Vec::new();
-    for repository in catalog(&http, &base, token).await? {
-        let reference: Reference = format!("{authority}/{repository}:latest")
-            .parse()
-            .map_err(transport_error)?;
-        let repository_token = client
+    for repository in catalog(&http, &base, token, |error| warn("_catalog", "", error)).await? {
+        let reference: Reference = match format!("{authority}/{repository}:latest").parse() {
+            Ok(reference) => reference,
+            Err(error) => {
+                warn(&repository, "", &transport_error(error))?;
+                continue;
+            }
+        };
+        let repository_token = match client
             .auth(&reference, &auth, RegistryOperation::Pull)
             .await
-            .map_err(transport_error)?;
+            .map_err(transport_error)
+        {
+            Ok(token) => token,
+            Err(error) => {
+                warn(&repository, "", &error)?;
+                continue;
+            }
+        };
         let mut tags = BTreeSet::new();
         let mut last = None;
         loop {
-            let page = client
+            let page = match client
                 .list_tags(&reference, &auth, Some(100), last.as_deref())
                 .await
-                .map_err(transport_error)?;
+                .map_err(transport_error)
+            {
+                Ok(page) => page,
+                Err(error) => {
+                    warn(&repository, "", &error)?;
+                    break;
+                }
+            };
             if page.tags.is_empty() {
                 break;
             }
             let cursor = page.tags.last().cloned().ok_or_else(invalid)?;
             if last.as_ref() == Some(&cursor) || page.tags.iter().all(|tag| tags.contains(tag)) {
-                return Err(t!("oci.pagination").to_string());
+                warn(&repository, "", &t!("oci.pagination"))?;
+                break;
             }
             tags.extend(page.tags);
             last = Some(cursor);
@@ -454,36 +525,15 @@ pub async fn discover(
                 let reference: Reference = format!("{authority}/{repository}:{tag}")
                     .parse()
                     .map_err(transport_error)?;
-                let bytes = manifest(&http, &base, &reference, repository_token.as_deref()).await?;
-                let index: Value = serde_json::from_slice(&bytes).map_err(|_| invalid())?;
-                if index["mediaType"] != INDEX || index["artifactType"] != ARTIFACT {
-                    return Ok(None);
-                }
-                let (name, version) = identity(&index)?;
-                let slug = name.split_once('/').ok_or_else(invalid)?.1.to_lowercase();
-                if tag != format!("{slug}-{version}") {
-                    return Err(invalid());
-                }
-                let Some(child) = select_child(&index, platform)? else {
-                    return Ok(None);
-                };
-                let child_ref: Reference = format!(
-                    "{authority}/{repository}@{}",
-                    child["digest"].as_str().ok_or_else(invalid)?
-                )
-                .parse()
-                .map_err(transport_error)?;
-                resource_manifest(
+                discover_tag(
                     &client,
                     &http,
                     &base,
-                    &child_ref,
+                    &reference,
                     repository_token.as_deref(),
-                    child,
-                    (name, version),
+                    platform,
                 )
                 .await
-                .map(Some)
             }
             .await;
             match result {
@@ -750,9 +800,11 @@ pub(crate) mod tests {
             );
             let server = RegistryServer::new(routes, Some("catalog-token"));
             let http = reqwest::Client::new();
-            let repositories = catalog(&http, &registry_url(&server.url).unwrap(), None)
-                .await
-                .unwrap();
+            let repositories = catalog(&http, &registry_url(&server.url).unwrap(), None, |error| {
+                panic!("{error}")
+            })
+            .await
+            .unwrap();
             assert_eq!(
                 repositories,
                 BTreeSet::from(["dsc/resource/test.oci".into()])
@@ -781,26 +833,38 @@ pub(crate) mod tests {
             ),
         );
         let server = RegistryServer::new(routes, Some("catalog-token"));
-        let error = catalog(
+        let mut warnings = Vec::new();
+        let repositories = catalog(
             &reqwest::Client::new(),
             &registry_url(&server.url).unwrap(),
             None,
+            |error| {
+                warnings.push(error.to_string());
+                Ok(())
+            },
         )
         .await
-        .unwrap_err();
-        assert_eq!(error, t!("oci.token").to_string());
-        assert!(!error.contains("confidential-response"));
+        .unwrap();
+        assert!(repositories.is_empty());
+        assert_eq!(warnings, [t!("oci.token").to_string()]);
+        assert!(!warnings[0].contains("confidential-response"));
     }
 
     #[tokio::test]
-    async fn catalog_permissions_are_errors_and_corrupt_content_is_warned() {
+    async fn catalog_permissions_and_corrupt_content_are_warned() {
         let server = RegistryServer::new(routes(false), Some("required-token"));
+        let mut warnings = Vec::new();
         assert!(
-            discover(&server.url, None, |_, _, error| panic!("{error}"))
-                .await
-                .unwrap_err()
-                .contains("401")
+            discover(&server.url, None, |_, _, error| {
+                warnings.push(error.to_string());
+                Ok(())
+            })
+            .await
+            .unwrap()
+            .is_empty()
         );
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("401"));
         let server = RegistryServer::new(routes(true), None);
         let mut warnings = Vec::new();
         assert!(
@@ -813,6 +877,93 @@ pub(crate) mod tests {
             .is_empty()
         );
         assert_eq!(warnings, [t!("oci.transport").to_string()]);
+    }
+
+    #[tokio::test]
+    async fn pagination_and_repository_failures_preserve_other_discovered_resources() {
+        for failure in ["catalog-page", "repository", "tag-page", "tag-loop"] {
+            let mut routes = BTreeMap::new();
+            for (repository, version) in [
+                ("a-first", "1.0.0"),
+                ("b-broken", "2.0.0"),
+                ("c-last", "3.0.0"),
+            ] {
+                for (path, (headers, body)) in version_routes(false, version) {
+                    if path.starts_with("/v2/dsc/resource/") {
+                        routes.insert(
+                            path.replace("test.oci", repository),
+                            (
+                                headers,
+                                String::from_utf8(body)
+                                    .unwrap()
+                                    .replace("test.oci", repository)
+                                    .into_bytes(),
+                            ),
+                        );
+                    }
+                }
+            }
+            routes.insert(
+                "/v2/_catalog?n=100".into(),
+                (
+                    if failure == "catalog-page" {
+                        "Link: </v2/_catalog?n=100&last=one>; rel=\"next\"\r\n".into()
+                    } else {
+                        String::new()
+                    },
+                    serde_json::to_vec(&json!({"repositories":[
+                        "dsc/resource/a-first", 42, "dsc/resource/b-broken", "dsc/resource/c-last"
+                    ]}))
+                    .unwrap(),
+                ),
+            );
+            let prefix = "/v2/dsc/resource/b-broken/tags/list";
+            match failure {
+                "repository" | "catalog-page" => {
+                    routes.remove(&format!("{prefix}?n=100"));
+                }
+                "tag-page" => {
+                    routes.remove(&format!("{prefix}?n=100&last=example-2.0.0"));
+                }
+                "tag-loop" => {
+                    routes
+                        .get_mut(&format!("{prefix}?n=100&last=example-2.0.0"))
+                        .unwrap()
+                        .1 = serde_json::to_vec(
+                        &json!({"name":"dsc/resource/b-broken","tags":["example-2.0.0"]}),
+                    )
+                    .unwrap();
+                }
+                _ => unreachable!(),
+            }
+            let server = RegistryServer::new(routes, None);
+            let mut warnings = Vec::new();
+            let resources = discover(&server.url, None, |repository, _, error| {
+                warnings.push((repository.to_string(), error.to_string()));
+                Ok(())
+            })
+            .await
+            .unwrap();
+            let versions: Vec<_> = resources
+                .iter()
+                .map(|resource| resource["version"].as_str().unwrap())
+                .collect();
+            assert!(versions.contains(&"1.0.0"), "{failure}");
+            assert!(versions.contains(&"3.0.0"), "{failure}");
+            if matches!(failure, "tag-page" | "tag-loop") {
+                assert!(versions.contains(&"2.0.0"), "{failure}");
+            }
+            assert!(
+                warnings
+                    .iter()
+                    .any(|(repository, _)| repository == "dsc/resource/b-broken")
+            );
+            assert!(
+                warnings
+                    .iter()
+                    .any(|(repository, _)| repository == "_catalog")
+            );
+        }
     }
 
     #[tokio::test]

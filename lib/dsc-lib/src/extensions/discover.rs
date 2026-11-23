@@ -134,7 +134,7 @@ impl DscExtension {
                     let value = crate::dscresources::jsonrpc::invoke_extension(
                         self, &jsonrpc, "discover", params, context, None
                     )?;
-                    let results: Vec<DiscoverResult> = serde_json::from_value(value)?;
+                    let results: Vec<Value> = serde_json::from_value(value)?;
                     let lines: Result<Vec<_>, _> = results.iter().map(serde_json::to_string).collect();
                     lines?.join("\n")
                 },
@@ -147,7 +147,8 @@ impl DscExtension {
                     let discover_result: DiscoverResult = match serde_json::from_str(line) {
                         Ok(result) => result,
                         Err(err) => {
-                            return Err(DscError::Json(err));
+                            warn!("{}", t!("extensions.dscextension.failedLoadManifest", extension = self.type_name, err = err));
+                            continue;
                         }
                     };
                     match discover_result.path_or_content {
@@ -162,7 +163,13 @@ impl DscExtension {
                                     }
                                 }
                             } else {
-                                load_manifest_content(&manifest_value)?
+                                match load_manifest_content(&manifest_value) {
+                                    Ok(manifests) => manifests,
+                                    Err(err) => {
+                                        warn!("{}", t!("extensions.dscextension.failedLoadManifest", extension = self.type_name, err = err));
+                                        continue;
+                                    }
+                                }
                             };
                             info!("{}", t!("extensions.dscextension.manifestImported", extension = self.type_name));
                             for mut imported_manifest in imported_manifests {
@@ -176,6 +183,11 @@ impl DscExtension {
                             }
                         }
                         ManifestKind::ManifestPath(manifest_path) => {
+                            if let Some(registry) = discover_result.registry.as_deref()
+                                && registry != "local" {
+                                warn!("{}", t!("extensions.dscextension.registryManifestPath", registry = registry));
+                                continue;
+                            }
                             if !manifest_path.is_absolute() {
                                 return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone(), path = manifest_path.display()).to_string()));
                             }

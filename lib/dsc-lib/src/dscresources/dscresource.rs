@@ -502,6 +502,11 @@ impl ResourceInvoke for DscResource {
             if let Some(SchemaKind::Embedded(schema)) = self.manifest.as_ref().and_then(|manifest| manifest.schema.as_ref()) {
                 return Ok(serde_json::to_string(schema)?);
             }
+            if let Some(manifest) = &self.adapted_manifest {
+                let schema = manifest.schema.get("embedded")
+                    .cloned().unwrap_or_else(|| Value::Object(manifest.schema.clone()));
+                return Ok(serde_json::to_string(&schema)?);
+            }
             return Err(error);
         }
         let target_resource = context.target_resource.as_ref().unwrap_or(self);

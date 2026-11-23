@@ -106,6 +106,9 @@ Add-RpcEvent -Role discover -Event start
                         registry = $settings.registry
                     }
                 }
+                if ($settings.ContainsKey('results')) {
+                    $result = $settings.results
+                }
             }
         }
         shutdown {

@@ -796,6 +796,13 @@ fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
 }
 
 pub(crate) fn load_registry_resource_manifest(content: &Value) -> Result<DscResource, DscError> {
+    if let Ok(manifest) = serde_json::from_value::<AdaptedDscResourceManifest>(content.clone()) {
+        if !AdaptedDscResourceManifest::is_recognized_schema_uri(&manifest.schema_version)
+            && !AdaptedDscResourceManifest::is_deprecated_schema_uri(&manifest.schema_version) {
+            return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidRegistryResourceSchema").to_string()));
+        }
+        return import_adapted_resource_manifest(None, &manifest, false);
+    }
     let manifest: ResourceManifest = serde_json::from_value(content.clone())?;
     if !ResourceManifest::is_recognized_schema_uri(&manifest.schema_version) {
         return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidRegistryResourceSchema").to_string()));
@@ -1066,6 +1073,10 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
 }
 
 pub fn load_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDscResourceManifest) -> Result<DscResource, DscError> {
+    import_adapted_resource_manifest(path, manifest, true)
+}
+
+fn import_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDscResourceManifest, verify_paths: bool) -> Result<DscResource, DscError> {
     if manifest.version.is_date_version() {
         warn!("{}", t!(
             "discovery.commandDiscovery.invalidManifestVersion",
@@ -1086,7 +1097,7 @@ pub fn load_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDsc
     let mut resource = DscResource::new();
     let directory = path.and_then(|p| p.parent()).unwrap_or_else(|| Path::new("")).to_path_buf();
     match &manifest.path_or_content {
-        AdaptedPathOrContent::Path(resource_path) => {
+        AdaptedPathOrContent::Path(resource_path) if verify_paths => {
             let resource_path = directory.join(resource_path);
             if !resource_path.exists() {
                 return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.adaptedResourcePathNotFound", path = resource_path.to_string_lossy(), resource = manifest.type_name).to_string()));
@@ -1096,7 +1107,8 @@ pub fn load_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDsc
         AdaptedPathOrContent::Content(content) => {
             resource.path = None;
             resource.adapted_content = Some(content.clone());
-        }
+        },
+        AdaptedPathOrContent::Path(_) => {},
     }
 
     resource.type_name = manifest.type_name.clone();
