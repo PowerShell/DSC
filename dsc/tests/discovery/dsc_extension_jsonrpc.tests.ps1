@@ -326,6 +326,46 @@ if ($Operation -eq 'list') {
         $result.results[1].result.actualState.installed | Should -BeTrue
     }
 
+    It 'refreshes adapted registry candidates after an implementation is removed during deployment' {
+        New-RegistryAdapterFixture
+        $escapedPath = (Join-Path $testDirectory listed.json).Replace("'", "''")
+        @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/UpdateAdapterList'
+            version = '0.1.0'
+            get = @{
+                executable = 'pwsh'
+                args = @('-NoProfile', '-NonInteractive', '-Command',
+                    "Set-Content -LiteralPath '$escapedPath' -Value '' -NoNewline; '{`"updated`":true}'")
+            }
+            schema = @{ embedded = @{ type = 'object' } }
+        } | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $testDirectory update.dsc.resource.json)
+        $configuration = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            directives = @{ resourceDiscovery = 'duringDeployment' }
+            resources = @(
+                @{ name = 'before'; type = 'Test/SecretDiscovered' }
+                @{
+                    name = 'remove'
+                    type = 'Test/UpdateAdapterList'
+                    dependsOn = @("[resourceId('Test/SecretDiscovered', 'before')]")
+                }
+                @{
+                    name = 'after'
+                    type = 'Test/SecretDiscovered'
+                    dependsOn = @("[resourceId('Test/UpdateAdapterList', 'remove')]")
+                }
+            )
+        }
+        dsc config get -i ($configuration | ConvertTo-Json -Depth 10) 2>$TestDrive/error.log | Out-Null
+        $LASTEXITCODE | Should -Be 2
+        Get-Content -Raw $TestDrive/error.log | Should -Match "Resource 'Test/SecretDiscovered' from registry 'oci-test' is not installed"
+        Get-Content -Raw (Join-Path $testDirectory listed.json) | Should -BeNullOrEmpty
+        $calls = @(Get-Content (Join-Path $testDirectory adapter-calls.log))
+        @($calls | Where-Object { $_ -eq 'list' }) | Should -HaveCount 2
+        @($calls | Where-Object { $_ -eq 'get' }) | Should -HaveCount 1
+    }
+
     It 'does not search other installed adapters when the remote adapter is explicitly required' {
         New-RegistryAdapterFixture
         $settings.manifest.requireAdapter = 'Test/AdvertisedRegistryAdapter'

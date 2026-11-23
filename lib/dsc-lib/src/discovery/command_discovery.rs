@@ -711,6 +711,9 @@ impl ResourceDiscovery for CommandDiscovery {
 
     fn find(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<DiscoveryCache, DscError> {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
+        if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
+            locked_clear!(ADAPTED_RESOURCES);
+        }
         if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || !self.resources_discovered {
             self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
         }

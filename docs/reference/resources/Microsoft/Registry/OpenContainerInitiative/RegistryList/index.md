@@ -112,6 +112,8 @@ with the same type and version, consistently for listing and invocation.
 Before accepting remote adapted metadata for invocation, DSC searches eligible installed adapters
 for a matching resource, checking the advertised adapter first when installed. An explicit
 `requireAdapter` restricts this search; otherwise another installed adapter can provide the resource.
+With `resourceDiscovery: duringDeployment`, adapted candidates are refreshed for each lookup so
+changes made by earlier configuration steps are reflected in subsequent resource resolution.
 Adapter-filtered lists also include matching remote adapted metadata, retaining
 installed adapter-list results over remote duplicates without executing uninstalled remote adapters.
 Registries must permit repository catalog enumeration. An unavailable registry or failed
