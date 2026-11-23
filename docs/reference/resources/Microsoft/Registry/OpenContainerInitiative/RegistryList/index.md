@@ -43,11 +43,16 @@ resources:
 
 ## Description
 
-The resource reads, replaces, and exports one registry settings file. `scope` defaults to
+The resource reads, tests, replaces, and exports one registry settings file. `scope` defaults to
 `currentUser`; `policy` defaults to `false`. Get and export return the selected file's list,
 not the merged effective discovery configuration. Missing files return an empty list; invalid
 JSON, invalid entries, and inaccessible files are errors. Set replaces the selected list
 atomically, and an empty `registries` array clears it.
+
+Test compares the entire selected registry list, including array order and optional
+authentication fields. Removing `authentication` or `secretVault` from the desired list is a
+change that set must apply. Omitting `registries` tests only the selected scope and policy,
+without requesting a list change.
 
 Export adds the top-level, read-only `_name` property with the value `OCI Registries`.
 DSC uses this value as the exported configuration instance's name and removes it from the
@@ -85,10 +90,18 @@ verifying SHA-256 digests, sizes, and resource identity. It does **not** downloa
 ZIPs, install packages, or modify resource search paths. Resources still need their implementations
 installed before invocation.
 
+Remote definitions are imported only as ordinary DSC resource manifests, without evaluating
+conditions or executing schema commands. Action, adapted-resource, and manifest-list payloads
+are rejected, and remote definitions cannot supply trusted local resource paths.
+
 Remote list results include `registry` set to the friendly name. Locally discovered resources
-include `registry: local`. Registries must permit repository catalog enumeration; failure to
-enumerate is reported as a discovery error, not an empty list. DSC reports extension failures as
-warnings while preserving local discovery.
+include `registry: local`. An installed local resource takes precedence over a remote resource
+with the same type and version, consistently for listing and invocation.
+Registries must permit repository catalog enumeration. An unavailable registry or failed
+credential lookup produces a warning identifying that registry; discovery continues with the
+remaining registries and retains earlier results. Invalid remote manifests are also reported as
+warnings without discarding valid results. Invalid overall settings remain an extension error,
+which DSC reports while preserving local discovery.
 
 When an entry specifies `authentication`, the extension requests its token through the host's
 reverse JSON-RPC `secret.get` service. The provider must return a nonempty `secureString`.
@@ -113,10 +126,8 @@ The resource has the following capabilities:
 
 - `get` - Retrieve the selected settings list.
 - `set` - Replace the selected settings list.
+- `test` - Compare the complete selected settings list with the desired list.
 - `export` - Export the selected settings list as one resource instance.
-
-This resource uses the synthetic test functionality of DSC to determine whether an instance is
-in the desired state.
 
 For more information, see [DSC resource capabilities][01].
 
@@ -126,7 +137,8 @@ For more information, see [DSC resource capabilities][01].
 
 ## Properties
 
-The resource has no key properties. `registries` is required for set and optional for get and export.
+The resource has no key properties. `registries` is required for set and optional for get, test,
+and export.
 The optional instance properties are `scope`, `policy`, and `registries`.
 The read-only `_name` property is returned only by export.
 

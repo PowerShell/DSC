@@ -795,6 +795,15 @@ fn evaluate_condition(condition: Option<&str>) -> Result<bool, DscError> {
     Ok(true)
 }
 
+pub(crate) fn load_registry_resource_manifest(content: &Value) -> Result<DscResource, DscError> {
+    let manifest: ResourceManifest = serde_json::from_value(content.clone())?;
+    if !ResourceManifest::is_recognized_schema_uri(&manifest.schema_version) {
+        return Err(DscError::InvalidManifest(t!("discovery.commandDiscovery.invalidRegistryResourceSchema").to_string()));
+    }
+    // Remote definitions are metadata: never evaluate conditions or resolve executable paths.
+    load_resource_manifest(None, &manifest, false)
+}
+
 /// Loads a manifest from the given content and returns a vector of `ImportedManifest`.
 ///
 /// # Arguments
@@ -827,7 +836,7 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = resource.condition.unwrap_or_default(), resource = resource.resource_type));
             return Ok(vec![]);
         }
-        let resource = load_resource_manifest(None, &resource)?;
+        let resource = load_resource_manifest(None, &resource, true)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     } else if let Ok(extension) = serde_json::from_value::<ExtensionManifest>(content.clone()) {
         if !evaluate_condition(extension.condition.as_deref())? {
@@ -864,7 +873,7 @@ pub fn load_manifest_content(content: &Value) -> Result<Vec<ImportedManifest>, D
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMetManifestContent", condition = resource_manifest.condition.unwrap_or_default(), resource = resource_manifest.resource_type));
                     continue;
                 }
-                let resource = load_resource_manifest(None, &resource_manifest)?;
+                let resource = load_resource_manifest(None, &resource_manifest, true)?;
                 resources.push(ImportedManifest::Resource(resource));
             }
         }
@@ -968,7 +977,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
             debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = manifest.condition.unwrap_or_default(), resource = manifest.resource_type));
             return Ok(vec![]);
         }
-        let resource = load_resource_manifest(Some(path), &manifest)?;
+        let resource = load_resource_manifest(Some(path), &manifest, true)?;
         return Ok(vec![ImportedManifest::Resource(resource)]);
     }
     if DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext)) {
@@ -1037,7 +1046,7 @@ pub fn load_manifest(path: &Path) -> Result<Vec<ImportedManifest>, DscError> {
                     debug!("{}", t!("discovery.commandDiscovery.conditionNotMet", path = path.to_string_lossy(), condition = res_manifest.condition.as_ref() : {:?}, resource = res_manifest.resource_type));
                     continue;
                 }
-                let resource = load_resource_manifest(Some(path), res_manifest)?;
+                let resource = load_resource_manifest(Some(path), res_manifest, true)?;
                 resources.push(ImportedManifest::Resource(resource));
             }
         }
@@ -1110,7 +1119,7 @@ pub fn load_adapted_resource_manifest(path: Option<&Path>, manifest: &AdaptedDsc
     Ok(resource)
 }
 
-fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
+fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest, verify_executables: bool) -> Result<DscResource, DscError> {
     manifest.validate_transport()?;
     if manifest.version.is_date_version() {
         warn!("{}", t!(
@@ -1130,15 +1139,20 @@ fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> R
 
     let mut capabilities: HashSet<ResourceCapability> = HashSet::new();
     let parent = path.and_then(|p| p.parent());
+    let verify_command = |operation: &str, executable: &str| {
+        if verify_executables {
+            verify_executable(&manifest.resource_type, operation, executable, parent);
+        }
+    };
     if let Some(rpc) = &manifest.jsonrpc {
-        verify_executable(&manifest.resource_type, "jsonrpc", &rpc.executable, parent);
+        verify_command("jsonrpc", &rpc.executable);
     }
     if let Some(get) = &manifest.get {
-        verify_executable(&manifest.resource_type, "get", &get.executable, parent);
+        verify_command("get", &get.executable);
         capabilities.insert(ResourceCapability::Get);
     }
     if let Some(set) = &manifest.set {
-        verify_executable(&manifest.resource_type, "set", &set.executable, parent);
+        verify_command("set", &set.executable);
         capabilities.insert(ResourceCapability::Set);
         if set.handles_exist == Some(true) {
             capabilities.insert(ResourceCapability::SetHandlesExist);
@@ -1148,29 +1162,29 @@ fn load_resource_manifest(path: Option<&Path>, manifest: &ResourceManifest) -> R
         }
     }
     if let Some(test) = &manifest.test {
-        verify_executable(&manifest.resource_type, "test", &test.executable, parent);
+        verify_command("test", &test.executable);
         capabilities.insert(ResourceCapability::Test);
     }
     if let Some(delete) = &manifest.delete {
-        verify_executable(&manifest.resource_type, "delete", &delete.executable, parent);
+        verify_command("delete", &delete.executable);
         capabilities.insert(ResourceCapability::Delete);
         if delete.supports_what_if == Some(true) || delete.args.as_ref().is_some_and(|args| args_contains_what_if(args)) {
             capabilities.insert(ResourceCapability::DeleteWhatIf);
         }
     }
     if let Some(export) = &manifest.export {
-        verify_executable(&manifest.resource_type, "export", &export.executable, parent);
+        verify_command("export", &export.executable);
         capabilities.insert(ResourceCapability::Export);
     }
     if let Some(resolve) = &manifest.resolve {
-        verify_executable(&manifest.resource_type, "resolve", &resolve.executable, parent);
+        verify_command("resolve", &resolve.executable);
         capabilities.insert(ResourceCapability::Resolve);
     }
     if let Some(SchemaKind::Command(command)) = &manifest.schema {
-        verify_executable(&manifest.resource_type, "schema", &command.executable, parent);
+        verify_command("schema", &command.executable);
     }
     if let Some(what_if) = &manifest.what_if {
-        verify_executable(&manifest.resource_type, "what-if", &what_if.executable, parent);
+        verify_command("what-if", &what_if.executable);
         capabilities.insert(ResourceCapability::SetWhatIf);
     }
 

@@ -1,10 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::settings::Authentication;
+use crate::settings::{Authentication, Registry};
 use rust_i18n::t;
 use serde_json::{Value, json};
-use std::io::{BufRead, Read, Write};
+use std::{
+    collections::BTreeMap,
+    io::{BufRead, Read, Write},
+};
 
 fn read(input: &mut impl BufRead) -> Result<Value, String> {
     let mut line = String::new();
@@ -59,6 +62,21 @@ pub fn secret(
 }
 
 pub async fn serve(input: &mut impl BufRead, output: &mut impl Write) -> Result<(), String> {
+    serve_with_settings(
+        input,
+        output,
+        &mut std::io::stderr(),
+        crate::settings::effective,
+    )
+    .await
+}
+
+async fn serve_with_settings(
+    input: &mut impl BufRead,
+    output: &mut impl Write,
+    diagnostics: &mut impl Write,
+    read_settings: impl Fn() -> Result<BTreeMap<String, Registry>, String>,
+) -> Result<(), String> {
     let mut initialized = false;
     let mut shutting_down = false;
     let mut secret_service = false;
@@ -89,10 +107,9 @@ pub async fn serve(input: &mut impl BufRead, output: &mut impl Write) -> Result<
                     && request["params"]["operation"] == "discover" =>
             {
                 let mut results = Vec::new();
-                match crate::settings::effective() {
+                match read_settings() {
                     Err(error) => Err(error),
                     Ok(registries) => {
-                        let mut failure = None;
                         for (name, registry) in registries {
                             let token = match &registry.authentication {
                                 Some(_) if !secret_service => {
@@ -114,12 +131,13 @@ pub async fn serve(input: &mut impl BufRead, output: &mut impl Write) -> Result<
                                 Ok(manifests) => results.extend(manifests.into_iter().map(|manifest|
                                     json!({"manifestContent": manifest, "registry": name}))),
                                 Err(error) => {
-                                    failure = Some(t!("rpc.operation", registry = name, error = error).to_string());
-                                    break;
+                                    writeln!(diagnostics, "{}", json!({
+                                        "warn": t!("rpc.operation", registry = name, error = error).to_string()
+                                    })).map_err(|error| error.to_string())?;
                                 },
                             }
                         }
-                        failure.map_or_else(|| Ok(Value::Array(results)), Err)
+                        Ok(Value::Array(results))
                     }
                 }
             }
@@ -142,7 +160,112 @@ pub async fn serve(input: &mut impl BufRead, output: &mut impl Write) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::oci::tests::{RegistryServer, routes};
     use std::io::Cursor;
+
+    #[tokio::test]
+    async fn retains_healthy_registries_before_and_after_catalog_and_secret_failures() {
+        for secret_service in [false, true] {
+            let healthy = RegistryServer::new(routes(false), None);
+            let unavailable = RegistryServer::new(routes(false), Some("sensitive"));
+            let anonymous = Registry {
+                location: healthy.url.clone(),
+                authentication: None,
+            };
+            let registries = BTreeMap::from([
+                ("a-healthy".into(), anonymous.clone()),
+                (
+                    "b-unavailable".into(),
+                    Registry {
+                        location: unavailable.url.clone(),
+                        ..anonymous.clone()
+                    },
+                ),
+                (
+                    "c-secret".into(),
+                    Registry {
+                        authentication: Some(Authentication {
+                            secret_name: "access".into(),
+                            secret_vault: None,
+                        }),
+                        ..anonymous.clone()
+                    },
+                ),
+                ("d-healthy".into(), anonymous),
+            ]);
+            let services = if secret_service {
+                vec!["secret.get"]
+            } else {
+                Vec::new()
+            };
+            let mut requests = vec![
+                json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"hostServices":services}}),
+                json!({"jsonrpc":"2.0","id":2,"method":"dsc_invoke","params":{"operation":"discover"}}),
+            ];
+            if secret_service {
+                requests.push(json!({
+                    "jsonrpc":"2.0","id":"oci-secret-1",
+                    "error":{"code":-1,"message":"sensitive"}
+                }));
+            }
+            requests.extend([
+                json!({"jsonrpc":"2.0","id":3,"method":"shutdown"}),
+                json!({"jsonrpc":"2.0","method":"exit"}),
+            ]);
+            let mut input = Cursor::new(
+                requests
+                    .into_iter()
+                    .map(|request| format!("{request}\n"))
+                    .collect::<String>(),
+            );
+            let mut output = Vec::new();
+            let mut diagnostics = Vec::new();
+            serve_with_settings(&mut input, &mut output, &mut diagnostics, || {
+                Ok(registries.clone())
+            })
+            .await
+            .unwrap();
+
+            let output = String::from_utf8(output).unwrap();
+            let responses: Vec<Value> = output
+                .lines()
+                .map(|line| serde_json::from_str(line).unwrap())
+                .collect();
+            let discovered = responses
+                .iter()
+                .find(|response| response["id"] == 2)
+                .unwrap()["result"]
+                .as_array()
+                .unwrap();
+            let names: Vec<_> = discovered
+                .iter()
+                .map(|result| result["registry"].as_str().unwrap())
+                .collect();
+            assert_eq!(names, ["a-healthy", "d-healthy"]);
+            assert_eq!(
+                responses
+                    .iter()
+                    .filter(|response| response["method"] == "secret.get")
+                    .count(),
+                usize::from(secret_service)
+            );
+            let diagnostics = String::from_utf8(diagnostics).unwrap();
+            let warnings: Vec<Value> = diagnostics
+                .lines()
+                .map(|line| serde_json::from_str(line).unwrap())
+                .collect();
+            assert_eq!(warnings.len(), 2);
+            assert!(
+                warnings[0]["warn"]
+                    .as_str()
+                    .unwrap()
+                    .contains("b-unavailable")
+            );
+            assert!(warnings[1]["warn"].as_str().unwrap().contains("c-secret"));
+            assert!(!output.contains("sensitive"));
+            assert!(!diagnostics.contains("sensitive"));
+        }
+    }
 
     #[test]
     fn reverse_secret_preserves_name_and_optional_vault_without_echoing_value() {

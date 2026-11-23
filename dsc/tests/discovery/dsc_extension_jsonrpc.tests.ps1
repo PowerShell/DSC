@@ -26,6 +26,9 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
 
     BeforeEach {
         $previousPath = $env:PATH
+        $previousHome = $env:HOME
+        $previousLocalAppData = $env:LOCALAPPDATA
+        $previousProgramData = $env:ProgramData
         $previousResourcePath = $env:DSC_RESOURCE_PATH
         $previousLog = $env:DSC_TEST_EXTENSION_RPC_LOG
         $previousSettings = $env:DSC_TEST_EXTENSION_RPC_SETTINGS
@@ -36,6 +39,9 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         $env:DSC_TEST_EXTENSION_RPC_SETTINGS = Join-Path $TestDrive "$([guid]::NewGuid()).json"
         $env:DSC_TEST_SECRET_RPC_FAULT = $null
         $testDirectory = (New-Item -ItemType Directory -Path "$TestDrive/$([guid]::NewGuid())").FullName
+        $env:HOME = $testDirectory
+        $env:LOCALAPPDATA = $testDirectory
+        $env:ProgramData = $testDirectory
         $secretName = "runtime-$([guid]::NewGuid().ToString('N'))"
         $stringSecret = @{ secureString = 'test-runtime-token' }
         $objectSecret = @{ secureObject = @{ credential = 'test-runtime-password' } }
@@ -55,6 +61,9 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
     AfterEach {
         $processIds = (Get-ExtensionRpcEvent).pid | Select-Object -Unique
         $env:PATH = $previousPath
+        $env:HOME = $previousHome
+        $env:LOCALAPPDATA = $previousLocalAppData
+        $env:ProgramData = $previousProgramData
         $env:DSC_RESOURCE_PATH = $previousResourcePath
         $env:DSC_TEST_EXTENSION_RPC_LOG = $previousLog
         $env:DSC_TEST_EXTENSION_RPC_SETTINGS = $previousSettings
@@ -102,6 +111,125 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
         $settings.registry = 'oci-test'
         Set-RpcSettings
         (Get-SecretDiscoveredResource).registry | Should -BeExactly 'oci-test'
+    }
+
+    It 'lists and invokes the installed local resource instead of its remote duplicate' {
+        $localManifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/SecretDiscovered'
+            version = '0.1.0'
+            get = @{
+                executable = 'pwsh'
+                args = @('-NoProfile', '-NonInteractive', '-Command', '''{"installed":true}''')
+            }
+            schema = @{ embedded = @{ type = 'object'; properties = @{ installed = @{ type = 'boolean' } } } }
+        }
+        $manifestPath = Join-Path $testDirectory 'installed.dsc.resource.json'
+        $localManifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath
+        $env:PATH = @($testDirectory, $env:PATH) -join [IO.Path]::PathSeparator
+        $settings.registry = 'oci-test'
+        $settings.requests = @()
+        Set-RpcSettings
+
+        $listed = @(Get-SecretDiscoveredResource)
+        $listed | Should -HaveCount 1
+        $listed[0].registry | Should -BeExactly 'local'
+        $listed[0].path | Should -BeExactly $manifestPath
+        $result = dsc resource get -r Test/SecretDiscovered 2>$TestDrive\error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
+        $result.actualState.installed | Should -BeTrue
+    }
+
+    It 'rejects remote <Shape> manifests without executing schema commands or trusting local paths' -ForEach @(
+        @{ Shape = 'action' }
+        @{ Shape = 'adapted-resource' }
+        @{ Shape = 'wrong-schema' }
+    ) {
+        $marker = Join-Path $testDirectory 'schema-command-executed'
+        $localPath = Join-Path $testDirectory 'untrusted-path.json'
+        '{}' | Set-Content -LiteralPath $localPath
+        $manifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json'
+            type = 'Test/SecretDiscovered'
+            version = '0.1.0'
+        }
+        switch ($Shape) {
+            action {
+                $escapedMarker = $marker.Replace("'", "''")
+                $manifest.invoke = @{
+                    executable = 'pwsh'
+                    inputSchema = @{
+                        command = @{
+                            executable = 'pwsh'
+                            args = @('-NoProfile', '-NonInteractive', '-Command',
+                                "Set-Content -LiteralPath '$escapedMarker' -Value executed; '{`"type`":`"object`"}'")
+                        }
+                    }
+                }
+            }
+            adapted-resource {
+                $manifest.'$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/adapted/manifest.json'
+                $manifest.kind = 'resource'
+                $manifest.capabilities = @('get')
+                $manifest.path = $localPath
+                $manifest.requireAdapter = 'Test/Adapter'
+                $manifest.schema = @{ type = 'object' }
+            }
+            wrong-schema {
+                $manifest.get = @{ executable = 'pwsh' }
+                $manifest.schema = @{ embedded = @{ type = 'object' } }
+            }
+        }
+        $settings.registry = 'oci-test'
+        $settings.requests = @()
+        $settings.manifest = $manifest
+        Set-RpcSettings
+        @(Get-SecretDiscoveredResource) | Should -HaveCount 0
+        $marker | Should -Not -Exist
+        Get-Content -LiteralPath $TestDrive\error.log -Raw | Should -Match "Registry 'oci-test' returned an invalid resource manifest"
+    }
+
+    It 'imports ordinary adapter metadata without evaluating its remote condition' {
+        $settings.registry = 'oci-test'
+        $settings.requests = @()
+        $settings.manifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/SecretDiscovered'
+            version = '0.1.0'
+            kind = 'adapter'
+            condition = '[false]'
+            get = @{ executable = 'pwsh' }
+            adapter = @{ inputKind = 'sequence'; list = @{ executable = 'pwsh' } }
+            schema = @{ embedded = @{ type = 'object' } }
+        }
+        Set-RpcSettings
+        $resource = Get-SecretDiscoveredResource
+        $resource.kind | Should -BeExactly 'adapter'
+        $resource.registry | Should -BeExactly 'oci-test'
+        $resource.path | Should -BeNullOrEmpty
+    }
+
+    It 'retains valid registry metadata after rejecting another returned manifest' {
+        $settings.registry = 'oci-test'
+        $settings.requests = @()
+        $settings.manifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/action/manifest.json'
+            type = 'Test/SecretDiscovered'
+            version = '0.1.0'
+            invoke = @{ executable = 'pwsh' }
+        }
+        $settings.additionalManifest = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+            type = 'Test/SecretDiscovered'
+            version = '0.1.0'
+            get = @{ executable = 'pwsh' }
+            schema = @{ embedded = @{ type = 'object' } }
+        }
+        Set-RpcSettings
+        $resource = @(Get-SecretDiscoveredResource)
+        $resource | Should -HaveCount 1
+        $resource[0].registry | Should -BeExactly 'oci-test'
+        Get-Content -LiteralPath $TestDrive\error.log -Raw | Should -Match "Registry 'oci-test' returned an invalid resource manifest"
     }
 
     It 'shows registry <ExpectedRegistry> after RequireAdapter in the resource table' -ForEach @(

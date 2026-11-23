@@ -38,6 +38,10 @@ enum Operation {
         #[arg(long, help = t!("main.input").to_string())]
         input: String,
     },
+    Test {
+        #[arg(long, help = t!("main.input").to_string())]
+        input: Option<String>,
+    },
     Export {
         #[arg(long, help = t!("main.input").to_string())]
         input: Option<String>,
@@ -73,8 +77,11 @@ async fn main() -> ExitCode {
         Operation::Schema => print_json(&schemars::schema_for!(settings::RegistryList)),
         operation => {
             let export = matches!(&operation, Operation::Export { .. });
+            let test = matches!(&operation, Operation::Test { .. });
             let (input, set) = match operation {
-                Operation::Get { input } | Operation::Export { input } => (input, false),
+                Operation::Get { input }
+                | Operation::Export { input }
+                | Operation::Test { input } => (input, false),
                 Operation::Set { input } => (Some(input), true),
                 _ => unreachable!(),
             };
@@ -108,18 +115,25 @@ async fn main() -> ExitCode {
                 ));
                 return ExitCode::from(EXIT_INVALID_INPUT);
             }
-            match if set {
-                settings::set(&input)
+            if test {
+                settings::test(&input).and_then(|(state, differences)| {
+                    print_json(&state)?;
+                    print_json(&differences)
+                })
             } else {
-                settings::get(&input)
-            } {
-                Ok(mut state) => {
-                    if export {
-                        state.name = Some(t!("main.exportName").to_string());
+                match if set {
+                    settings::set(&input)
+                } else {
+                    settings::get(&input)
+                } {
+                    Ok(mut state) => {
+                        if export {
+                            state.name = Some(t!("main.exportName").to_string());
+                        }
+                        print_json(&state)
                     }
-                    print_json(&state)
+                    Err(error) => Err(error),
                 }
-                Err(error) => Err(error),
             }
         }
     };

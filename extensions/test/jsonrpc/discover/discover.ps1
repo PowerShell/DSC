@@ -97,6 +97,15 @@ Add-RpcEvent -Role discover -Event start
                 if ($settings.registry) {
                     $result[0].registry = $settings.registry
                 }
+                if ($settings.manifest) {
+                    $result[0].manifestContent = $settings.manifest
+                }
+                if ($settings.additionalManifest) {
+                    $result += @{
+                        manifestContent = $settings.additionalManifest
+                        registry = $settings.registry
+                    }
+                }
             }
         }
         shutdown {

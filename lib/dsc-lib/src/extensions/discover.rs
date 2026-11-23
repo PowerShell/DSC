@@ -10,7 +10,8 @@ use crate::{
         DSC_RESOURCE_EXTENSIONS,
         ImportedManifest,
         load_manifest,
-        load_manifest_content
+        load_manifest_content,
+        load_registry_resource_manifest
     },
     dscerror::DscError,
     configure::context::Context,
@@ -151,7 +152,18 @@ impl DscExtension {
                     };
                     match discover_result.path_or_content {
                         ManifestKind::ManifestContent(manifest_value) => {
-                            let imported_manifests = load_manifest_content(&manifest_value)?;
+                            let imported_manifests = if let Some(registry) = discover_result.registry.as_deref()
+                                && registry != "local" {
+                                match load_registry_resource_manifest(&manifest_value) {
+                                    Ok(resource) => vec![ImportedManifest::Resource(resource)],
+                                    Err(err) => {
+                                        warn!("{}", t!("extensions.dscextension.invalidRegistryManifest", registry = registry, err = err));
+                                        continue;
+                                    }
+                                }
+                            } else {
+                                load_manifest_content(&manifest_value)?
+                            };
                             info!("{}", t!("extensions.dscextension.manifestImported", extension = self.type_name));
                             for mut imported_manifest in imported_manifests {
                                 if let ImportedManifest::Resource(resource) = &mut imported_manifest

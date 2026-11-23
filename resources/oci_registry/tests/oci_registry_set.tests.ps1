@@ -42,6 +42,46 @@ Describe 'OCI RegistryList set' {
         $output = '{}' | dsc resource get -r $resource -f - 2>$TestDrive\error.log
         ($output | ConvertFrom-Json).actualState.registries | Should -HaveCount 0
     }
+    It 'detects and applies removal of <Property> from the complete registry list' -ForEach @(
+        @{ Property = 'authentication' }
+        @{ Property = 'secretVault' }
+    ) {
+        $initial = '{"registries":[{"private":{"location":"example.com","authentication":{"secretName":"access","secretVault":"vault"}}}]}'
+        $initial | dsc resource set -r $resource -f - 2>$TestDrive\error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
+        $unchanged = $initial | dsc resource test -r $resource -f - 2>$TestDrive\error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
+        ($unchanged | ConvertFrom-Json).inDesiredState | Should -BeTrue
+
+        $desired = $initial | ConvertFrom-Json -AsHashtable
+        if ($Property -eq 'authentication') {
+            $desired.registries[0].private.Remove('authentication')
+        } else {
+            $desired.registries[0].private.authentication.Remove('secretVault')
+        }
+        $json = $desired | ConvertTo-Json -Depth 10
+        $tested = $json | dsc resource test -r $resource -f - 2>$TestDrive\error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
+        $tested = $tested | ConvertFrom-Json
+        $tested.inDesiredState | Should -BeFalse
+        $tested.differingProperties | Should -Contain 'registries'
+        $tested.actualState.registries[0].private.authentication.secretVault | Should -BeExactly 'vault'
+
+        $json | dsc resource set -r $resource -f - 2>$TestDrive\error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
+        $output = '{}' | dsc resource get -r $resource -f - 2>$TestDrive\error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
+        $actual = ($output | ConvertFrom-Json).actualState.registries[0].private
+        if ($Property -eq 'authentication') {
+            @($actual.PSObject.Properties.Name) | Should -Not -Contain 'authentication'
+        } else {
+            $actual.authentication.secretName | Should -BeExactly 'access'
+            @($actual.authentication.PSObject.Properties.Name) | Should -Not -Contain 'secretVault'
+        }
+        $tested = $json | dsc resource test -r $resource -f - 2>$TestDrive\error.log
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -LiteralPath $TestDrive\error.log -Raw)
+        ($tested | ConvertFrom-Json).inDesiredState | Should -BeTrue
+    }
     It 'rejects an invalid registry without writing settings' -ForEach @(
         '{"registries":[{"public":{}}]}'
         '{"registries":[{"private":{"location":"example.com","authentication":{}}}]}'

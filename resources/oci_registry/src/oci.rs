@@ -445,7 +445,7 @@ pub async fn discover(location: &str, token: Option<&str>) -> Result<Vec<Value>,
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use serde_json::json;
     use std::{
@@ -463,15 +463,18 @@ mod tests {
         json!({"mediaType": media_type, "digest": sha256_digest(bytes), "size": bytes.len()})
     }
 
-    struct RegistryServer {
-        url: String,
+    pub(crate) struct RegistryServer {
+        pub(crate) url: String,
         requests: Arc<Mutex<Vec<String>>>,
         stop: Arc<AtomicBool>,
         worker: Option<thread::JoinHandle<()>>,
     }
 
     impl RegistryServer {
-        fn new(routes: BTreeMap<String, (String, Vec<u8>)>, token: Option<&str>) -> Self {
+        pub(crate) fn new(
+            routes: BTreeMap<String, (String, Vec<u8>)>,
+            token: Option<&str>,
+        ) -> Self {
             let listener = TcpListener::bind("127.0.0.1:0").unwrap();
             let address = listener.local_addr().unwrap();
             listener.set_nonblocking(true).unwrap();
@@ -552,7 +555,7 @@ mod tests {
         }
     }
 
-    fn routes(corrupt: bool) -> BTreeMap<String, (String, Vec<u8>)> {
+    pub(crate) fn routes(corrupt: bool) -> BTreeMap<String, (String, Vec<u8>)> {
         let resource = serde_json::to_vec(&json!({
             "$schema":"https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type":"Test.Oci/Example", "version":"1.0.0",

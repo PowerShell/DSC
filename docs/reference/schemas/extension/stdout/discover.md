@@ -66,8 +66,9 @@ Required: true (when manifestContent isn't defined)
 
 ### manifestContent
 
-The value for this property must be the content of a manifest as a JSON object. DSC processes the
-value the same way it processes the content of a manifest file, including evaluating the
+The value for this property must be the content of a manifest as a JSON object. Unless `registry`
+identifies a remote registry, DSC processes the value the same way it processes a manifest file,
+including evaluating the
 `condition` property of the manifest. The value can be a resource manifest, an adapted resource
 manifest, or a manifest list. If the value isn't a valid manifest, DSC raises an error. This
 property was added in DSC version 3.3.0.
@@ -84,6 +85,12 @@ The friendly name of the registry containing a discovered resource. DSC includes
 
 Returning manifest content does not install its implementation. DSC rejects operations on an
 uninstalled remote resource, but can return a schema embedded in its manifest.
+
+When `registry` is neither omitted nor `local`, manifest content must be an ordinary DSC resource
+manifest using a recognized resource manifest schema. DSC imports it as metadata without
+evaluating conditions or executing schema commands. Action, adapted-resource, and manifest-list
+shapes cannot supply remote resource metadata or trusted local installation paths. Invalid remote
+manifests produce warnings and are skipped without discarding valid discovery results.
 
 ```yaml
 Type:     [string, 'null']

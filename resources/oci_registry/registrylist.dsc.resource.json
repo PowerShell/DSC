@@ -19,6 +19,11 @@
     "executable": "oci_registry",
     "args": ["export", {"jsonInputArg": "--input", "mandatory": false}]
   },
+  "test": {
+    "executable": "oci_registry",
+    "args": ["test", {"jsonInputArg": "--input", "mandatory": false}],
+    "return": "stateAndDiff"
+  },
   "exitCodes": {
     "0": "Success",
     "1": "Invalid arguments",

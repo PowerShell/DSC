@@ -190,6 +190,20 @@ pub fn set(input: &RegistryList) -> Result<RegistryList, String> {
     get(input)
 }
 
+pub fn test(input: &RegistryList) -> Result<(RegistryList, Vec<String>), String> {
+    let state = get(input)?;
+    let differences = if input
+        .registries
+        .as_ref()
+        .is_some_and(|desired| state.registries.as_ref() != Some(desired))
+    {
+        vec!["registries".to_string()]
+    } else {
+        Vec::new()
+    };
+    Ok((state, differences))
+}
+
 fn write(path: &Path, settings: &Settings, scope: Scope) -> Result<(), String> {
     #[cfg(not(unix))]
     let _ = scope;
