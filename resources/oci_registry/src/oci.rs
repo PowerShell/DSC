@@ -62,6 +62,16 @@ fn transport_error<T>(_: T) -> String {
     t!("oci.transport").to_string()
 }
 
+fn http_client() -> Result<reqwest::Client, String> {
+    #[cfg(not(windows))]
+    TLS_PROVIDER.as_ref().map_err(Clone::clone)?;
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(transport_error)
+}
+
 fn invalid() -> String {
     t!("oci.document").to_string()
 }
@@ -452,10 +462,9 @@ pub async fn discover(
     token: Option<&str>,
     mut warn: impl FnMut(&str, &str, &str) -> Result<(), String>,
 ) -> Result<Vec<Value>, String> {
-    #[cfg(not(windows))]
-    TLS_PROVIDER.as_ref().map_err(Clone::clone)?;
     let base = registry_url(location)?;
     let authority = &base[url::Position::BeforeHost..url::Position::AfterPort];
+    let http = http_client()?;
     let client = Client::new(ClientConfig {
         protocol: if base.scheme() == "http" {
             ClientProtocol::Http
@@ -466,11 +475,6 @@ pub async fn discover(
         connect_timeout: Some(Duration::from_secs(10)),
         ..Default::default()
     });
-    let http = reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .map_err(transport_error)?;
     let auth = token.map_or(RegistryAuth::Anonymous, |token| {
         RegistryAuth::Bearer(token.to_string())
     });
@@ -595,6 +599,9 @@ pub(crate) mod tests {
                     socket
                         .set_read_timeout(Some(Duration::from_secs(5)))
                         .unwrap();
+                    socket
+                        .set_write_timeout(Some(Duration::from_secs(5)))
+                        .unwrap();
                     let mut reader = BufReader::new(socket.try_clone().unwrap());
                     let mut line = String::new();
                     reader.read_line(&mut line).unwrap();
@@ -641,7 +648,11 @@ pub(crate) mod tests {
                             std::io::ErrorKind::BrokenPipe
                                 | std::io::ErrorKind::ConnectionReset
                                 | std::io::ErrorKind::ConnectionAborted
-                        ));
+                        ) || (worker_stop.load(Ordering::Relaxed)
+                            && matches!(
+                                error.kind(),
+                                std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
+                            )));
                     }
                 }
             });
@@ -662,6 +673,36 @@ pub(crate) mod tests {
                 result.unwrap();
             }
         }
+    }
+
+    #[test]
+    fn registry_server_stops_without_draining_response_body() {
+        let server = RegistryServer::new(
+            BTreeMap::from([(
+                "/oversized".into(),
+                (String::new(), vec![b' '; LIMIT + 1]),
+            )]),
+            None,
+        );
+        let address = server.url.strip_prefix("http://").unwrap();
+        let mut socket = std::net::TcpStream::connect(address).unwrap();
+        socket
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        write!(socket, "GET /oversized HTTP/1.1\r\nHost: {address}\r\n\r\n").unwrap();
+        let mut reader = BufReader::new(socket);
+        let mut line = String::new();
+        reader.read_line(&mut line).unwrap();
+        assert_eq!(line, "HTTP/1.1 200 OK\r\n");
+        let (completed, wait) = std::sync::mpsc::channel();
+        let worker = thread::spawn(move || {
+            drop(server);
+            completed.send(()).unwrap();
+        });
+        let result = wait.recv_timeout(Duration::from_secs(10));
+        drop(reader);
+        worker.join().unwrap();
+        result.unwrap();
     }
 
     pub(crate) fn routes(corrupt: bool) -> BTreeMap<String, (String, Vec<u8>)> {
@@ -799,7 +840,7 @@ pub(crate) mod tests {
                 ),
             );
             let server = RegistryServer::new(routes, Some("catalog-token"));
-            let http = reqwest::Client::new();
+            let http = http_client().unwrap();
             let repositories = catalog(&http, &registry_url(&server.url).unwrap(), None, |error| {
                 panic!("{error}")
             })
@@ -835,7 +876,7 @@ pub(crate) mod tests {
         let server = RegistryServer::new(routes, Some("catalog-token"));
         let mut warnings = Vec::new();
         let repositories = catalog(
-            &reqwest::Client::new(),
+            &http_client().unwrap(),
             &registry_url(&server.url).unwrap(),
             None,
             |error| {
@@ -1034,7 +1075,7 @@ pub(crate) mod tests {
                 .parse()
                 .unwrap();
             let result = manifest(
-                &reqwest::Client::new(),
+                &http_client().unwrap(),
                 &base,
                 &reference,
                 Some("test-token"),
@@ -1096,7 +1137,7 @@ pub(crate) mod tests {
                     .unwrap();
             let result = tokio::time::timeout(
                 Duration::from_secs(5),
-                manifest(&reqwest::Client::new(), &base, &reference, None),
+                manifest(&http_client().unwrap(), &base, &reference, None),
             )
             .await;
             release.send(()).unwrap();
