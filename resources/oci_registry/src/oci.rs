@@ -642,17 +642,29 @@ pub(crate) mod tests {
                         ("404 Not Found", String::new(), b"{}".to_vec())
                     };
                     write!(socket, "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n{headers}\r\n", body.len()).unwrap();
-                    if let Err(error) = socket.write_all(&body) {
-                        assert!(matches!(
-                            error.kind(),
-                            std::io::ErrorKind::BrokenPipe
-                                | std::io::ErrorKind::ConnectionReset
-                                | std::io::ErrorKind::ConnectionAborted
-                        ) || (worker_stop.load(Ordering::Relaxed)
-                            && matches!(
-                                error.kind(),
-                                std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
-                            )));
+                    let mut remaining = body.as_slice();
+                    // write_all can restart the socket timeout after each partial write.
+                    while !remaining.is_empty() && !worker_stop.load(Ordering::Relaxed) {
+                        match socket.write(remaining) {
+                            Ok(written) => {
+                                assert!(written > 0, "registry response write made no progress");
+                                remaining = &remaining[written..];
+                            }
+                            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
+                            Err(error) => {
+                                assert!(matches!(
+                                    error.kind(),
+                                    std::io::ErrorKind::BrokenPipe
+                                        | std::io::ErrorKind::ConnectionReset
+                                        | std::io::ErrorKind::ConnectionAborted
+                                ) || (worker_stop.load(Ordering::Relaxed)
+                                    && matches!(
+                                        error.kind(),
+                                        std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
+                                    )));
+                                break;
+                            }
+                        }
                     }
                 }
             });
