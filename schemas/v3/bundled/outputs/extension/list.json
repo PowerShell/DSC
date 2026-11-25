@@ -150,7 +150,21 @@
               ]
             },
             {
-              "$ref": "#/$defs/jsonrpcOperation"
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "jsonrpc"
+              ],
+              "properties": {
+                "jsonrpc": {
+                  "$ref": "#/$defs/jsonrpcOperation/properties/jsonrpc"
+                },
+                "network": {
+                  "description": "Whether discovery accesses the network. Network discovery runs after local discovery and is skipped for resource lookups that are already satisfied.",
+                  "type": "boolean",
+                  "default": false
+                }
+              }
             },
             {
               "type": "null"
@@ -310,6 +324,11 @@
               }
             ]
           }
+        },
+        "network": {
+          "description": "Whether discovery accesses the network. Network discovery runs after local discovery and is skipped for resource lookups that are already satisfied.",
+          "type": "boolean",
+          "default": false
         }
       }
     },

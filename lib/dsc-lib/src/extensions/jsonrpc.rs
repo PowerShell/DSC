@@ -50,10 +50,15 @@ mod tests {
     use test_case::test_case;
 
     #[test_case(json!({"executable": "discover"}); "command")]
+    #[test_case(json!({"executable": "discover", "network": true}); "network command")]
     #[test_case(json!({"jsonrpc": {"executable": "discover", "args": ["rpc"], "requestTimeoutMS": 0}}); "jsonrpc")]
+    #[test_case(json!({"jsonrpc": {"executable": "discover"}, "network": true}); "network jsonrpc")]
     fn transport_round_trip(method: Value) {
-        let parsed: ExtensionMethod<DiscoverMethod> = serde_json::from_value(method.clone()).unwrap();
+        let parsed: DiscoverMethod = serde_json::from_value(method.clone()).unwrap();
         let mut expected = method;
+        if expected.get("network").is_none() {
+            expected["network"] = json!(false);
+        }
         if expected.get("jsonrpc").is_none() {
             expected["args"] = Value::Null;
         }
@@ -68,8 +73,10 @@ mod tests {
     #[test_case(json!({"jsonrpc": {"executable": "discover", "input": "stdin"}}); "unknown transport field")]
     #[test_case(json!({"jsonrpc": {"executable": "discover"}, "executable": "fallback"}); "mixed transports")]
     #[test_case(json!({"executable": "discover", "jsonRpc": {}}); "misspelled transport")]
+    #[test_case(json!({"executable": "discover", "network": "true"}); "non-boolean network")]
+    #[test_case(json!({"jsonrpc": {"executable": "discover"}, "network": null}); "null network")]
     fn rejects_invalid_transport(method: Value) {
-        assert!(serde_json::from_value::<ExtensionMethod<DiscoverMethod>>(method).is_err());
+        assert!(serde_json::from_value::<DiscoverMethod>(method).is_err());
     }
 
     #[test]
@@ -81,7 +88,7 @@ mod tests {
             "discover": {"jsonrpc": {"executable": "discover"}},
             "secret": {"executable": "secret", "args": [{"nameArg": "--name"}]}
         })).unwrap();
-        assert!(matches!(manifest.discover, Some(ExtensionMethod::JsonRpc { .. })));
+        assert!(matches!(manifest.discover.unwrap().method, ExtensionMethod::JsonRpc { .. }));
         assert!(matches!(manifest.secret, Some(ExtensionMethod::Command(_))));
     }
 }

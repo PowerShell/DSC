@@ -30,12 +30,12 @@ use crate::{
 };
 use rust_i18n::t;
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::path::PathBuf;
 use tracing::{info, trace, warn};
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "manifest.discover", folder_path = "extension")]
 #[schemars(
@@ -43,6 +43,28 @@ use tracing::{info, trace, warn};
     transform = DiscoverMethod::transform_schema_docs
 )]
 pub struct DiscoverMethod {
+    /// Whether discovery uses the network. Network discovery runs after local discovery.
+    #[serde(default)]
+    pub network: bool,
+    #[serde(flatten)]
+    pub method: ExtensionMethod<DiscoverCommand>,
+}
+
+impl<'de> Deserialize<'de> for DiscoverMethod {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let mut value = Value::deserialize(deserializer)?;
+        let network = value.as_object_mut().and_then(|object| object.remove("network"))
+            .map(serde_json::from_value).transpose().map_err(serde::de::Error::custom)?
+            .unwrap_or(false);
+        let method = serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+        Ok(Self { network, method })
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[schemars(inline)]
+pub struct DiscoverCommand {
     /// The command to run to get the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Get.
@@ -118,7 +140,7 @@ impl DscExtension {
             if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
                 warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
             }
-            let stdout = match discover {
+            let stdout = match discover.method {
                 ExtensionMethod::Command(discover) => {
                     let args = process_discover_args(discover.args.as_ref())?;
                     let (_, stdout, _) = invoke_command(

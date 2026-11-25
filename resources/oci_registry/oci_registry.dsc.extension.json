@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "Discover DSC resource manifests in configured OCI registries.",
   "discover": {
+    "network": true,
     "jsonrpc": {
       "executable": "oci_registry",
       "args": ["discover"],

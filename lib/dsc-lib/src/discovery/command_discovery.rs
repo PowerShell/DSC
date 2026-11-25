@@ -41,6 +41,8 @@ pub const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.reso
 
 static ADAPTERS: LazyLock<RwLock<DiscoveryCache>> = LazyLock::new(|| RwLock::new(DiscoveryCache::new()));
 static RESOURCES: LazyLock<RwLock<DiscoveryCache>> = LazyLock::new(|| RwLock::new(DiscoveryCache::new()));
+static NETWORK_RESOURCES: LazyLock<RwLock<DiscoveryCache>> = LazyLock::new(|| RwLock::new(DiscoveryCache::new()));
+static DISCOVERED_NETWORK_EXTENSIONS: LazyLock<RwLock<HashSet<FullyQualifiedTypeName>>> = LazyLock::new(|| RwLock::new(HashSet::new()));
 static EXTENSIONS: LazyLock<RwLock<DiscoveryExtensionCache>> = LazyLock::new(|| RwLock::new(DiscoveryExtensionCache::new()));
 static ADAPTED_RESOURCES: LazyLock<RwLock<DiscoveryCache>> = LazyLock::new(|| RwLock::new(DiscoveryCache::new()));
 
@@ -99,6 +101,70 @@ impl CommandDiscovery {
 
     #[must_use]
     pub fn get_extensions(&self) -> DiscoveryExtensionCache { locked_clone!(EXTENSIONS) }
+
+    fn discover_extensions(
+        &mut self,
+        filter: &TypeNameFilter,
+        network: bool,
+        required_resources: Option<&[DiscoveryFilter]>,
+    ) -> Result<(), DscError> {
+        let mut progress = ProgressBar::new(1, self.progress_format)?;
+        let mut context = Context::new();
+        context.extensions = loaded_extensions();
+        let mut resources = if network { locked_clone!(NETWORK_RESOURCES) } else { locked_clone!(RESOURCES) };
+        for extension in &context.extensions {
+            if required_resources.is_some_and(|filters| filters.iter().all(|filter|
+                resources.get(filter.resource_type()).is_some_and(|resources|
+                    resources.iter().any(|resource| resource_matches_filter(resource.as_ref(), filter))))) {
+                break;
+            }
+            if !extension.capabilities.contains(&ExtensionCapability::Discover) {
+                continue;
+            }
+            let manifest: ExtensionManifest = serde_json::from_value(extension.manifest.clone())
+                .map_err(|error| DscError::Manifest(extension.type_name.to_string(), error))?;
+            if manifest.discover.as_ref().is_none_or(|discover| discover.network != network) {
+                continue;
+            }
+            if network && !DISCOVERED_NETWORK_EXTENSIONS.write().unwrap().insert(extension.type_name.clone()) {
+                continue;
+            }
+            progress.write_activity(&t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
+            debug!("{}", t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
+            let discovered_resources = match extension.discover_with_context(&context) {
+                Ok(resources) => resources,
+                Err(error) => {
+                    warn!("{}", t!("discovery.commandDiscovery.extensionDiscoverFailed", extension = extension.type_name, error = error));
+                    continue;
+                }
+            };
+            debug!("{}", t!("discovery.commandDiscovery.extensionFoundResources", extension = extension.type_name, count = discovered_resources.len()));
+            for manifest in discovered_resources {
+                match manifest {
+                    ImportedManifest::Resource(resource) => {
+                        if network || filter.is_match(&resource.type_name) {
+                            trace!("{}", t!("discovery.commandDiscovery.extensionResourceFound", resource = resource.type_name));
+                            insert_resource(&mut resources, Box::new(resource));
+                        }
+                    },
+                    ImportedManifest::Action(action) => {
+                        if network || filter.is_match(&action.type_name) {
+                            trace!("{}", t!("discovery.commandDiscovery.actionFound", action = action.type_name, version = action.version));
+                            insert_resource(&mut resources, Box::new(action));
+                        }
+                    },
+                    ImportedManifest::Extension(_) => {},
+                }
+            }
+        }
+        if network {
+            locked_extend!(NETWORK_RESOURCES, resources);
+        } else {
+            locked_extend!(RESOURCES, resources);
+        }
+        progress.write_increment(1);
+        Ok(())
+    }
 
     pub(crate) fn find_resource_for_schema(&mut self, filter: &DiscoveryFilter) -> Result<Option<Box<dyn ResourceInvoke>>, DscError> {
         self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
@@ -477,42 +543,9 @@ impl ResourceDiscovery for CommandDiscovery {
                 locked_extend!(EXTENSIONS, extensions);
             }
             DiscoveryKind::Resource | DiscoveryKind::Action => {
-                // Now we need to call discover extensions and add those resource to the list of resources
-                let mut context = Context::new();
-                context.extensions = loaded_extensions();
-                for extension in &context.extensions {
-                    if extension.capabilities.contains(&ExtensionCapability::Discover) {
-                        progress.write_activity(&t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
-                        debug!("{}", t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
-                        let discovered_resources = match extension.discover_with_context(&context) {
-                            Ok(res) => res,
-                            Err(e) => {
-                                warn!("{}", t!("discovery.commandDiscovery.extensionDiscoverFailed", extension = extension.type_name, error = e));
-                                continue;
-                            }
-                        };
-                        debug!("{}", t!("discovery.commandDiscovery.extensionFoundResources", extension = extension.type_name, count = discovered_resources.len()));
-                        for manifest in discovered_resources {
-                            match manifest {
-                                ImportedManifest::Resource(resource) => {
-                                    if filter.is_match(&resource.type_name) {
-                                        trace!("{}", t!("discovery.commandDiscovery.extensionResourceFound", resource = resource.type_name));
-                                        insert_resource(&mut resources, Box::new(resource));
-                                    }
-                                },
-                                ImportedManifest::Action(action) => {
-                                    if filter.is_match(&action.type_name) {
-                                        trace!("{}", t!("discovery.commandDiscovery.actionFound", action = action.type_name, version = action.version));
-                                        insert_resource(&mut resources, Box::new(action));
-                                    }
-                                },
-                                ImportedManifest::Extension(_) => {},
-                            }
-                        }
-                    }
-                }
                 locked_extend!(ADAPTERS, adapters);
                 locked_extend!(RESOURCES, resources);
+                self.discover_extensions(filter, false, None)?;
             },
         }
 
@@ -629,18 +662,24 @@ impl ResourceDiscovery for CommandDiscovery {
         type_name_filter: &TypeNameFilter,
         adapter_name_filter: Option<&TypeNameFilter>
     ) -> Result<DiscoveryManifestCache, DscError> {
+        if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment && *kind != DiscoveryKind::Extension {
+            locked_clear!(NETWORK_RESOURCES);
+            locked_clear!(DISCOVERED_NETWORK_EXTENSIONS);
+        }
         let mut resources = DiscoveryManifestCache::new();
         match *kind {
             DiscoveryKind::Action => {
                 self.discover(kind, type_name_filter)?;
-                for (action_name, actions_vec) in &locked_clone!(RESOURCES) {
+                self.discover_extensions(type_name_filter, true, None)?;
+                for (action_name, actions_vec) in locked_clone!(RESOURCES).into_iter().chain(locked_clone!(NETWORK_RESOURCES)) {
                     let mut imported_manifests = Vec::new();
-                    for action in actions_vec {
-                        if let Some(action) = action.as_action() {
+                    for action in &actions_vec {
+                        if let Some(action) = action.as_action()
+                            && type_name_filter.is_match(&action.type_name) {
                             imported_manifests.push(ImportedManifest::Action(action.clone()));
                         }
                     }
-                    resources.insert(action_name.clone(), imported_manifests);
+                    resources.entry(action_name).or_default().extend(imported_manifests);
                 }
             }
             DiscoveryKind::Extension => {
@@ -652,15 +691,20 @@ impl ResourceDiscovery for CommandDiscovery {
             DiscoveryKind::Resource => {
                 if let Some(adapter_name_filter) = adapter_name_filter {
                     self.discover(kind, &TypeNameFilter::default())?;
-                    let remote_resources: Vec<_> = locked_clone!(RESOURCES).into_values().flatten()
+                    let has_matching_adapter = locked_clone!(ADAPTERS).keys().any(|adapter| adapter_name_filter.is_match(adapter));
+                    if has_matching_adapter {
+                        self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
+                    }
+                    self.discover_extensions(type_name_filter, true, None)?;
+                    let remote_resources: Vec<_> = locked_clone!(RESOURCES).into_values()
+                        .chain(locked_clone!(NETWORK_RESOURCES).into_values()).flatten()
                         .filter(|resource| is_remote_adapted_resource(resource.as_ref()))
                         .filter_map(|resource| resource.as_dsc_resource().cloned())
                         .filter(|resource| type_name_filter.is_match(&resource.type_name)
                             && resource.require_adapter.as_ref().is_some_and(|adapter| adapter_name_filter.is_match(adapter)))
                         .collect();
-                    if remote_resources.is_empty()
-                        || locked_clone!(ADAPTERS).keys().any(|adapter| adapter_name_filter.is_match(adapter)) {
-                        self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
+                    if remote_resources.is_empty() && !has_matching_adapter && !locked_is_empty!(ADAPTERS) {
+                        return Err(DscError::AdapterNotFound(adapter_name_filter.to_string()));
                     }
 
                     // add/update found adapted resources to the lookup_table
@@ -684,23 +728,26 @@ impl ResourceDiscovery for CommandDiscovery {
                     }
                 } else {
                     self.discover(kind, type_name_filter)?;
-                    for (resource_name, resources_vec) in &locked_clone!(RESOURCES) {
+                    self.discover_extensions(type_name_filter, true, None)?;
+                    for (resource_name, resources_vec) in locked_clone!(RESOURCES).into_iter().chain(locked_clone!(NETWORK_RESOURCES)) {
                         let mut imported_manifests = Vec::new();
-                        for r in resources_vec {
-                            if let Some(resource) = r.as_dsc_resource() {
+                        for r in &resources_vec {
+                            if let Some(resource) = r.as_dsc_resource()
+                                && type_name_filter.is_match(&resource.type_name) {
                                 imported_manifests.push(ImportedManifest::Resource(resource.clone()));
                             }
                         }
-                        resources.insert(resource_name.clone(), imported_manifests);
+                        resources.entry(resource_name).or_default().extend(imported_manifests);
                     }
                     for (adapter_name, adapter_vec) in &locked_clone!(ADAPTERS) {
                         let mut imported_manifests = Vec::new();
                         for r in adapter_vec {
-                            if let Some(resource) = r.as_dsc_resource() {
+                            if let Some(resource) = r.as_dsc_resource()
+                                && type_name_filter.is_match(&resource.type_name) {
                                 imported_manifests.push(ImportedManifest::Resource(resource.clone()));
                             }
                         }
-                        resources.insert(adapter_name.clone(), imported_manifests);
+                        resources.entry(adapter_name.clone()).or_default().extend(imported_manifests);
                     }
                 }
             },
@@ -713,6 +760,8 @@ impl ResourceDiscovery for CommandDiscovery {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
         if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment {
             locked_clear!(ADAPTED_RESOURCES);
+            locked_clear!(NETWORK_RESOURCES);
+            locked_clear!(DISCOVERED_NETWORK_EXTENSIONS);
         }
         if self.discovery_mode == ResourceDiscoveryMode::DuringDeployment || !self.resources_discovered {
             self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
@@ -769,18 +818,18 @@ impl ResourceDiscovery for CommandDiscovery {
             })
             .collect();
 
-        if adapter_filter_candidates.is_empty() {
-            return Ok(found_resources);
-        }
-
         // store the keys of the ADAPTERS into a vec
-        let mut adapters: Vec<FullyQualifiedTypeName> = locked_clone!(ADAPTERS).keys().cloned().collect();
+        let mut adapters: Vec<FullyQualifiedTypeName> = if adapter_filter_candidates.is_empty() {
+            Vec::new()
+        } else {
+            locked_clone!(ADAPTERS).keys().cloned().collect()
+        };
         // sort the adapters by ones specified in the required resources first
 
         for filter in &adapter_filter_candidates {
             if let Some(required_adapter) = filter.require_adapter() {
                 if !adapters.contains(required_adapter) {
-                    return Err(DscError::AdapterNotFound(required_adapter.to_string()));
+                    continue;
                 }
                 // otherwise insert at the front of the list
                 adapters.retain(|a| a != required_adapter);
@@ -804,6 +853,23 @@ impl ResourceDiscovery for CommandDiscovery {
             }
         }
 
+        let missing_resources: Vec<_> = required_resource_types.iter()
+            .filter(|filter| !required_resources.get(*filter).copied().unwrap_or(false))
+            .cloned().collect();
+        if !missing_resources.is_empty() {
+            self.discover_extensions(&TypeNameFilter::default(), true, Some(&missing_resources))?;
+            for filter in &missing_resources {
+                if let Some(resources) = locked_get!(NETWORK_RESOURCES, filter.resource_type()) {
+                    filter_resources(&mut found_resources, &mut required_resources, &resources, filter);
+                }
+                if !required_resources.get(filter).copied().unwrap_or(false)
+                    && let Some(adapter) = filter.require_adapter()
+                    && locked_get!(ADAPTERS, adapter).is_none() {
+                    return Err(DscError::AdapterNotFound(adapter.to_string()));
+                }
+            }
+        }
+
         Ok(found_resources)
     }
 
@@ -823,6 +889,11 @@ fn is_remote_adapted_resource(resource: &dyn ResourceInvoke) -> bool {
     resource.as_dsc_resource().is_some_and(|resource|
         resource.require_adapter.is_some() && resource.path.is_none()
             && resource.registry.as_deref().is_some_and(|registry| registry != "local"))
+}
+
+fn resource_matches_filter(resource: &dyn ResourceInvoke, filter: &DiscoveryFilter) -> bool {
+    filter.require_version().is_none_or(|version| version.matches(&resource.version()))
+        && matches_adapter_requirement(resource, filter)
 }
 
 fn resource_candidates(filter: &DiscoveryFilter) -> Option<Vec<Box<dyn ResourceInvoke>>> {
@@ -1317,7 +1388,7 @@ fn load_extension_manifest(path: Option<&Path>, manifest: &ExtensionManifest) ->
     let mut capabilities: Vec<dscextension::Capability> = vec![];
     let parent = path.and_then(|p| p.parent());
     if let Some(discover) = &manifest.discover {
-        let executable = match discover {
+        let executable = match &discover.method {
             crate::extensions::jsonrpc::ExtensionMethod::Command(command) => &command.executable,
             crate::extensions::jsonrpc::ExtensionMethod::JsonRpc { jsonrpc } => &jsonrpc.executable,
         };

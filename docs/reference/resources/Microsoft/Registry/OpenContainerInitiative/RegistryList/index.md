@@ -83,7 +83,12 @@ A policy entry cannot be overridden by user or machine preferences. Policy does 
 adding other friendly names. Current-user preferences can override machine preferences or add
 additional registries.
 
-When DSC performs resource discovery, including `dsc resource list`, the extension enumerates
+The OCI Discover manifest sets `discover.network` to `true`. Resource lookups call it only after
+local manifests, non-network Discover extensions, and installed adapters fail to satisfy the
+requested type, version, and adapter requirements. `dsc resource list` still enumerates the
+registries, after local discovery, to include available remote metadata.
+
+When called, the extension enumerates
 registry repositories under `dsc/resource/`, paginates tags, and reads the resource indexes
 defined by the OCI resource distribution RFC. It lists all published versions, including
 prereleases, that have a descriptor for the host operating system and architecture.

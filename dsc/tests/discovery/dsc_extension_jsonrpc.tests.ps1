@@ -23,6 +23,49 @@ Describe 'JSON-RPC extensions and reverse secret requests' {
             $output | ConvertFrom-Json
         }
 
+        function New-NetworkDiscoverFixture {
+            $manifest = Get-Content (Join-Path $discoverPath discover.dsc.extension.json) -Raw |
+                ConvertFrom-Json -AsHashtable
+            $manifest.type = 'Test/ANetworkDiscover'
+            $manifest.discover.network = $true
+            $manifest.discover.jsonrpc.args[-1] = Join-Path $discoverPath discover.ps1
+            $manifest | ConvertTo-Json -Depth 20 |
+                Set-Content (Join-Path $testDirectory network.dsc.extension.json)
+            $env:DSC_RESTRICTED_PATH = @($testDirectory, $secretPath, $PSHOME) -join [IO.Path]::PathSeparator
+        }
+
+        function New-LocalDiscoveryManifest {
+            param([string]$Type = 'Test/SecretDiscovered', [string]$Version = '0.1.0')
+            @{
+                '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json'
+                type = $Type
+                version = $Version
+                get = @{
+                    executable = 'pwsh'
+                    args = @('-NoProfile', '-NonInteractive', '-Command', '''{"installed":true}''')
+                }
+                schema = @{ embedded = @{ type = 'object'; properties = @{ installed = @{ type = 'boolean' } } } }
+            }
+        }
+
+        function New-CommandDiscoverFixture {
+            param([string]$Type, [hashtable]$Manifest, [bool]$Network = $false, [switch]$Fail)
+            $prefix = Join-Path $testDirectory $Type.Replace('/', '-')
+            @{ manifestContent = $Manifest } | ConvertTo-Json -Depth 20 -Compress |
+                Set-Content "$prefix.results.json"
+            $escapedPrefix = $prefix.Replace("'", "''")
+            $command = "Set-Content -LiteralPath '$escapedPrefix.called' -Value called; "
+            $command += if ($Fail) { 'exit 1' } else { "Get-Content -LiteralPath '$escapedPrefix.results.json'" }
+            $discover = @{ executable = 'pwsh'; args = @('-NoProfile', '-NonInteractive', '-Command', $command) }
+            if ($Network) { $discover.network = $true }
+            @{
+                '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json'
+                type = $Type
+                version = '0.1.0'
+                discover = $discover
+            } | ConvertTo-Json -Depth 20 | Set-Content "$prefix.dsc.extension.json"
+        }
+
         function New-RegistryAdapterFixture {
             $listed = @{
                 type = 'Test/SecretDiscovered'
@@ -161,6 +204,193 @@ if ($Operation -eq 'list') {
         $LASTEXITCODE | Should -Be 0
         $result.hadErrors | Should -BeFalse
         $result.results[0].result.actualState.authenticated | Should -BeTrue
+    }
+
+    It 'skips network discovery for a locally satisfied <Operation> request' -ForEach @(
+        @{ Operation = 'get' }
+        @{ Operation = 'schema' }
+    ) {
+        New-NetworkDiscoverFixture
+        New-LocalDiscoveryManifest | ConvertTo-Json -Depth 20 |
+            Set-Content (Join-Path $testDirectory local.dsc.resource.json)
+        $result = dsc resource $Operation -r Test/SecretDiscovered 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        if ($Operation -eq 'get') { $result.actualState.installed | Should -BeTrue }
+        else { $result.properties.installed.type | Should -BeExactly 'boolean' }
+        @(Get-ExtensionRpcEvent) | Should -HaveCount 0
+    }
+
+    It 'tries non-network Discover extensions before an alphabetically earlier network extension' {
+        New-NetworkDiscoverFixture
+        New-CommandDiscoverFixture -Type 'Test/ZLocalDiscover' -Manifest (New-LocalDiscoveryManifest)
+        $result = dsc resource get -r Test/SecretDiscovered 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $result.actualState.installed | Should -BeTrue
+        Join-Path $testDirectory 'Test-ZLocalDiscover.called' | Should -Exist
+        @(Get-ExtensionRpcEvent) | Should -HaveCount 0
+    }
+
+    It 'tries installed adapters before network discovery with adapter pinned <Pinned>' -ForEach @(
+        @{ Pinned = $false }
+        @{ Pinned = $true }
+    ) {
+        New-RegistryAdapterFixture
+        New-NetworkDiscoverFixture
+        $instance = @{ name = 'installed'; type = 'Test/SecretDiscovered' }
+        if ($Pinned) { $instance.directives = @{ requireAdapter = 'Test/InstalledRegistryAdapter' } }
+        $configuration = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @($instance)
+        }
+        $result = dsc config get -i ($configuration | ConvertTo-Json -Depth 20) 2>$TestDrive/error.log |
+            ConvertFrom-Json -Depth 30
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $result.results[0].result.actualState.installed | Should -BeTrue
+        @(Get-ExtensionRpcEvent) | Should -HaveCount 0
+        @(Get-Content (Join-Path $testDirectory adapter-calls.log)) | Should -Be @('list', 'get')
+    }
+
+    It 'falls back to network discovery for <Reason> and skips later network extensions' -ForEach @(
+        @{ Reason = 'missing type' }
+        @{ Reason = 'unavailable version' }
+    ) {
+        New-NetworkDiscoverFixture
+        New-CommandDiscoverFixture -Type 'Test/ZNetworkDiscover' -Network $true -Manifest (New-LocalDiscoveryManifest)
+        $settings.requests = @()
+        $versionArguments = @()
+        if ($Reason -eq 'unavailable version') {
+            New-LocalDiscoveryManifest | ConvertTo-Json -Depth 20 |
+                Set-Content (Join-Path $testDirectory local.dsc.resource.json)
+            $settings.manifest = New-LocalDiscoveryManifest -Version '0.2.0'
+            $versionArguments = @('--version', '=0.2.0')
+        }
+        Set-RpcSettings
+        $result = dsc resource get -r Test/SecretDiscovered @versionArguments 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        if ($Reason -eq 'missing type') { $result.actualState.authenticated | Should -BeTrue }
+        else { $result.actualState.installed | Should -BeTrue }
+        @((Get-ExtensionRpcEvent) | Where-Object { $_.role -eq 'discover' -and $_.event -eq 'dsc_invoke' }) |
+            Should -HaveCount 1
+        Join-Path $testDirectory 'Test-ZNetworkDiscover.called' | Should -Not -Exist
+    }
+
+    It 'preserves locally selected resources when network discovery resolves another configuration resource' {
+        New-NetworkDiscoverFixture
+        New-LocalDiscoveryManifest -Type 'Test/Local' | ConvertTo-Json -Depth 20 |
+            Set-Content (Join-Path $testDirectory local.dsc.resource.json)
+        $settings.requests = @()
+        $settings.additionalManifest = New-LocalDiscoveryManifest -Type 'Test/Local' -Version '9.0.0'
+        $settings.additionalManifest.get.args[-1] = '''{"remote":true}'''
+        Set-RpcSettings
+        $configuration = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{ name = 'remote'; type = 'Test/SecretDiscovered' }
+                @{ name = 'local'; type = 'Test/Local' }
+            )
+        }
+        $result = dsc config get -i ($configuration | ConvertTo-Json -Depth 20) 2>$TestDrive/error.log |
+            ConvertFrom-Json -Depth 30
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $result.results[0].result.actualState.authenticated | Should -BeTrue
+        $result.results[1].result.actualState.installed | Should -BeTrue
+    }
+
+    It 'continues network discovery when an earlier result does not satisfy the requested version' {
+        New-NetworkDiscoverFixture
+        $settings.requests = @()
+        Set-RpcSettings
+        New-CommandDiscoverFixture -Type 'Test/ZNetworkDiscover' -Network $true `
+            -Manifest (New-LocalDiscoveryManifest -Version '0.2.0')
+        $result = dsc resource get -r Test/SecretDiscovered --version '=0.2.0' 2>$TestDrive/error.log |
+            ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $result.actualState.installed | Should -BeTrue
+        @((Get-ExtensionRpcEvent) | Where-Object { $_.role -eq 'discover' -and $_.event -eq 'dsc_invoke' }) |
+            Should -HaveCount 1
+        Join-Path $testDirectory 'Test-ZNetworkDiscover.called' | Should -Exist
+    }
+
+    It 'includes network adapted metadata in adapter-filtered lists' {
+        New-RegistryAdapterFixture
+        New-NetworkDiscoverFixture
+        $settings.manifest.type = 'Test/RemoteOnly'
+        Set-RpcSettings
+        $resources = @(dsc resource list -a Test/InstalledRegistryAdapter 2>$TestDrive/error.log | ConvertFrom-Json)
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $resources | Should -HaveCount 2
+        ($resources | Where-Object type -EQ 'Test/RemoteOnly').registry | Should -BeExactly 'oci-test'
+        ($resources | Where-Object type -EQ 'Test/SecretDiscovered').registry | Should -BeExactly 'local'
+    }
+
+    It 'filters network list results by the requested type' {
+        New-NetworkDiscoverFixture
+        $settings.requests = @()
+        $settings.additionalManifest = New-LocalDiscoveryManifest -Type 'Test/OtherRemote'
+        Set-RpcSettings
+        $resources = @(dsc resource list Test/SecretDiscovered 2>$TestDrive/error.log | ConvertFrom-Json)
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $resources | Should -HaveCount 1
+        $resources[0].type | Should -BeExactly 'Test/SecretDiscovered'
+    }
+
+    It 'reads network adapted schemas without requiring an installed adapter' {
+        New-RegistryAdapterFixture
+        Remove-Item -LiteralPath (Join-Path $testDirectory adapter.dsc.resource.json)
+        New-NetworkDiscoverFixture
+        Set-RpcSettings
+        $schema = dsc resource schema -r Test/SecretDiscovered 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $schema.type | Should -BeExactly 'object'
+        Join-Path $testDirectory adapter-calls.log | Should -Not -Exist
+    }
+
+    It 'refreshes network results for each during-deployment lookup' {
+        New-NetworkDiscoverFixture
+        $settings.requests = @()
+        Set-RpcSettings
+        $update = New-LocalDiscoveryManifest -Type 'Test/UpdateNetworkResults'
+        $escapedSettings = $env:DSC_TEST_EXTENSION_RPC_SETTINGS.Replace("'", "''")
+        $update.get.args[-1] = "Set-Content -LiteralPath '$escapedSettings' -Value '{`"requests`":[],`"results`":[]}'; '{`"updated`":true}'"
+        $update | ConvertTo-Json -Depth 20 | Set-Content (Join-Path $testDirectory update.dsc.resource.json)
+        $configuration = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            directives = @{ resourceDiscovery = 'duringDeployment' }
+            resources = @(
+                @{ name = 'before'; type = 'Test/SecretDiscovered' }
+                @{
+                    name = 'update'; type = 'Test/UpdateNetworkResults'
+                    dependsOn = @("[resourceId('Test/SecretDiscovered', 'before')]")
+                }
+                @{
+                    name = 'after'; type = 'Test/SecretDiscovered'
+                    dependsOn = @("[resourceId('Test/UpdateNetworkResults', 'update')]")
+                }
+            )
+        }
+        dsc config get -i ($configuration | ConvertTo-Json -Depth 20) 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Not -Be 0
+        Get-Content -Raw $TestDrive/error.log | Should -Match 'Resource not found: Test/SecretDiscovered'
+        @((Get-ExtensionRpcEvent) | Where-Object { $_.role -eq 'discover' -and $_.event -eq 'dsc_invoke' }) |
+            Should -HaveCount 2
+    }
+
+    It 'continues after a failed network extension and lists all network extensions after local discovery' {
+        New-NetworkDiscoverFixture
+        $settings.requests = @()
+        Set-RpcSettings
+        New-CommandDiscoverFixture -Type 'Test/0FailedNetwork' -Network $true -Fail -Manifest (New-LocalDiscoveryManifest)
+        New-CommandDiscoverFixture -Type 'Test/ZLocalDiscover' -Manifest (New-LocalDiscoveryManifest -Type 'Test/Local')
+        New-CommandDiscoverFixture -Type 'Test/ZNetworkDiscover' -Network $true -Manifest (New-LocalDiscoveryManifest -Type 'Test/OtherRemote')
+        $resources = @(dsc -l debug resource list 'Test/*' 2>$TestDrive/error.log | ConvertFrom-Json)
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw $TestDrive/error.log)
+        $resources.type | Should -Contain 'Test/Local'
+        $resources.type | Should -Contain 'Test/SecretDiscovered'
+        $resources.type | Should -Contain 'Test/OtherRemote'
+        $diagnostics = Get-Content -Raw $TestDrive/error.log
+        $diagnostics | Should -Match 'Test/0FailedNetwork'
+        $diagnostics.IndexOf("Calling extension 'Test/ZLocalDiscover'") |
+            Should -BeLessThan $diagnostics.IndexOf("Calling extension 'Test/ANetworkDiscover'")
     }
 
     It 'reports the active Discover extension during <Kind> discovery' -ForEach @(
@@ -986,6 +1216,19 @@ Start-Sleep -Seconds 30
             $manifest = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -AsHashtable
             $value = if ($SchemaKind -like '*extension-list*') { @{ manifest = $manifest } } else { $manifest }
             $value | ConvertTo-Json -Depth 30 | Test-Json -Schema $schema | Should -BeTrue
+        }
+        foreach ($discover in @(
+            @{ executable = 'pwsh'; network = $true }
+            @{ jsonrpc = @{ executable = 'pwsh' }; network = $true }
+        )) {
+            $manifest = Get-Content (Join-Path $discoverPath discover.dsc.extension.json) -Raw |
+                ConvertFrom-Json -AsHashtable
+            $manifest.discover = $discover
+            $value = if ($SchemaKind -like '*extension-list*') { @{ manifest = $manifest } } else { $manifest }
+            $value | ConvertTo-Json -Depth 30 | Test-Json -Schema $schema | Should -BeTrue
+            $discover.network = 'true'
+            $value | ConvertTo-Json -Depth 30 | Test-Json -Schema $schema -ErrorAction SilentlyContinue |
+                Should -BeFalse
         }
         $manifest = Get-Content -LiteralPath "$secretPath/secret.dsc.extension.json" -Raw |
             ConvertFrom-Json -AsHashtable

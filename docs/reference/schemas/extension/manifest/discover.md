@@ -43,6 +43,15 @@ JSON-RPC Discover extensions can optionally use
 [`secret.get` reverse requests](root.md#reverse-secret-requests) after reading their own settings.
 Extensions that don't need secrets don't make these requests and don't require a Secret provider.
 
+Set `discover.network` to `true` when the extension accesses network services. For resource
+lookups, DSC first searches local manifests, non-network Discover extensions, and installed
+adapters. It calls network Discover extensions only for requests that remain unresolved,
+including requests whose version or adapter requirements aren't satisfied locally. Once all
+requests are satisfied, DSC skips remaining network extensions.
+
+List operations still enumerate network extensions, after local discovery, so remote resources
+remain visible even when a local implementation is installed.
+
 ## Examples
 
 The following example shows the `discover` property from the manifest for the
@@ -73,6 +82,17 @@ The command form of `discover` must include these properties. The JSON-RPC form 
 - [executable](#executable)
 
 ## Properties
+
+### network
+
+Indicates whether discovery accesses the network. This property applies to both the command and
+JSON-RPC forms and defaults to `false`.
+
+```yaml
+Type:     boolean
+Required: false
+Default:  false
+```
 
 ### executable
 
