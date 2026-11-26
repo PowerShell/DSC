@@ -1,0 +1,35 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/adaptedresource/manifest.json",
+  "type": "DscTest/Get",
+  "kind": "resource",
+  "version": "0.1.0",
+  "capabilities": [
+    "get"
+  ],
+  "requireAdapter": "Microsoft.Adapter/Python",
+  "content": {
+    "module": "dsc_test_resource.resources",
+    "class": "GetResource"
+  },
+  "description": "Read-only fixture resource.  Always reports _exist=True.",
+  "schema": {
+    "embedded": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique name of the test instance."
+        },
+        "_exist": {
+          "type": "boolean",
+          "description": "Whether the instance should exist."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    }
+  }
+}

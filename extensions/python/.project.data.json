@@ -1,0 +1,10 @@
+{
+    "Name": "extensions/python",
+    "Kind": "Extension",
+    "CopyFiles": {
+        "All": [
+            "python.discover.py",
+            "python.dsc.extension.json"
+        ]
+    }
+}
