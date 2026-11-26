@@ -30,6 +30,8 @@
       "psDscAdapter/",
       "psscript.ps1",
       "psscript.dsc.resource.json",
+      "pythonadapter.dsc.resource.json",
+      "pyDscAdapter/",
       "RunCommandOnSet.dsc.resource.json",
       "runcommandonset",
       "sshdconfig",
@@ -64,6 +66,8 @@
       "psDscAdapter/",
       "psscript.ps1",
       "psscript.dsc.resource.json",
+      "pythonadapter.dsc.resource.json",
+      "pyDscAdapter/",
       "RunCommandOnSet.dsc.resource.json",
       "runcommandonset",
       "sshdconfig",
@@ -105,6 +109,8 @@
       "psDscAdapter/",
       "psscript.ps1",
       "psscript.dsc.resource.json",
+      "pythonadapter.dsc.resource.json",
+      "pyDscAdapter/",
       "winpsscript.dsc.resource.json",
       "reboot_pending.dsc.resource.json",
       "reboot_pending.resource.ps1",
@@ -165,6 +171,17 @@
           "psDscAdapter/win_psDscAdapter.psd1",
           "psDscAdapter/win_psDscAdapter.psm1",
           "windowspowershell.dsc.resource.json"
+        ]
+      }
+    },
+    {
+      "Name": "python-adapter",
+      "Kind": "Adapter",
+      "RelativePath": "adapters/python",
+      "CopyFiles": {
+        "All": [
+          "pyDscAdapter/*",
+          "pythonadapter.dsc.resource.json"
         ]
       }
     },

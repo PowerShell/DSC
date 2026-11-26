@@ -1,0 +1,13 @@
+{
+  "Name": "python-tests",
+  "Kind": "Resource",
+  "TestOnly": true,
+  "CopyFiles": {
+    "All": [
+      "pyproject.toml",
+      "pythontest.dsc.manifests.json",
+      "pythoncomponent.tests.ps1",
+      "pythonintegration.tests.ps1"
+    ]
+  }
+}
