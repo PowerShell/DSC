@@ -87,6 +87,8 @@ The OCI Discover manifest sets `discover.network` to `true`. Resource lookups ca
 local manifests, non-network Discover extensions, and installed adapters fail to satisfy the
 requested type, version, and adapter requirements. `dsc resource list` still enumerates the
 registries, after local discovery, to include available remote metadata.
+Schema lookup checks or discovers matching network metadata before enumerating installed
+adapters, allowing remote embedded schemas to be read without executing adapter list commands.
 
 When called, the extension enumerates
 registry repositories under `dsc/resource/`, paginates tags, and reads the resource indexes

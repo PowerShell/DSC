@@ -614,11 +614,14 @@ if ($Operation -eq 'list') {
         Join-Path $testDirectory adapter-calls.log | Should -Not -Exist
     }
 
-    It 'reads remote embedded schemas without calling an installed adapter that provides the resource <ProvidesResource>' -ForEach @(
-        @{ ProvidesResource = $false }
-        @{ ProvidesResource = $true }
+    It 'reads remote embedded schemas with network <Network> without calling an installed adapter that provides the resource <ProvidesResource>' -ForEach @(
+        @{ Network = $false; ProvidesResource = $false }
+        @{ Network = $false; ProvidesResource = $true }
+        @{ Network = $true; ProvidesResource = $false }
+        @{ Network = $true; ProvidesResource = $true }
     ) {
         New-RegistryAdapterFixture
+        if ($Network) { New-NetworkDiscoverFixture }
         if (-not $ProvidesResource) {
             $listed = Get-Content -Raw (Join-Path $testDirectory listed.json) | ConvertFrom-Json
             $listed.type = 'Test/OtherResource'
@@ -635,8 +638,12 @@ if ($Operation -eq 'list') {
         Join-Path $testDirectory adapter-calls.log | Should -Not -Exist
     }
 
-    It 'still discovers installed adapted schemas when no matching resource metadata is available' {
+    It 'still discovers installed adapted schemas when no matching resource metadata is available with network <Network>' -ForEach @(
+        @{ Network = $false }
+        @{ Network = $true }
+    ) {
         New-RegistryAdapterFixture
+        if ($Network) { New-NetworkDiscoverFixture }
         $settings.manifest.type = 'Test/OtherMetadata'
         Set-RpcSettings
         $schema = dsc resource schema -r Test/SecretDiscovered --version '=0.1.0' 2>$TestDrive/error.log |

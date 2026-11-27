@@ -49,6 +49,10 @@ adapters. It calls network Discover extensions only for requests that remain unr
 including requests whose version or adapter requirements aren't satisfied locally. Once all
 requests are satisfied, DSC skips remaining network extensions.
 
+Schema lookup is metadata-first: after checking local metadata, DSC checks or discovers network
+metadata before enumerating installed adapters. A matching remote embedded schema can therefore
+be read without executing adapter list commands.
+
 List operations still enumerate network extensions, after local discovery, so remote resources
 remain visible even when a local implementation is installed.
 

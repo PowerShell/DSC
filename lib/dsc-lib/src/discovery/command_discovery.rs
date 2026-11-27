@@ -168,11 +168,19 @@ impl CommandDiscovery {
 
     pub(crate) fn find_resource_for_schema(&mut self, filter: &DiscoveryFilter) -> Result<Option<Box<dyn ResourceInvoke>>, DscError> {
         self.discover(&DiscoveryKind::Resource, &TypeNameFilter::default())?;
-        if let Some(resources) = locked_get!(RESOURCES, filter.resource_type())
-            && let Some(resource) = resources.into_iter().find(|resource|
-                filter.require_version().is_none_or(|version| version.matches(&resource.version()))
-                    && matches_adapter_requirement(resource.as_ref(), filter)) {
-            return Ok(Some(resource));
+        for network in [false, true] {
+            if network {
+                self.discover_extensions(&TypeNameFilter::default(), true, Some(std::slice::from_ref(filter)))?;
+            }
+            let resources = if network {
+                locked_get!(NETWORK_RESOURCES, filter.resource_type())
+            } else {
+                locked_get!(RESOURCES, filter.resource_type())
+            };
+            if let Some(resource) = resources.and_then(|resources|
+                resources.into_iter().find(|resource| resource_matches_filter(resource.as_ref(), filter))) {
+                return Ok(Some(resource));
+            }
         }
         Ok(self.find(std::slice::from_ref(filter))?.remove(filter.resource_type())
             .and_then(|resources| resources.into_iter().next()))
