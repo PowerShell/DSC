@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::discovery::{command_discovery::ImportedManifest, discovery_trait::DiscoveryFilter};
+use crate::discovery::{command_discovery::{CommandDiscovery, ImportedManifest}, discovery_trait::DiscoveryFilter};
 use crate::discovery::discovery_trait::DiscoveryKind;
 use crate::progress::ProgressFormat;
 use crate::types::TypeNameFilter;
@@ -58,6 +58,17 @@ impl DscManager {
     ///
     pub fn find_resource(&mut self, filter: &DiscoveryFilter) -> Result<Option<Box<dyn ResourceInvoke>>, DscError> {
         self.discovery.find_resource(filter)
+    }
+
+    /// Find a resource for schema retrieval, using known metadata before enumerating adapters.
+    ///
+    /// Schema candidates are not added to the invocation discovery cache.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if resource discovery fails.
+    pub fn find_resource_for_schema(&mut self, filter: &DiscoveryFilter, progress_format: ProgressFormat) -> Result<Option<Box<dyn ResourceInvoke>>, DscError> {
+        CommandDiscovery::new(progress_format).find_resource_for_schema(filter)
     }
 
     pub fn list_available(

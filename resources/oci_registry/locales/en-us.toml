@@ -1,0 +1,37 @@
+_version = 1
+
+[main]
+about = "Manage OCI registry discovery settings and serve the DSC Discover JSON-RPC extension"
+input = "RegistryList JSON input"
+failed = "OCI registry operation failed: %{error}"
+invalidInput = "Invalid RegistryList input: %{error}"
+exportName = "OCI Registries"
+
+[settings]
+invalid = "Each registry must have one nonempty, unique friendly name other than 'local', a valid location, and valid optional secret references"
+reservedName = "Registry friendly name '%{name}' is reserved for locally discovered resources; choose a different friendly name"
+scope = "Policy requires scope 'allUsers'"
+missingPath = "Cannot determine the settings directory: environment variable %{name} is unavailable"
+path = "Cannot read or write settings file %{path}: %{error}"
+invalidFile = "Invalid registry settings file %{path}: %{error}"
+elevated = "Writing allUsers preferences or policy requires administrator privileges"
+required = "The registries property is required for set"
+
+[rpc]
+invalid = "Invalid JSON-RPC message or lifecycle operation"
+secretUnavailable = "The host did not advertise secret.get"
+secret = "Could not retrieve a nonempty secureString registry token from the host"
+operation = "Registry discovery failed for %{registry}: %{error}"
+
+[oci]
+crypto = "Cannot initialize the TLS cryptography provider"
+location = "Location must be a registry hostname, optionally with https://; HTTP is allowed only for loopback registries"
+catalog = "Cannot enumerate registry repositories (HTTP %{status}); repository listing access is required"
+transport = "Registry transport failed"
+document = "Invalid OCI DSC resource metadata"
+entry = "Skipping resource metadata in registry %{registry} at %{reference}: %{error}"
+integrity = "OCI resource content does not match its SHA-256 digest or size"
+pagination = "Registry pagination did not advance or returned an unsafe next-page link"
+platform = "The host operating system or architecture is not supported"
+limit = "Registry metadata or a resource manifest exceeds the 8 MiB discovery limit"
+token = "Anonymous registry authentication failed"

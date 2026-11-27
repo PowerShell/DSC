@@ -25,12 +25,18 @@
     "path": {
       "title": "Path",
       "description": "Indicates the path to the DSC resource on the file system.",
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "directory": {
       "title": "Directory",
       "description": "Indicates the path to the folder containing the DSC resource on the file system.",
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "implementedAs": {
       "title": "Implemented as",
@@ -92,6 +98,15 @@
     },
     "manifest": {
       "$ref": "/PowerShell/DSC/main/schemas/v3/resource/manifest.json"
+    },
+    "registry": {
+      "title": "Resource registry",
+      "description": "The registry friendly name, or local for a resource on the filesystem.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "local"
     }
   }
 }

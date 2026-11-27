@@ -1,0 +1,9 @@
+{
+  "Name": "oci_registry",
+  "Kind": "Resource",
+  "IsRust": true,
+  "Binaries": ["oci_registry"],
+  "CopyFiles": {
+    "All": ["oci_registry.dsc.extension.json", "registrylist.dsc.resource.json"]
+  }
+}

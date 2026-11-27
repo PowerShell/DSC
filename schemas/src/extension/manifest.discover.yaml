@@ -30,6 +30,12 @@ type: object
 required:
   - executable
 properties:
+  network:
+    description: >-
+      Whether discovery accesses the network. Network discovery runs after local discovery
+      and is skipped for resource lookups that are already satisfied.
+    type: boolean
+    default: false
   executable:
     $ref: /<PREFIX>/<VERSION>/definitions/commandExecutable.yaml
     markdownDescription: |

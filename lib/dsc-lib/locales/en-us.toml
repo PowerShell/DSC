@@ -174,6 +174,7 @@ invalidAdaptedResourceManifest = "Invalid manifest for adapted resource '%{resou
 invalidManifestList = "Invalid manifest list '%{resource}': %{err}"
 invalidManifestFile = "Invalid manifest file '%{resource}': %{err}"
 invalidManifestContent = "Manifest content did not match any known manifest types"
+invalidRegistryResourceSchema = "Registry discovery requires a recognized DSC resource or adapted resource manifest schema"
 extensionResourceFound = "Extension found resource '%{resource}'"
 callingExtension = "Calling extension '%{extension}' to discover resources"
 extensionFoundResources = "Extension '%{extension}' found %{count} resources"
@@ -269,6 +270,7 @@ redactedSchemaErrorMessage = "'secureString' and 'secureObject' values are not c
 invokeNotSupportedForResources = "Operation argument 'invoke' is not supported for resources"
 
 [dscresources.dscresource]
+registryResourceNotInstalled = "Resource '%{resource}' from registry '%{registry}' is not installed; install its implementation before invoking it"
 invokeGet = "Invoking get for '%{resource}'"
 customResourceNotSupported = "Custom resource not supported"
 invokeSet = "Invoking set for '%{resource}'"
@@ -334,6 +336,8 @@ secretMultipleLinesReturned = "Extension '%{extension}' returned multiple lines 
 importProcessingOutput = "Processing output from extension '%{extension}'"
 deprecationMessage = "Extension '%{extension}' is deprecated: %{message}"
 failedLoadManifest = "Extension '%{extension}' failed to load manifest: %{err}"
+invalidRegistryManifest = "Registry '%{registry}' returned an invalid resource manifest: %{err}"
+registryManifestPath = "Registry '%{registry}' returned a local manifest path; remote discovery requires manifest content"
 manifestImported = "Manifest imported from extension %{extension}"
 
 [extensions.extension_manifest]

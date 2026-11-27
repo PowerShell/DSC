@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the 'discover' operation output in a DSC extension
-ms.date:     09/01/2026
+ms.date:     11/22/2026
 ms.topic:    reference
 title:       DSC extension discover operation stdout schema reference
 ---
@@ -15,7 +15,7 @@ Represents a manifest not discoverable in the `PATH` or `DSC_RESOURCE_PATH` envi
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/extension/stdout/discover.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/stdout/discover.json
 Type:          object
 ```
 
@@ -27,7 +27,9 @@ to stdout for the **Discover** operation to adhere to this schema.
 
 The output must be a JSON object. The object must define exactly one of the [manifestPath][01] or
 [manifestContent][02] properties. If an extension returns JSON that is invalid against this schema,
-DSC raises an error.
+DSC warns and skips that record, preserving other valid results.
+
+The optional [registry][03] property identifies the source registry for discovered resources.
 
 Each discovered manifest must be emitted as a separate JSON Line to stdout. If the extension
 doesn't discover any manifests, it must return nothing to stdout and exit with code `0`. An empty
@@ -64,15 +66,37 @@ Required: true (when manifestContent isn't defined)
 
 ### manifestContent
 
-The value for this property must be the content of a manifest as a JSON object. DSC processes the
-value the same way it processes the content of a manifest file, including evaluating the
+The value for this property must be the content of a manifest as a JSON object. Unless `registry`
+identifies a remote registry, DSC processes the value the same way it processes a manifest file,
+including evaluating the
 `condition` property of the manifest. The value can be a resource manifest, an adapted resource
-manifest, or a manifest list. If the value isn't a valid manifest, DSC raises an error. This
+manifest, or a manifest list. If the value isn't a valid manifest, DSC warns and skips that record. This
 property was added in DSC version 3.3.0.
 
 ```yaml
 Type:     object
 Required: true (when manifestPath isn't defined)
+```
+
+### registry
+
+The friendly name of the registry containing a discovered resource. DSC includes this value in
+`dsc resource list` results. Locally discovered resources use `local`.
+
+Returning manifest content does not install its implementation. DSC rejects operations on an
+uninstalled remote resource, but can return a schema embedded in its manifest.
+
+When `registry` is neither omitted nor `local`, manifest content must be an ordinary or adapted
+DSC resource manifest using a recognized schema. DSC imports it as metadata without evaluating
+conditions, executing schema commands, or resolving executable or adapted-resource paths.
+Adapted metadata preserves its capabilities, required adapter, content, and schema, but remote
+paths never establish local installation. Embedded schemas can be read without invoking an
+adapter. Remote `manifestPath` results, action manifests, and manifest lists are not supported.
+Invalid records produce warnings and are skipped without discarding other discovery results.
+
+```yaml
+Type:     [string, 'null']
+Required: false
 ```
 
 ## Exit codes
@@ -86,3 +110,4 @@ The extension must return one of the following exit codes:
 <!-- Link reference definitions -->
 [01]: #manifestpath
 [02]: #manifestcontent
+[03]: #registry

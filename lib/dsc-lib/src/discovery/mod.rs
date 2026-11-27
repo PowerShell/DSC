@@ -101,7 +101,7 @@ impl Discovery {
                             format!("{}@{}", resource.type_name.to_lowercase(), resource.version)
                         },
                     };
-                    resources.insert(key, manifest);
+                    resources.entry(key).or_insert(manifest);
                 }
             };
 

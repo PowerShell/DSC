@@ -35,7 +35,8 @@ members = [
     "tools/dsctest",
     "tools/test_group_resource",
     "xtask",
-    "y2j"
+    "y2j",
+    "resources/oci_registry"
 ]
 
 # This value is modified by the `Set-DefaultWorkspaceMember` helper.
@@ -74,7 +75,8 @@ default-members = [
     "tools/dsctest",
     "tools/test_group_resource",
     "xtask",
-    "y2j"
+    "y2j",
+    "resources/oci_registry"
 ]
 
 [workspace.metadata.groups]
@@ -82,6 +84,7 @@ default-members = [
 # function `Set-DefaultWorkspaceMember` to choose the correct target for your
 # current operating system to enable faster builds.
 Windows = [
+    "resources/oci_registry",
     "dsc",
     "dsc-bicep-ext",
     "grammars/tree-sitter-dscexpression",
@@ -117,6 +120,7 @@ Windows = [
     "y2j"
 ]
 macOS = [
+    "resources/oci_registry",
     "dsc",
     "dsc-bicep-ext",
     "grammars/tree-sitter-dscexpression",
@@ -140,6 +144,7 @@ macOS = [
     "y2j",
 ]
 Linux = [
+    "resources/oci_registry",
     "dsc",
     "dsc-bicep-ext",
     "grammars/tree-sitter-dscexpression",
@@ -173,6 +178,11 @@ split-debuginfo = "packed"  # generates a seperate *.dwp/*.dSYM so the binary ca
 strip = "symbols"           # See split-debuginfo - allows us to drop the size by ~65%
 
 [workspace.dependencies]
+# OCI registry discovery
+http-auth = { version = "0.1.10", default-features = false }
+oci-client = { version = "0.18.0", default-features = false }
+reqwest = { version = "0.13.5", default-features = false, features = ["json"] }
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
 #external dependencies
 # file_dsc
 base16ct = { version = "1.0.0", features = ["alloc"] }

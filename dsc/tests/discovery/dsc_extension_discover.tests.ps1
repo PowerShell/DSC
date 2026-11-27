@@ -23,30 +23,20 @@ Describe 'Discover extension tests' {
     It 'Discover extensions' {
         $out = dsc extension list | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        if ($IsWindows) {
-            $out.Count | Should -Be 3 -Because ($out | Out-String)
-            $out[0].type | Should -BeExactly 'Microsoft.PowerShell/Discover'
-            $out[0].version | Should -BeExactly '0.1.1'
-            $out[0].capabilities | Should -BeExactly @('discover')
-            $out[0].manifest | Should -Not -BeNullOrEmpty
-            $out[1].type | Should -BeExactly 'Microsoft.Windows.Appx/Discover'
-            $out[1].version | Should -BeExactly '0.1.0'
-            $out[1].capabilities | Should -BeExactly @('discover')
-            $out[1].manifest | Should -Not -BeNullOrEmpty
-            $out[2].type | Should -BeExactly 'Test/Discover'
-            $out[2].version | Should -BeExactly '0.1.0'
-            $out[2].capabilities | Should -BeExactly @('discover')
-            $out[2].manifest | Should -Not -BeNullOrEmpty
-        } else {
-            $out.Count | Should -Be 2 -Because ($out | Out-String)
-            $out[0].type | Should -BeExactly 'Microsoft.PowerShell/Discover'
-            $out[0].version | Should -BeExactly '0.1.1'
-            $out[0].capabilities | Should -BeExactly @('discover')
-            $out[0].manifest | Should -Not -BeNullOrEmpty
-            $out[1].type | Should -BeExactly 'Test/Discover'
-            $out[1].version | Should -BeExactly '0.1.0'
-            $out[1].capabilities | Should -BeExactly @('discover')
-            $out[1].manifest | Should -Not -BeNullOrEmpty
+        $expected = @(
+            @{ type = 'Microsoft.PowerShell/Discover'; version = '0.1.1' }
+            @{ type = 'Microsoft.Registry.OpenContainerInitiative/Discover'; version = '0.1.0' }
+            if ($IsWindows) {
+                @{ type = 'Microsoft.Windows.Appx/Discover'; version = '0.1.0' }
+            }
+            @{ type = 'Test/Discover'; version = '0.1.0' }
+        )
+        $out.Count | Should -Be $expected.Count -Because ($out | Out-String)
+        for ($index = 0; $index -lt $expected.Count; $index++) {
+            $out[$index].type | Should -BeExactly $expected[$index].type
+            $out[$index].version | Should -BeExactly $expected[$index].version
+            $out[$index].capabilities | Should -BeExactly @('discover')
+            $out[$index].manifest | Should -Not -BeNullOrEmpty
         }
     }
 

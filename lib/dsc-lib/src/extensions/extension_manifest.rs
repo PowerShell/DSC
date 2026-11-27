@@ -51,7 +51,7 @@ pub struct ExtensionManifest {
     #[serde(default, skip_serializing_if = "TagList::is_empty")]
     pub tags: TagList,
     /// Details how to call the Discover method of the extension.
-    pub discover: Option<ExtensionMethod<DiscoverMethod>>,
+    pub discover: Option<DiscoverMethod>,
     /// Details how to call the Import method of the extension.
     pub import: Option<ImportMethod>,
     /// Details how to call the ImportParameters method of the extension.

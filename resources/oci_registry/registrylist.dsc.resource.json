@@ -1,0 +1,39 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+  "type": "Microsoft.Registry.OpenContainerInitiative/RegistryList",
+  "version": "0.1.0",
+  "author": "Microsoft Corporation",
+  "tags": ["OCI"],
+  "description": "Manage OCI registry discovery preferences and machine policy.",
+  "get": {
+    "executable": "oci_registry",
+    "args": ["get", {"jsonInputArg": "--input", "mandatory": false}]
+  },
+  "set": {
+    "executable": "oci_registry",
+    "args": ["set", {"jsonInputArg": "--input", "mandatory": true}],
+    "implementsPretest": true,
+    "return": "state"
+  },
+  "export": {
+    "executable": "oci_registry",
+    "args": ["export", {"jsonInputArg": "--input", "mandatory": false}]
+  },
+  "test": {
+    "executable": "oci_registry",
+    "args": ["test", {"jsonInputArg": "--input", "mandatory": false}],
+    "return": "stateAndDiff"
+  },
+  "exitCodes": {
+    "0": "Success",
+    "1": "Invalid arguments",
+    "2": "Invalid input",
+    "3": "Settings or registry operation failed"
+  },
+  "schema": {
+    "command": {
+      "executable": "oci_registry",
+      "args": ["schema"]
+    }
+  }
+}

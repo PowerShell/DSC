@@ -4,17 +4,18 @@ $id:     <HOST>/<PREFIX>/<VERSION>/extension/stdout/discover.yaml
 
 title: Discover extension operation stdout
 description: >-
-  Represents the full path a DSC resource manifest.
+  Represents a DSC manifest path or manifest content, with optional registry provenance.
 markdownDescription: | # VS Code only
   ***
   [_Online Documentation_][00]
   ***
 
-  Represents the full path a DSC resource manifest. DSC expects every JSON Line emitted to stdout
+  Represents a DSC manifest path or manifest content. DSC expects every JSON Line emitted to stdout
   for the **Discover** operation to adhere to this schema. An extension indicates that it supports
   the **Discover** operation by defining the [discover][01] field in its manifest.
 
-  The output must be a JSON object that defines the `manifestPath` property.
+  The output must be a JSON object that defines exactly one of `manifestPath` or `manifestContent`.
+  Remotely discovered resources can include their registry friendly name in `registry`.
 
   If the extension doesn't discover any resources, it shouldn't emit any data to stdout.
 
@@ -27,9 +28,16 @@ markdownDescription: | # VS Code only
 
 type: object
 additionalProperties: false
-required:
-  - manifestPath
+oneOf:
+  - required: [manifestPath]
+  - required: [manifestContent]
 properties:
+  registry:
+    description: The registry friendly name for a remotely discovered resource.
+    type: [string, 'null']
+  manifestContent:
+    description: The resource manifest content.
+    type: object
   manifestPath:
     title: DSC manifest path
     description: >-

@@ -249,7 +249,21 @@
                           ]
                         },
                         {
-                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/extension/manifest.json/$defs/jsonrpcOperation"
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "jsonrpc"
+                          ],
+                          "properties": {
+                            "jsonrpc": {
+                              "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/extension/manifest.json/$defs/jsonrpcOperation/properties/jsonrpc"
+                            },
+                            "network": {
+                              "description": "Whether discovery accesses the network. Network discovery runs after local discovery and is skipped for resource lookups that are already satisfied.",
+                              "type": "boolean",
+                              "default": false
+                            }
+                          }
                         },
                         {
                           "type": "null"
@@ -424,6 +438,11 @@
                         ]
                       },
                       "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings and extensions argument objects to pass to the command. DSC\npasses the arguments in the order they're specified. An object with `extensionsArg` names\nthe argument that receives the comma-separated list of resource manifest extensions.\nSet `includeQuotes` to `true` when that list must be surrounded by quotes.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myextension\",\n  \"args\":       [\"discover\", \"--all\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyextension discover --all\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/discover?view=dsc-3.0&preserve-view=true#args\n"
+                    },
+                    "network": {
+                      "description": "Whether discovery accesses the network. Network discovery runs after local discovery and is skipped for resource lookups that are already satisfied.",
+                      "type": "boolean",
+                      "default": false
                     }
                   },
                   "defaultSnippets": [

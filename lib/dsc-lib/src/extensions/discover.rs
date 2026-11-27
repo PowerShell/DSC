@@ -10,7 +10,8 @@ use crate::{
         DSC_RESOURCE_EXTENSIONS,
         ImportedManifest,
         load_manifest,
-        load_manifest_content
+        load_manifest_content,
+        load_registry_resource_manifest
     },
     dscerror::DscError,
     configure::context::Context,
@@ -29,12 +30,12 @@ use crate::{
 };
 use rust_i18n::t;
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::path::PathBuf;
 use tracing::{info, trace, warn};
 
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema, DscRepoSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, JsonSchema, DscRepoSchema)]
 #[serde(deny_unknown_fields)]
 #[dsc_repo_schema(base_name = "manifest.discover", folder_path = "extension")]
 #[schemars(
@@ -42,6 +43,28 @@ use tracing::{info, trace, warn};
     transform = DiscoverMethod::transform_schema_docs
 )]
 pub struct DiscoverMethod {
+    /// Whether discovery uses the network. Network discovery runs after local discovery.
+    #[serde(default)]
+    pub network: bool,
+    #[serde(flatten)]
+    pub method: ExtensionMethod<DiscoverCommand>,
+}
+
+impl<'de> Deserialize<'de> for DiscoverMethod {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let mut value = Value::deserialize(deserializer)?;
+        let network = value.as_object_mut().and_then(|object| object.remove("network"))
+            .map(serde_json::from_value).transpose().map_err(serde::de::Error::custom)?
+            .unwrap_or(false);
+        let method = serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+        Ok(Self { network, method })
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+#[schemars(inline)]
+pub struct DiscoverCommand {
     /// The command to run to get the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Get.
@@ -67,6 +90,9 @@ pub enum ManifestKind {
 pub struct DiscoverResult {
     #[serde(flatten)]
     pub path_or_content: ManifestKind,
+    /// The registry friendly name for remotely discovered resources.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub registry: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -114,7 +140,7 @@ impl DscExtension {
             if let Some(deprecation_message) = extension.deprecation_message.as_ref() {
                 warn!("{}", t!("extensions.dscextension.deprecationMessage", extension = self.type_name, message = deprecation_message));
             }
-            let stdout = match discover {
+            let stdout = match discover.method {
                 ExtensionMethod::Command(discover) => {
                     let args = process_discover_args(discover.args.as_ref())?;
                     let (_, stdout, _) = invoke_command(
@@ -130,7 +156,7 @@ impl DscExtension {
                     let value = crate::dscresources::jsonrpc::invoke_extension(
                         self, &jsonrpc, "discover", params, context, None
                     )?;
-                    let results: Vec<DiscoverResult> = serde_json::from_value(value)?;
+                    let results: Vec<Value> = serde_json::from_value(value)?;
                     let lines: Result<Vec<_>, _> = results.iter().map(serde_json::to_string).collect();
                     lines?.join("\n")
                 },
@@ -143,20 +169,47 @@ impl DscExtension {
                     let discover_result: DiscoverResult = match serde_json::from_str(line) {
                         Ok(result) => result,
                         Err(err) => {
-                            return Err(DscError::Json(err));
+                            warn!("{}", t!("extensions.dscextension.failedLoadManifest", extension = self.type_name, err = err));
+                            continue;
                         }
                     };
                     match discover_result.path_or_content {
                         ManifestKind::ManifestContent(manifest_value) => {
-                            let imported_manifests = load_manifest_content(&manifest_value)?;
+                            let imported_manifests = if let Some(registry) = discover_result.registry.as_deref()
+                                && registry != "local" {
+                                match load_registry_resource_manifest(&manifest_value) {
+                                    Ok(resource) => vec![ImportedManifest::Resource(resource)],
+                                    Err(err) => {
+                                        warn!("{}", t!("extensions.dscextension.invalidRegistryManifest", registry = registry, err = err));
+                                        continue;
+                                    }
+                                }
+                            } else {
+                                match load_manifest_content(&manifest_value) {
+                                    Ok(manifests) => manifests,
+                                    Err(err) => {
+                                        warn!("{}", t!("extensions.dscextension.failedLoadManifest", extension = self.type_name, err = err));
+                                        continue;
+                                    }
+                                }
+                            };
                             info!("{}", t!("extensions.dscextension.manifestImported", extension = self.type_name));
-                            for imported_manifest in imported_manifests {
+                            for mut imported_manifest in imported_manifests {
+                                if let ImportedManifest::Resource(resource) = &mut imported_manifest
+                                    && let Some(registry) = &discover_result.registry {
+                                    resource.registry = Some(registry.clone());
+                                }
                                 if matches!(imported_manifest, ImportedManifest::Resource(_) | ImportedManifest::Action(_)) {
                                     resources.push(imported_manifest);
                                 }
                             }
                         }
                         ManifestKind::ManifestPath(manifest_path) => {
+                            if let Some(registry) = discover_result.registry.as_deref()
+                                && registry != "local" {
+                                warn!("{}", t!("extensions.dscextension.registryManifestPath", registry = registry));
+                                continue;
+                            }
                             if !manifest_path.is_absolute() {
                                 return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone(), path = manifest_path.display()).to_string()));
                             }
@@ -168,7 +221,11 @@ impl DscExtension {
                                     continue;
                                 }
                             };
-                            for imported_manifest in manifests {
+                            for mut imported_manifest in manifests {
+                                if let ImportedManifest::Resource(resource) = &mut imported_manifest
+                                    && let Some(registry) = &discover_result.registry {
+                                    resource.registry = Some(registry.clone());
+                                }
                                 if matches!(imported_manifest, ImportedManifest::Resource(_) | ImportedManifest::Action(_)) {
                                     resources.push(imported_manifest);
                                 }
