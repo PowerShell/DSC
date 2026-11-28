@@ -50,7 +50,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag -->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.1...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.3.0...main
 
 <!--
     Unreleased change entry instructions:
@@ -130,6 +130,40 @@ changes since the last release, see the [diff on GitHub][unreleased].
   - PRs: _None_
 
   </details>
+
+## [v3.3.0][release-v3.3.0] - 2026-09-17
+
+This section includes a summary of changes for the `3.3.0` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.3.0].
+
+<!-- Release links -->
+[release-v3.3.0]: https://github.com/PowerShell/DSC/releases/tag/v3.3.0 "Link to the DSC v3.3.0 release on GitHub"
+[compare-v3.3.0]: https://github.com/PowerShell/DSC/compare/v3.3.0-rc.2...v3.3.0
+
+### Added
+
+- Added resource-version support for adapters, export filtering, and schema-aware diff
+  improvements. Added `--what-if` support to `Microsoft.Windows/UpdateList` and the MCP server
+  tools, and added new Group Policy, environment variable, and filesystem resources.
+
+### Fixed
+
+- Fixed nested schema diffs, preservation of quoted group names in `sshd_config`, and registry
+  resource `--what-if` behavior.
+
+## [v3.2.3][release-v3.2.3] - 2026-07-16
+
+This section includes a summary of changes for the `3.2.3` patch release. For the full list of
+changes in this release, see the [diff on GitHub][compare-v3.2.3].
+
+<!-- Release links -->
+[release-v3.2.3]: https://github.com/PowerShell/DSC/releases/tag/v3.2.3 "Link to the DSC v3.2.3 release on GitHub"
+[compare-v3.2.3]: https://github.com/PowerShell/DSC/compare/v3.2.2...v3.2.3
+
+### Fixed
+
+- Backported verification of write permission on the policy settings folder and support for
+  ignoring the settings switch and environment variable.
 
 ## [v3.2.2][release-v3.2.2] - 2026-06-16
 
