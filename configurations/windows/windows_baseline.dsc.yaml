@@ -1,8 +1,7 @@
 # This configuration validates a Windows system against a security baseline configuration
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-metadata:
-  Microsoft.DSC:
-    securityContext: elevated
+directives:
+  securityContext: elevated
 resources:
 - name: Validate the OS is Windows
   type: Microsoft.DSC/Assertion
